@@ -28,3 +28,5 @@
 
 # Obfuscate everything else
 -dontwarn com.appversal.appstorys
+
+-dontwarn java.lang.invoke.StringConcatFactory
