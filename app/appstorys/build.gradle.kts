@@ -23,7 +23,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -79,7 +79,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.appversal"
                 artifactId = "appstorys"
-                version = "3.3.0"
+                version = "3.3.1"
             }
         }
     }
