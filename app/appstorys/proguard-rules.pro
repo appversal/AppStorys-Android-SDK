@@ -21,7 +21,7 @@
 #-renamesourcefileattribute SourceFile
 
 # Keep all public classes and methods in your package
--keep class com.appversal.appstorys.AppStorys { *; }
+#-keep class com.appversal.appstorys.AppStorys { *; }
 
 # Remove all logging (hides debug info)
 -assumenosideeffects class android.util.Log { *; }
