@@ -24,9 +24,9 @@
 #-keep class com.appversal.appstorys.AppStorys { *; }
 
 # Remove all logging (hides debug info)
--assumenosideeffects class android.util.Log { *; }
+#-assumenosideeffects class android.util.Log { *; }
 
 # Obfuscate everything else
--dontwarn com.appversal.appstorys
+#-dontwarn com.appversal.appstorys
 
--dontwarn java.lang.invoke.StringConcatFactory
+#-dontwarn java.lang.invoke.StringConcatFactory
