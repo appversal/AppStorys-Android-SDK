@@ -7,8 +7,6 @@ import com.google.gson.JsonElement
 import com.google.gson.reflect.TypeToken
 import java.lang.reflect.Type
 
-
-
 internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse> {
     override fun deserialize(
         json: JsonElement, typeOfT: Type, context: JsonDeserializationContext

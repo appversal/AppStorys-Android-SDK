@@ -1,79 +1,82 @@
 package com.appversal.appstorys.api
-
+import androidx.annotation.Keep
 import com.google.gson.annotations.SerializedName
 
-data class ValidateAccountRequest(
+@Keep data class ValidateAccountRequest(
     val app_id: String?,
     val account_id: String?
 )
 
-data class TrackAction(
+@Keep data class TrackAction(
     val campaign_id: String?,
     val user_id: String?,
     val event_type: String?,
     val widget_image: String?
 )
 
-data class ReelStatusRequest(
+@Keep data class ReelStatusRequest(
     val user_id: String?,
     val action: String?,
     val reel: String?
 )
 
-data class TrackActionStories(
+@Keep data class TrackActionStories(
     val campaign_id: String?,
     val user_id: String?,
     val event_type: String?,
     val story_slide: String?
 )
 
-data class TrackActionTooltips(
+@Keep data class TrackActionTooltips(
     val campaign_id: String?,
     val user_id: String?,
     val event_type: String?,
     val tooltip_id: String?
 )
 
-data class ReelActionRequest(
+@Keep data class IdentifyTooltips(
+    val element: String?
+)
+
+@Keep data class ReelActionRequest(
     val user_id: String?,
     val event_type: String?,
     val reel_id: String?,
     val campaign_id: String?,
 )
 
-data class ValidateAccountResponse(
+@Keep data class ValidateAccountResponse(
     val access_token: String?
 )
 
-data class TrackScreenRequest(
+@Keep data class TrackScreenRequest(
     val screen_name: String?,
     val position_list: List<String>?,
-    val element_list: List<String>?
 )
 
-data class TrackScreenResponse(
+@Keep data class TrackScreenResponse(
     val campaigns: List<String>?
 )
 
-data class TrackUserRequest(
+@Keep data class TrackUserRequest(
     val user_id: String?,
     val campaign_list: List<String>?,
     val attributes: List<Map<String, Any>>?
 )
 
-data class CampaignResponse(
+@Keep data class CampaignResponse(
     val user_id: String?,
     val campaigns: List<Campaign>?
 )
 
-data class Campaign(
+@Keep data class Campaign(
     val id: String?,
     @SerializedName("campaign_type") val campaignType: String?,
     val details: Any?,
     val position: String?
 )
 
-data class StoryGroup(
+@Keep data class StoryGroup(
     val id: String?,
     val name: String?,
     val thumbnail: String?,
@@ -83,7 +86,7 @@ data class StoryGroup(
     val slides: List<StorySlide>?
 )
 
-data class StorySlide(
+@Keep data class StorySlide(
     val id: String?,
     val parent: String?,
     val image: String?,
@@ -93,7 +96,7 @@ data class StorySlide(
     val order: Int?
 )
 
-data class BannerDetails(
+@Keep data class BannerDetails(
     val id: String?,
     val image: String?,
     val width: Int?,
@@ -103,7 +106,7 @@ data class BannerDetails(
     val lottie_data: String?
 )
 
-data class Styling(
+@Keep data class Styling(
     val isClose: Boolean?,
     val marginBottom: Int?,
     val topLeftRadius: Int?,
@@ -112,7 +115,7 @@ data class Styling(
     val bottomRightRadius: Int?
 )
 
-data class WidgetDetails(
+@Keep data class WidgetDetails(
     val id: String?,
     val type: String?,
     val width: Int?,
@@ -123,14 +126,14 @@ data class WidgetDetails(
     val styling: Styling?
 )
 
-data class WidgetImage(
+@Keep data class WidgetImage(
     val id: String?,
     val image: String?,
     val link: Any?,
     val order: Int?
 )
 
-data class CSATDetails(
+@Keep data class CSATDetails(
     val id: String?,
     val title: String?,
     val height: Int?,
@@ -145,7 +148,7 @@ data class CSATDetails(
     val link: String?
 )
 
-data class FloaterDetails(
+@Keep data class FloaterDetails(
     val id: String?,
     val image: String?,
     val width: Int?,
@@ -155,7 +158,7 @@ data class FloaterDetails(
     val campaign: String?
 )
 
-data class FeedbackOption(
+@Keep data class FeedbackOption(
     val option1: String?,
     val option2: String?,
     val option3: String?,
@@ -181,21 +184,26 @@ data class FeedbackOption(
         ).filter { it.isNotBlank() }
 }
 
-data class CSATStyling(
+@Keep data class CSATStyling(
     val delayDisplay: Int?,
     val displayDelay: String?,
     val csatTitleColor: String?,
     val csatCtaTextColor: String?,
+    val csatLowStarColor: String?,
+    val csatHighStarColor: String?,
+    val csatUnselectedStarColor: String?,
     val csatBackgroundColor: String?,
     val csatOptionTextColour: String?,
     val csatOptionStrokeColor: String?,
     val csatCtaBackgroundColor: String?,
+    val csatAdditionalTextColor: String?,
     val csatDescriptionTextColor: String?,
     val csatSelectedOptionTextColor: String?,
-    val csatSelectedOptionBackgroundColor: String?
+    val csatSelectedOptionBackgroundColor: String?,
+
 )
 
-data class CsatFeedbackPostRequest(
+@Keep data class CsatFeedbackPostRequest(
     val csat: String?,
     val user_id: String?,
     val rating: Int?,
@@ -203,13 +211,13 @@ data class CsatFeedbackPostRequest(
     val additional_comments: String = ""
 )
 
-data class ReelsDetails(
+@Keep data class ReelsDetails(
     val id: String?,
     val reels: List<Reel>?,
     val styling: ReelStyling?
 )
 
-data class Reel(
+@Keep data class Reel(
     val id: String?,
     @SerializedName("button_text") val buttonText: String?,
     val order: Int?,
@@ -220,7 +228,7 @@ data class Reel(
     val link: String?
 )
 
-data class ReelStyling(
+@Keep data class ReelStyling(
     val ctaBoxColor: String?,
     val cornerRadius: String?,
     val ctaTextColor: String?,
@@ -230,7 +238,7 @@ data class ReelStyling(
     val descriptionTextColor: String?
 )
 
-data class TooltipsDetails(
+@Keep data class TooltipsDetails(
     @SerializedName("_id") val id: String?,
     val campaign: String?,
     val name: String?,
@@ -238,7 +246,7 @@ data class TooltipsDetails(
     @SerializedName("created_at") val createdAt: String?
 )
 
-data class Tooltip(
+@Keep data class Tooltip(
     val type: String?,
     val url: String?,
     val clickAction: String?,
@@ -249,7 +257,7 @@ data class Tooltip(
     @SerializedName("_id") val id: String?
 )
 
-data class TooltipStyling(
+@Keep data class TooltipStyling(
     val tooltipDimensions: TooltipDimensions?,
     val highlightRadius: String?,
     val highlightPadding: String?,
@@ -260,29 +268,29 @@ data class TooltipStyling(
     val closeButton: Boolean?
 )
 
-data class TooltipDimensions(
+@Keep data class TooltipDimensions(
     val height: String?,
     val width: String?,
     val cornerRadius: String?
 )
 
-data class TooltipArrow(
+@Keep data class TooltipArrow(
     val arrowHeight: String?,
     val arrowWidth: String?
 )
 
-data class TooltipSpacing(
+@Keep data class TooltipSpacing(
     val padding: TooltipPadding?
 )
 
-data class TooltipPadding(
+@Keep data class TooltipPadding(
     val paddingTop: Int?,
     val paddingRight: Int?,
     val paddingBottom: Int?,
     val paddingLeft: Int?
 )
 
-data class PipDetails(
+@Keep data class PipDetails(
     val id: String?,
     val position: String?,
     val small_video: String?,

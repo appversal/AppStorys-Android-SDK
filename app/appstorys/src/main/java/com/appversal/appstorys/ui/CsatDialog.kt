@@ -49,7 +49,6 @@ internal fun CsatDialog(
             "description" to (csatDetails.descriptionText?.takeIf { it.isNotEmpty() } ?: "This will help us improve your experience"),
             "thankyouText" to (csatDetails.thankyouText?.takeIf { it.isNotEmpty() } ?: "Thank you for your feedback!"),
             "thankyouDescription" to (csatDetails.thankyouDescription?.takeIf { it.isNotEmpty() } ?: "We appreciate you taking the time to share your thoughts."),
-            "rateUsText" to "Rate Us!",
             "feedbackPrompt" to "Please tell us what went wrong."
         )
     }
@@ -64,7 +63,11 @@ internal fun CsatDialog(
             "csatSelectedOptionBackgroundColor" to csatDetails.styling?.csatSelectedOptionBackgroundColor.toColor(Color(0xFFE3F2FD)),
             "csatOptionStrokeColor" to csatDetails.styling?.csatOptionStrokeColor.toColor(Color(0xFFCCCCCC)),
             "csatSelectedOptionTextColor" to csatDetails.styling?.csatSelectedOptionTextColor.toColor(Color(0xFF007AFF)),
-            "csatOptionTextColor" to csatDetails.styling?.csatOptionTextColour.toColor(Color.Black)
+            "csatOptionTextColor" to csatDetails.styling?.csatOptionTextColour.toColor(Color.Black),
+            "csatLowStarColor" to csatDetails.styling?.csatLowStarColor.toColor(Color.Black),
+            "csatHighStarColor" to csatDetails.styling?.csatHighStarColor.toColor(Color.Black),
+            "csatUnselectedStarColor" to csatDetails.styling?.csatUnselectedStarColor.toColor(Color.Black),
+            "csatAdditionalTextColor" to csatDetails.styling?.csatAdditionalTextColor.toColor(Color.Black)
         )
     }
 
@@ -209,24 +212,21 @@ private fun MainContent(
             horizontalArrangement = Arrangement.Start
         ) {
             repeat(5) { index ->
+                val starColor = when {
+                    index >= selectedStars -> styling["csatUnselectedStarColor"]!!
+                    selectedStars >= 4 -> styling["csatHighStarColor"]!!
+                    else -> styling["csatLowStarColor"]!!
+                }
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = "Star ${index + 1}",
-                    tint = if (index < selectedStars) Color(0xFFFFC107) else Color.Gray,
+                    tint = starColor,
                     modifier = Modifier
                         .size(40.dp)
                         .clickable { onStarSelected(index + 1) }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
-        }
-
-        if (!showFeedback) {
-            Text(
-                text = localContent["rateUsText"]!!,
-                modifier = Modifier.padding(start = 8.dp, top = 8.dp),
-                fontSize = 16.sp
-            )
         }
 
         AnimatedVisibility(visible = showFeedback) {
@@ -298,7 +298,7 @@ private fun FeedbackContent(
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Additional comments", color = Color.Gray) },
             colors = TextFieldDefaults.colors(
-                focusedTextColor = Color.Black,
+                focusedTextColor = styling["csatAdditionalTextColor"]!!,
                 unfocusedTextColor = Color.Black,
                 unfocusedContainerColor = Color.Transparent,
                 focusedContainerColor = Color.Transparent

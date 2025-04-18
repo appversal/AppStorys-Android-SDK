@@ -20,12 +20,12 @@ internal class ApiRepository(private val apiService: ApiService) {
             }
         }
     }
-    suspend fun getCampaigns(accessToken: String, screenName: String, positions: List<String>?, elementList: List<String>?): List<String>? {
+    suspend fun getCampaigns(accessToken: String, screenName: String, positions: List<String>?): List<String>? {
         return withContext(Dispatchers.IO) {
             when (val result = safeApiCall {
                 apiService.trackScreen(
                     token = "Bearer $accessToken",
-                    request = TrackScreenRequest(screen_name = screenName, positions, elementList)
+                    request = TrackScreenRequest(screen_name = screenName, positions)
                 ).campaigns
             }) {
                 is ApiResult.Success -> result.data
@@ -138,6 +138,21 @@ internal class ApiRepository(private val apiService: ApiService) {
                 )
             }) {
                 is ApiResult.Error -> println("Error tracking actions: ${result.message}")
+                else -> Unit
+            }
+        }
+    }
+
+    suspend fun tooltipIdentify(accessToken: String, screen: String, actions: IdentifyTooltips) {
+        withContext(Dispatchers.IO) {
+            when (val result = safeApiCall {
+                apiService.identifyTooltips(
+                    token = "Bearer $accessToken",
+                    screen = screen,
+                    request = actions
+                )
+            }) {
+                is ApiResult.Error -> println("Error identifying tooltip: ${result.message}")
                 else -> Unit
             }
         }

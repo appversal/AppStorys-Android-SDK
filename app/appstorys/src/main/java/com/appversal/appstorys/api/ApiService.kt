@@ -4,6 +4,7 @@ import retrofit2.HttpException
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Query
 import java.io.IOException
 
 internal interface ApiService {
@@ -60,6 +61,13 @@ internal interface ApiService {
     suspend fun trackTooltipsAction(
         @Header("Authorization") token: String,
         @Body request: TrackActionTooltips
+    )
+
+    @POST("api/v1/appinfo/identify-elements/")
+    suspend fun identifyTooltips(
+        @Header("Authorization") token: String,
+        @Query("screen") screen: String,
+        @Body request: IdentifyTooltips
     )
 }
 

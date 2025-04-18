@@ -70,10 +70,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.appversal.appstorys.api.IdentifyTooltips
 import com.appversal.appstorys.api.PipDetails
 import com.appversal.appstorys.api.ReelActionRequest
 import com.appversal.appstorys.api.ReelStatusRequest
@@ -174,7 +176,7 @@ object AppStorys {
             if (accessToken != null) {
                 this.accessToken = accessToken
                 currentScreen = "Home Screen"
-                val campaignList = repository.getCampaigns(accessToken, currentScreen, null, null)
+                val campaignList = repository.getCampaigns(accessToken, currentScreen, null)
 
                 if (campaignList?.isNotEmpty() == true) {
                     val campaignsData =
@@ -190,8 +192,7 @@ object AppStorys {
 
     fun getScreenCampaigns(
         screenName: String,
-        positionList: List<String>,
-        elementList: List<String>
+        positionList: List<String>
     ) {
         try {
             coroutineScope.launch {
@@ -205,8 +206,7 @@ object AppStorys {
                         repository.getCampaigns(
                             accessToken,
                             currentScreen,
-                            positionList,
-                            elementList
+                            positionList
                         )
                     if (campaignList?.isNotEmpty() == true) {
                         val campaignsData =
@@ -292,36 +292,41 @@ object AppStorys {
                     isVisibleState = true
                 }
 
-                AnimatedVisibility(
-                    modifier = modifier,
-                    visible = isVisibleState,
-                    enter = slideInVertically() { it },
-                    exit = slideOutVertically { it }
+                Box(
+                    modifier = modifier.fillMaxSize(),
+                    contentAlignment = Alignment.BottomCenter  // Position at bottom
                 ) {
-                    CsatDialog(
-                        onDismiss = {
-                            isVisibleState = false
-                            coroutineScope.launch {
-                                delay(500L)
-                                showCsat = true
-                            }
-                        },
-                        onSubmitFeedback = { feedback ->
-                            coroutineScope.launch {
-                                repository.captureCSATResponse(
-                                    accessToken,
-                                    CsatFeedbackPostRequest(
-                                        user_id = userId,
-                                        csat = csatDetails.id,
-                                        rating = feedback.rating,
-                                        additional_comments = feedback.additionalComments,
-                                        feedback_option = feedback.feedbackOption
+                    AnimatedVisibility(
+                        modifier = modifier,
+                        visible = isVisibleState,
+                        enter = slideInVertically() { it },
+                        exit = slideOutVertically { it }
+                    ) {
+                        CsatDialog(
+                            onDismiss = {
+                                isVisibleState = false
+                                coroutineScope.launch {
+                                    delay(500L)
+                                    showCsat = true
+                                }
+                            },
+                            onSubmitFeedback = { feedback ->
+                                coroutineScope.launch {
+                                    repository.captureCSATResponse(
+                                        accessToken,
+                                        CsatFeedbackPostRequest(
+                                            user_id = userId,
+                                            csat = csatDetails.id,
+                                            rating = feedback.rating,
+                                            additional_comments = feedback.additionalComments,
+                                            feedback_option = feedback.feedbackOption
+                                        )
                                     )
-                                )
-                            }
-                        },
-                        csatDetails = csatDetails
-                    )
+                                }
+                            },
+                            csatDetails = csatDetails
+                        )
+                    }
                 }
             }
         }
@@ -385,6 +390,14 @@ object AppStorys {
         val view = LocalView.current.rootView
         val visibleShowcase by showcaseVisible.collectAsStateWithLifecycle()
         val currentToolTipTarget by tooltipTargetView.collectAsStateWithLifecycle()
+
+        LaunchedEffect(targetKey) {
+            repository.tooltipIdentify(
+                accessToken = accessToken,
+                screen = currentScreen,
+                actions = IdentifyTooltips(element = targetKey)
+            )
+        }
 
         LaunchedEffect(currentToolTipTarget) {
             if (currentToolTipTarget?.target == targetKey) {
@@ -486,6 +499,8 @@ object AppStorys {
     @Composable
     fun Pip(
         modifier: Modifier = Modifier,
+        bottomPadding: Dp = 0.dp,
+        topPadding: Dp = 0.dp,
     ) {
         var showPip by remember { mutableStateOf(true) }
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -522,6 +537,8 @@ object AppStorys {
                                 button_text = pipDetails.button_text.toString(),
                                 link = it1,
                                 position = pipDetails.position.toString(),
+                                bottomPadding = bottomPadding,
+                                topPadding = topPadding,
                                 onButtonClick = {
                                     campaign?.id?.let { campaignId ->
                                         trackCampaignActions(campaignId, "CLK")

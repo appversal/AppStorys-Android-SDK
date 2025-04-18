@@ -29,8 +29,8 @@ class App : Application() {
         // Initialize CampaignManager with userId and appId
         AppStorys.initialize(
             context = this,
-            appId = "1163a1a2-61a8-486c-b263-7252f9a502c2",
-            accountId = "5bb1378d-9f32-4da8-aed1-1ee44d086db7",
+            appId = "5a2ecc86-346a-4895-b14c-f662cc12071b",
+            accountId = "70ddda52-2106-453b-919a-d63d1287bdf7",
             userId = "cheqtesting",
             attributes = attributes,
             navigateToScreen = { screen ->

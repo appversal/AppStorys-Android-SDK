@@ -45,6 +45,8 @@ internal fun PipVideo(
     button_text: String,
     position: String?,
     link: String,
+    bottomPadding: Dp = 0.dp,
+    topPadding: Dp = 0.dp,
     onClose: () -> Unit,
     onButtonClick: () -> Unit,
     onExpandClick: () -> Unit = {}
@@ -84,6 +86,9 @@ internal fun PipVideo(
                 play()
             }
     }
+
+    val bottomPaddingPx = with(LocalDensity.current) { bottomPadding.toPx() }
+    val topPaddingPx = with(LocalDensity.current) { topPadding.toPx() }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -141,8 +146,8 @@ internal fun PipVideo(
                                 screenWidth - pipSize.width - boundaryPaddingPx
                             )
                             offsetY = (offsetY + dragAmount.y).coerceIn(
-                                boundaryPaddingPx,
-                                screenHeight - pipSize.height - boundaryPaddingPx
+                                boundaryPaddingPx + topPaddingPx,
+                                screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
                             )
                         }
                     },
@@ -220,7 +225,7 @@ internal fun PipVideo(
                         } else {
                             offsetX = screenWidth - pipSize.width - boundaryPaddingPx
                         }
-                        offsetY = screenHeight - pipSize.height - boundaryPaddingPx
+                        offsetY = screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
                         isInitialized = true
                     }
                     .alpha(0f)
