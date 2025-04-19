@@ -43,7 +43,7 @@
 }
 
 # Obfuscate all internal implementation
--keep class !com.appversal.appstorys.AppStorysAPI,com.appversal.appstorys.** { *; }
+-keep,allowobfuscation,allowoptimization class com.appversal.appstorys.** { *; }
 -keepattributes Signature,Exceptions,*Annotation*,InnerClasses,PermittedSubclasses,EnclosingMethod
 
 # For Kotlin specific features
