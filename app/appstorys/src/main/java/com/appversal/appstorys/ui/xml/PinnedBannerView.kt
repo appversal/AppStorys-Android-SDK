@@ -45,7 +45,8 @@ class PinnedBannerView @JvmOverloads constructor(
                     contentScale = contentScale,
                     staticWidth = staticWidth.value,
                     placeHolder = placeHolder,
-                    position = position
+                    position = position,
+                    placeholderContent = null
                 )
             }
         }

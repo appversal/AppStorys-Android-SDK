@@ -30,3 +30,26 @@
 #-dontwarn com.appversal.appstorys
 
 #-dontwarn java.lang.invoke.StringConcatFactory
+
+
+# Keep the public API
+-keep class com.appversal.appstorys.AppStorysAPI { *; }
+-keep class com.appversal.appstorys.AppStorysAPI$* { *; }
+
+# Keep composable functions annotations
+-keep class androidx.compose.runtime.* { *; }
+-keepclassmembers class * {
+    @androidx.compose.runtime.Composable *;
+}
+
+# Obfuscate all internal implementation
+-keep class !com.appversal.appstorys.AppStorysAPI,com.appversal.appstorys.** { *; }
+-keepattributes Signature,Exceptions,*Annotation*,InnerClasses,PermittedSubclasses,EnclosingMethod
+
+# For Kotlin specific features
+-keepclassmembers class **$WhenMappings {
+    <fields>;
+}
+-keepclassmembers class kotlin.Metadata {
+    public <methods>;
+}

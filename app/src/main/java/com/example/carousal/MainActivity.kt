@@ -40,6 +40,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -240,11 +241,11 @@ fun HomeScreen(padding: PaddingValues) {
             }
         }
 
-        campaignManager.Pip(bottomPadding = padding.calculateBottomPadding(), topPadding = padding.calculateTopPadding())
+        campaignManager.Pip(bottomPadding = padding.calculateBottomPadding(), topPadding = padding.calculateTopPadding(), modifier = Modifier)
         Box(
             modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
         ){
-            campaignManager.CSAT()
+            campaignManager.CSAT(modifier = Modifier, displayDelaySeconds = 5, position = null)
         }
     }
 }
@@ -277,7 +278,8 @@ fun PayScreen(padding: PaddingValues) {
                 Row {
                     campaignManager.ToolTipWrapper(
                     targetModifier = Modifier,
-                    targetKey = "cashbook"
+                    targetKey = "cashbook",
+                        isNavigationBarItem = false
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.more_one),
@@ -289,7 +291,8 @@ fun PayScreen(padding: PaddingValues) {
 
                     campaignManager.ToolTipWrapper(
                         targetModifier = Modifier,
-                        targetKey = "bills"
+                        targetKey = "bills",
+                        isNavigationBarItem = false
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.more_two),
@@ -301,7 +304,8 @@ fun PayScreen(padding: PaddingValues) {
 
                     campaignManager.ToolTipWrapper(
                         targetModifier = Modifier,
-                        targetKey = "items"
+                        targetKey = "items",
+                        isNavigationBarItem = false
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.more_three),
@@ -322,7 +326,10 @@ fun PayScreen(padding: PaddingValues) {
                 campaignManager.Widget(
                     modifier = Modifier.fillMaxWidth(),
                     placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-                    position = null
+                    position = null,
+                    contentScale = ContentScale.Fit,
+                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
+                    placeholderContent = null
                 )
             }
 //            campaignManager.PinnedBanner(

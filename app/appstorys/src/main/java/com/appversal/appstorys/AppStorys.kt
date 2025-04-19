@@ -97,7 +97,36 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import org.json.JSONObject
 
-object AppStorys {
+public interface AppStorysAPI {
+    fun initialize(
+        context: Application,
+        appId: String,
+        accountId: String,
+        userId: String,
+        attributes: List<Map<String, Any>>? = null,
+        navigateToScreen: (String) -> Unit
+    )
+
+    fun getScreenCampaigns(screenName: String, positionList: List<String>)
+    fun trackEvents(event_type: String, campaign_id: String? = null, metadata: Map<String, Any>? = null)
+
+    @Composable fun CSAT(modifier: Modifier, displayDelaySeconds: Long, position: String?)
+    @Composable fun Floater(boxModifier: Modifier, iconModifier: Modifier)
+    @Composable fun ToolTipWrapper(targetModifier: Modifier, targetKey: String, isNavigationBarItem: Boolean, requesterView: @Composable (Modifier) -> Unit)
+    @Composable fun Pip(modifier: Modifier, bottomPadding: Dp, topPadding: Dp)
+    @Composable fun PinnedBanner(modifier: Modifier, contentScale: ContentScale, staticWidth: Dp?, placeHolder: Drawable?, placeholderContent: (@Composable () -> Unit)?, position: String?)
+    @Composable fun Widget(modifier: Modifier, contentScale: ContentScale, staticWidth: Dp?, placeHolder: Drawable?, placeholderContent: (@Composable () -> Unit)?, position: String?)
+    @Composable fun Stories()
+    @Composable fun Reels(modifier: Modifier)
+    @Composable fun getBannerHeight(): Dp
+
+    companion object {
+        @JvmStatic
+        fun getInstance(): AppStorysAPI = AppStorys
+    }
+}
+
+internal object AppStorys : AppStorysAPI {
     private lateinit var context: Application
     private lateinit var appId: String
     private lateinit var accountId: String
@@ -105,12 +134,12 @@ object AppStorys {
     private var attributes: List<Map<String, Any>>? = null
     private lateinit var navigateToScreen: (String) -> Unit
 
-    fun initialize(
+    override fun initialize(
         context: Application,
         appId: String,
         accountId: String,
         userId: String,
-        attributes: List<Map<String, Any>>? = null,
+        attributes: List<Map<String, Any>>?,
         navigateToScreen: (String) -> Unit
     ) {
         this.context = context
@@ -190,7 +219,7 @@ object AppStorys {
         }
     }
 
-    fun getScreenCampaigns(
+    override fun getScreenCampaigns(
         screenName: String,
         positionList: List<String>
     ) {
@@ -225,10 +254,10 @@ object AppStorys {
         }
     }
 
-    fun trackEvents(
+    override fun trackEvents(
         event_type: String,
-        campaign_id: String? = null,
-        metadata: Map<String, Any>? = null
+        campaign_id: String?,
+        metadata: Map<String, Any>?
     ) {
         coroutineScope.launch {
             if (accessToken.isNotEmpty()) {
@@ -259,10 +288,10 @@ object AppStorys {
     }
 
     @Composable
-    fun CSAT(
-        modifier: Modifier = Modifier,
-        displayDelaySeconds: Long = 10,
-        position: String? = null
+    override fun CSAT(
+        modifier: Modifier,
+        displayDelaySeconds: Long,
+        position: String?
     ) {
         if (!showCsat) {
             val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -333,9 +362,9 @@ object AppStorys {
     }
 
     @Composable
-    fun Floater(
-        boxModifier: Modifier = Modifier,
-        iconModifier: Modifier = Modifier
+    override fun Floater(
+        boxModifier: Modifier,
+        iconModifier: Modifier
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
 
@@ -380,10 +409,10 @@ object AppStorys {
 
 
     @Composable
-    fun ToolTipWrapper(
+    override fun ToolTipWrapper(
         targetModifier: Modifier,
         targetKey: String,
-        isNavigationBarItem: Boolean = false,
+        isNavigationBarItem: Boolean,
         requesterView: @Composable (Modifier) -> Unit
     ) {
         var position by remember { mutableStateOf(TooltipPopupPosition()) }
@@ -497,10 +526,10 @@ object AppStorys {
     }
 
     @Composable
-    fun Pip(
-        modifier: Modifier = Modifier,
-        bottomPadding: Dp = 0.dp,
-        topPadding: Dp = 0.dp,
+    override fun Pip(
+        modifier: Modifier,
+        bottomPadding: Dp,
+        topPadding: Dp,
     ) {
         var showPip by remember { mutableStateOf(true) }
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -595,7 +624,7 @@ object AppStorys {
 
 
     @Composable
-    fun Stories() {
+    override fun Stories() {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
         val campaign = campaignsData.value.firstOrNull { it.campaignType == "STR" }
         val storiesDetails = (campaign?.details as? List<*>)?.filterIsInstance<StoryGroup>()
@@ -609,16 +638,16 @@ object AppStorys {
                             user_id = userId,
                             story_slide = it.first.id,
                             event_type = it.second
-                            )
                         )
-                    }
+                    )
                 }
+            }
             )
         }
     }
 
     @Composable
-    fun Reels(modifier: Modifier = Modifier) {
+    override fun Reels(modifier: Modifier) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
         val campaign =
             campaignsData.value.firstOrNull { it.campaignType == "REL" && it.details is ReelsDetails }
@@ -781,7 +810,7 @@ object AppStorys {
     }
 
     @Composable
-    fun getBannerHeight(): Dp {
+    override fun getBannerHeight(): Dp {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
         val defaultHeight = 100.dp
 
@@ -793,12 +822,12 @@ object AppStorys {
     }
 
     @Composable
-    fun PinnedBanner(
-        modifier: Modifier = Modifier,
-        contentScale: ContentScale = ContentScale.FillWidth,
-        staticWidth: Dp? = null,
-        placeHolder: Drawable? = null,
-        placeholderContent: (@Composable () -> Unit)? = null,
+    override fun PinnedBanner(
+        modifier: Modifier,
+        contentScale: ContentScale,
+        staticWidth: Dp?,
+        placeHolder: Drawable?,
+        placeholderContent: (@Composable () -> Unit)?,
         position: String?
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -869,12 +898,12 @@ object AppStorys {
     }
 
     @Composable
-    fun Widget(
-        modifier: Modifier = Modifier,
-        contentScale: ContentScale = ContentScale.FillWidth,
-        staticWidth: Dp? = null,
+    override fun Widget(
+        modifier: Modifier,
+        contentScale: ContentScale,
+        staticWidth: Dp?,
         placeHolder: Drawable?,
-        placeholderContent: (@Composable () -> Unit)? = null,
+        placeholderContent: (@Composable () -> Unit)?,
         position: String?
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -909,7 +938,7 @@ object AppStorys {
     }
 
     @Composable
-    fun FullWidget(
+    private fun FullWidget(
         modifier: Modifier = Modifier,
         contentScale: ContentScale = ContentScale.FillWidth,
         staticWidth: Dp? = null,
@@ -997,7 +1026,7 @@ object AppStorys {
     }
 
     @Composable
-    fun DoubleWidget(
+    private fun DoubleWidget(
         modifier: Modifier = Modifier,
         staticWidth: Dp? = null,
         position: String?,
@@ -1208,11 +1237,11 @@ object AppStorys {
     }
 
     private fun openUrl(url: String) {
-            try {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                context.startActivity(intent)
-            } catch (_: Exception) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            context.startActivity(intent)
+        } catch (_: Exception) {
         }
     }
 }

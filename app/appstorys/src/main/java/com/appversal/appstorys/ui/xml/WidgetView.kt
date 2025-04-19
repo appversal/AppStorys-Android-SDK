@@ -40,10 +40,12 @@ class WidgetView @JvmOverloads constructor(
         val composeView = ComposeView(context).apply {
             setContent {
                 AppStorys.Widget(
+                    modifier = Modifier,
                     contentScale = contentScale,
                     staticWidth = staticWidth.value,
                     placeHolder = placeHolder,
-                    position = position
+                    position = position,
+                    placeholderContent = null
                 )
             }
         }
