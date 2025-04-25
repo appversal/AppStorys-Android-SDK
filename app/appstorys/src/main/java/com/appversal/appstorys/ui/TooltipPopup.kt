@@ -73,7 +73,7 @@ internal fun TooltipContent(tooltip: Tooltip, onClick: () -> Unit, exitUnit: () 
         AsyncImage(
             model = imageRequest,
             contentDescription = null,
-            contentScale = ContentScale.FillBounds,
+            contentScale = ContentScale.Fit,
             modifier = Modifier.fillMaxSize().clip(
                 if (tooltip.styling?.tooltipDimensions?.cornerRadius != null) RoundedCornerShape(
                     tooltip.styling.tooltipDimensions.cornerRadius.toIntOrNull()?.dp ?: 12.dp) else MaterialTheme.shapes.medium
@@ -306,7 +306,7 @@ internal fun BubbleLayout(
 
                 drawPath(
                     path = path,
-                    color = backgroundColor,
+                    color = Color.White,
                 )
                 path.close()
             }

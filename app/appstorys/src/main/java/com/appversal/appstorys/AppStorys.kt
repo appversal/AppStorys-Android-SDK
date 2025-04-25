@@ -75,6 +75,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.IdentifyTooltips
 import com.appversal.appstorys.api.PipDetails
 import com.appversal.appstorys.api.ReelActionRequest
@@ -84,6 +85,7 @@ import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackActionStories
 import com.appversal.appstorys.api.TrackActionTooltips
+import com.appversal.appstorys.ui.BottomSheetComponent
 import com.appversal.appstorys.ui.PipVideo
 import com.appversal.appstorys.ui.StoryAppMain
 import com.appversal.appstorys.ui.getLikedReels
@@ -118,6 +120,7 @@ public interface AppStorysAPI {
     @Composable fun Widget(modifier: Modifier, contentScale: ContentScale, staticWidth: Dp?, placeHolder: Drawable?, placeholderContent: (@Composable () -> Unit)?, position: String?)
     @Composable fun Stories()
     @Composable fun Reels(modifier: Modifier)
+    @Composable fun BottomSheet(onDismissRequest: () -> Unit)
     @Composable fun getBannerHeight(): Dp
 
     companion object {
@@ -459,7 +462,7 @@ internal object AppStorys : AppStorysAPI {
                     )
                 })
             },
-            backgroundColor = Color.White,
+            backgroundColor = Color.Transparent,
             position = position,
             isShowTooltip = visibleShowcase && currentToolTipTarget?.target == targetKey,
             onDismissRequest = {
@@ -542,6 +545,8 @@ internal object AppStorys : AppStorysAPI {
             else -> null
         }
 
+        val isMovable = false
+
         if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty()) {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -568,6 +573,7 @@ internal object AppStorys : AppStorysAPI {
                                 position = pipDetails.position.toString(),
                                 bottomPadding = bottomPadding,
                                 topPadding = topPadding,
+                                isMovable = isMovable,
                                 onButtonClick = {
                                     campaign?.id?.let { campaignId ->
                                         trackCampaignActions(campaignId, "CLK")
@@ -1166,6 +1172,48 @@ internal object AppStorys : AppStorysAPI {
             handleDeepLink(json, campaignId, widgetImageId)
         } else if (link is JSONObject) {
             handleDeepLink(link, campaignId, widgetImageId)
+        }
+    }
+
+    @Composable
+    override fun BottomSheet(
+        onDismissRequest: () -> Unit,
+    ) {
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+
+        val campaign =
+            campaignsData.value.firstOrNull { it.campaignType == "BTS" && it.details is BottomSheetDetails }
+
+        val bottomSheetDetails = when (val details = campaign?.details) {
+            is BottomSheetDetails -> details
+            else -> null
+        }
+
+        if (bottomSheetDetails != null){
+
+            LaunchedEffect(Unit) {
+                campaign?.id?.let {
+                    trackCampaignActions(it, "IMP")
+                }
+            }
+
+            val ctaLinks: List<String?> = bottomSheetDetails.elements
+                ?.filter { it.type == "cta" }
+                ?.map { it.ctaLink }
+                ?: emptyList()
+
+            BottomSheetComponent(
+                onDismissRequest = onDismissRequest,
+                bottomSheetDetails = bottomSheetDetails,
+                onClick = {
+                        campaign?.id?.let {
+                            ctaLinks.forEach { link ->
+                                clickEvent(link = link, campaignId = it)
+                            }
+
+                        }
+                }
+            )
         }
     }
 

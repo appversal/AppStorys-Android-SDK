@@ -165,7 +165,8 @@ internal fun CsatDialog(
                         styling = styling,
                         onDone = onDismiss,
                         image = csatDetails.thankyouImage,
-                        csatDetails = csatDetails
+                        csatDetails = csatDetails,
+                        selectedStars = selectedStars
                     )
                 }
             }
@@ -328,6 +329,7 @@ private fun ThankYouContent(
     styling: Map<String, Color>,
     image: String,
     csatDetails: CSATDetails,
+    selectedStars: Int,
     onDone: () -> Unit
 ) {
     val context = LocalContext.current
@@ -365,7 +367,7 @@ private fun ThankYouContent(
 
         Button(
             onClick = {
-                if(csatDetails.link.isNullOrEmpty()){
+                if(csatDetails.link.isNullOrEmpty() || selectedStars < 4){
                     onDone()
                 } else {
                     try {
@@ -386,7 +388,7 @@ private fun ThankYouContent(
             )
         ) {
             Text(
-                text = "Done",
+                text = if (selectedStars < 4) "Done" else "Review us",
                 color = styling["csatCtaTextColor"]!!
             )
         }

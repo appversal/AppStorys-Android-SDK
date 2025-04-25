@@ -16,6 +16,10 @@ fun isGifUrl(url: String): Boolean {
     return url.lowercase().endsWith(".gif")
 }
 
+//fun isGifUrl(url: String): Boolean {
+//    return url.lowercase().endsWith(".gif")
+//}
+
 fun String?.toColor(defaultColor: Color): Color {
     return try {
         if (this.isNullOrEmpty()){

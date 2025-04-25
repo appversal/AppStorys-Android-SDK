@@ -29,6 +29,7 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
                 "REL" -> context.deserialize(detailsJson, ReelsDetails::class.java)
                 "TTP" -> context.deserialize(detailsJson, TooltipsDetails::class.java)
                 "PIP" -> context.deserialize(detailsJson, PipDetails::class.java)
+                "BTS" -> context.deserialize(detailsJson, BottomSheetDetails::class.java)
                 "STR" -> context.deserialize(detailsJson, object : TypeToken<List<StoryGroup>>() {}.type)
                 else -> null
             }

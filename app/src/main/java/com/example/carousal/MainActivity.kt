@@ -46,6 +46,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.appversal.appstorys.ui.PopupModal
 import com.example.carousal.ui.theme.CarousalTheme
 
 
@@ -60,6 +61,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyApp() {
     val context = LocalContext.current
@@ -140,6 +142,8 @@ fun HomeScreen(padding: PaddingValues) {
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
 
+    var showPopupModal by remember { mutableStateOf(true) }
+
     campaignManager.getScreenCampaigns(
         "Home Screen",
         listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty"),
@@ -148,7 +152,7 @@ fun HomeScreen(padding: PaddingValues) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFf1f2f4)) // Optional background color
+            .background(Color(0xFFf1f2f4))
     ) {
         // Scrollable Column using LazyColumn
         LazyColumn(
@@ -163,10 +167,25 @@ fun HomeScreen(padding: PaddingValues) {
                     painter = painterResource(id = R.drawable.home_one),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showBottomSheet = true },
+                        .fillMaxWidth(),
+//                        .clickable { showBottomSheet = true },
                     contentScale = ContentScale.Fit
                 )
+
+                campaignManager.ToolTipWrapper(
+                    targetModifier = Modifier,
+                    targetKey = "tooltip_home",
+                    isNavigationBarItem = false
+                ) {
+                campaignManager.Widget(
+                    modifier = it.fillMaxWidth(),
+                    placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
+                    position = null,
+                    contentScale = ContentScale.Fit,
+                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
+                    placeholderContent = null
+                )
+            }
 
                 Image(
                     painter = painterResource(id = R.drawable.home_two),
@@ -175,6 +194,16 @@ fun HomeScreen(padding: PaddingValues) {
                         .fillMaxWidth(),
                     contentScale = ContentScale.Fit
                 )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize(),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Button(onClick = { showBottomSheet = true }) {
+                        Text("Open Bottom Sheet")
+                    }
+                }
 
 //                campaignManager.ToolTipWrapper(
 //                    targetModifier = Modifier,
@@ -197,55 +226,18 @@ fun HomeScreen(padding: PaddingValues) {
         }
 
         if (showBottomSheet) {
-            ModalBottomSheet(
+            campaignManager.BottomSheet(
                 onDismissRequest = { showBottomSheet = false },
-                sheetState = sheetState,
-                shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-                containerColor = Color.White,
-                dragHandle = {
-                    // Custom drag handle with padding to move it upward
-                    Box(
-                        modifier = Modifier
-                            .padding(top = 12.dp) // This moves the drag handle upward
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        // The actual drag handle bar
-                        Box(
-                            modifier = Modifier
-                                .width(40.dp)
-                                .height(4.dp)
-                                .background(
-                                    color = Color.Gray.copy(alpha = 0.5f),
-                                    shape = RoundedCornerShape(2.dp)
-                                )
-                        )
-                    }
-                }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Column {
-                        Spacer(Modifier.height(20.dp))
-                        Image(
-                            painter = painterResource(id = R.drawable.bottomsheet),
-                            contentDescription = "App Logo",
-                            modifier = Modifier
-                                .fillMaxWidth(),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
-                }
-            }
+            )
         }
-
-        campaignManager.Pip(bottomPadding = padding.calculateBottomPadding(), topPadding = padding.calculateTopPadding(), modifier = Modifier)
         Box(
             modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
         ){
             campaignManager.CSAT(modifier = Modifier, displayDelaySeconds = 5, position = null)
+        }
+
+        if (showPopupModal) {
+            PopupModal(imageLink = "https://plus.unsplash.com/premium_photo-1664474619075-644dd191935f?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aW1hZ2V8ZW58MHx8MHx8fDA%3D", onCloseClick = { showPopupModal = false },)
         }
     }
 }
@@ -323,14 +315,14 @@ fun PayScreen(padding: PaddingValues) {
                     ,
                     contentScale = ContentScale.Fit
                 )
-                campaignManager.Widget(
-                    modifier = Modifier.fillMaxWidth(),
-                    placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-                    position = null,
-                    contentScale = ContentScale.Fit,
-                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
-                    placeholderContent = null
-                )
+//                campaignManager.Widget(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
+//                    position = null,
+//                    contentScale = ContentScale.Fit,
+//                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
+//                    placeholderContent = null
+//                )
             }
 //            campaignManager.PinnedBanner(
 //                modifier = Modifier.fillMaxWidth(),
@@ -339,6 +331,7 @@ fun PayScreen(padding: PaddingValues) {
 //            )
         }
     }
+    campaignManager.Pip(bottomPadding = padding.calculateBottomPadding(), topPadding = padding.calculateTopPadding(), modifier = Modifier)
 }
 
 @Composable

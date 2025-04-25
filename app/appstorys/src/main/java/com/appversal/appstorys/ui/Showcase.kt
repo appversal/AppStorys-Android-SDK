@@ -102,10 +102,10 @@ private fun ShowcaseBackground(
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer(alpha = 0.6f)
+                .graphicsLayer(alpha = 0.9f)
         ) {
             drawRect(
-                Color.Black.copy(alpha = 0.6f),
+                Color.Black.copy(alpha = 0.9f),
                 size = Size(size.width, size.height)
             )
             drawHighlight(coordinates)

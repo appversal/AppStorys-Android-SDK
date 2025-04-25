@@ -1,120 +1,372 @@
 package com.appversal.appstorys.ui
 
-import androidx.compose.foundation.BorderStroke
+import android.net.Uri
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
+import coil.compose.rememberAsyncImagePainter
+import com.appversal.appstorys.R
+import com.appversal.appstorys.api.BottomSheetDetails
+import com.appversal.appstorys.api.BottomSheetElement
 import kotlinx.coroutines.launch
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextAlign
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun BottomSheetComponent(onDismiss: () -> Unit) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
+internal fun BottomSheetComponent(
+    onClick: () -> Unit = {},
+    onDismissRequest: () -> Unit = {},
+    bottomSheetDetails: BottomSheetDetails,
+) {
+    val context = LocalContext.current
+
+    val coroutineScope = rememberCoroutineScope()
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true, // This will prevent the partially expanded state
+    )
+
+    // Expand the sheet on first composition
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            sheetState.expand()
+        }
+    }
+
+    val backgroundColor = Color.Transparent
+
+    val cornerRadius = bottomSheetDetails.cornerRadius?.toFloatOrNull()?.dp ?: 16.dp
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        containerColor = Color.White
+        onDismissRequest = onDismissRequest,
+        shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
+        containerColor = backgroundColor,
+        dragHandle = {},
+        sheetState = sheetState
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            AsyncImage(
-                model = "https://gratisography.com/wp-content/uploads/2024/11/gratisography-augmented-reality-800x525.jpg",
-                contentDescription = "Thank you",
-                modifier = Modifier
+        Box(modifier = Modifier.fillMaxWidth()) {
+            val sortedElements = bottomSheetDetails.elements?.sortedBy { it.order } ?: emptyList()
+
+            val imageElement = sortedElements.firstOrNull { it.type == "image" }
+            val bodyElements = sortedElements.filter { it.type == "body" }
+            val ctaElements = sortedElements.filter { it.type == "cta" }
+
+            if (imageElement != null) {
+                Box(modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp),
-                contentScale = ContentScale.Crop
-            )
+                ) {
+                    ImageElement(imageElement)
 
-            Spacer(modifier = Modifier.height(16.dp))
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        bodyElements.forEach { BodyElement(it) }
 
-            Text(
-                text = "Track your bills",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
+                        val leftCTA = ctaElements.firstOrNull { it.position == "left" }
+                        val rightCTA = ctaElements.firstOrNull { it.position == "right" }
+                        val centerCTAs = ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
 
-            Spacer(modifier = Modifier.height(4.dp))
+                        if (leftCTA != null || rightCTA != null) {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                if (leftCTA != null) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        CTAElement(leftCTA, onClick = onClick)
+                                    }
+                                } else Spacer(modifier = Modifier.weight(1f))
 
-            Text(
-                text = "Track your bills",
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp), // Space from left and right
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Button(
-                    onClick = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) {
-                                onDismiss()
+                                if (rightCTA != null) {
+                                    Box(modifier = Modifier.weight(1f)) {
+                                        CTAElement(rightCTA, onClick = onClick)
+                                    }
+                                } else Spacer(modifier = Modifier.weight(1f))
                             }
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF01C198),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(text = "Exit", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+
+                        centerCTAs.forEach {
+                            CTAElement(it, onClick = onClick)
+                        }
+                    }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        scope.launch { sheetState.hide() }.invokeOnCompletion {
-                            if (!sheetState.isVisible) {
-                                onDismiss()
-                            }
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    border = BorderStroke(1.dp, Color(0xFF01C198)),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF01C198)
-                    )
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(text = "Close", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    bodyElements.forEach { BodyElement(it) }
+
+                    val leftCTA = ctaElements.firstOrNull { it.position == "left" }
+                    val rightCTA = ctaElements.firstOrNull { it.position == "right" }
+                    val centerCTAs = ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
+
+                    if (leftCTA != null || rightCTA != null) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            if (leftCTA != null) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    CTAElement(leftCTA, onClick = onClick)
+                                }
+                            } else Spacer(modifier = Modifier.weight(1f))
+
+                            if (rightCTA != null) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    CTAElement(rightCTA, onClick = onClick)
+                                }
+                            } else Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
+
+                    centerCTAs.forEach {
+                        CTAElement(it, onClick = onClick)
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+
+            // Add cross button if enabled
+            if (bottomSheetDetails.enableCrossButton == "true") {
+                IconButton(
+                    onClick = onDismissRequest,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Icon(
+                        tint = Color.Black,
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = null
+                    )
+                }
+            }
+        }
+
+    }
+}
+
+@Composable
+private fun ImageElement(element: BottomSheetElement) {
+    val paddingLeft = element.paddingLeft?.dp ?: 0.dp
+    val paddingRight = element.paddingRight?.dp ?: 0.dp
+    val paddingTop = element.paddingTop?.dp ?: 0.dp
+    val paddingBottom = element.paddingBottom?.dp ?: 0.dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                start = paddingLeft,
+                end = paddingRight,
+                top = paddingTop,
+                bottom = paddingBottom
+            ),
+        contentAlignment = when (element.alignment) {
+            "left" -> Alignment.CenterStart
+            "right" -> Alignment.CenterEnd
+            else -> Alignment.Center
+        }
+    ) {
+        Image(
+            painter = rememberAsyncImagePainter(element.url),
+            contentDescription = "Image",
+            modifier = Modifier.fillMaxWidth(),
+            contentScale = ContentScale.FillWidth
+        )
+    }
+}
+
+@Composable
+private fun BodyElement(element: BottomSheetElement) {
+    val paddingLeft = element.paddingLeft?.dp ?: 0.dp
+    val paddingRight = element.paddingRight?.dp ?: 0.dp
+    val paddingTop = element.paddingTop?.dp ?: 0.dp
+    val paddingBottom = element.paddingBottom?.dp ?: 0.dp
+
+    val alignment = when (element.alignment) {
+        "left" -> Alignment.Start
+        "right" -> Alignment.End
+        else -> Alignment.CenterHorizontally
+    }
+
+    val textAlign = when (element.alignment) {
+        "left" -> TextAlign.Start
+        "right" -> TextAlign.End
+        else -> TextAlign.Center
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = Color(android.graphics.Color.parseColor(element.bodyBackgroundColor ?: "#FFFFFF")))
+            .padding(
+                start = paddingLeft,
+                end = paddingRight,
+                top = paddingTop,
+                bottom = paddingBottom
+            ),
+        horizontalAlignment = alignment
+    ) {
+        // Title Text
+        element.titleText?.let { title ->
+
+            if (element.titleText.isNotBlank()) {
+                val titleColor = try {
+                    Color(android.graphics.Color.parseColor(element.titleFontStyle?.colour ?: "#000000"))
+                } catch (e: Exception) {
+                    Color.Black
+                }
+
+                val decoration = element.titleFontStyle?.decoration
+
+                val titleFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal
+                val titleFontStyle = if (decoration == "italic") FontStyle.Italic else FontStyle.Normal
+                val titleTextDecoration = if (decoration == "underline") TextDecoration.Underline else null
+
+                Text(
+                    text = title,
+                    color = titleColor,
+                    fontSize = (element.titleFontSize ?: 16).sp,
+                    fontWeight = titleFontWeight,
+                    fontStyle = titleFontStyle,
+                    textDecoration = titleTextDecoration,
+                    textAlign = textAlign,
+                    lineHeight = ((element.titleLineHeight ?: 1f) * (element.titleFontSize ?: 16)).sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height((element.spacingBetweenTitleDesc?.toInt() ?: 0).dp))
+
+        // Description Text
+        element.descriptionText?.let { description ->
+            val descriptionColor = try {
+                Color(android.graphics.Color.parseColor(element.descriptionFontStyle?.colour ?: "#000000"))
+            } catch (e: Exception) {
+                Color.Black
+            }
+
+            val decoration = element.descriptionFontStyle?.decoration
+
+            val descriptionFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal
+            val descriptionFontStyle = if (decoration == "italic") FontStyle.Italic else FontStyle.Normal
+            val descriptionTextDecoration = if (decoration == "underline") TextDecoration.Underline else null
+
+            Text(
+                text = description,
+                color = descriptionColor,
+                fontSize = (element.descriptionFontSize ?: 14).sp,
+                fontWeight = descriptionFontWeight,
+                fontStyle = descriptionFontStyle,
+                textDecoration = descriptionTextDecoration,
+                textAlign = textAlign,
+                lineHeight = ((element.descriptionLineHeight ?: 1f) * (element.descriptionFontSize ?: 14)).sp,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {},) {
+    val paddingLeft = element.paddingLeft?.dp ?: 0.dp
+    val paddingRight = element.paddingRight?.dp ?: 0.dp
+    val paddingTop = element.paddingTop?.dp ?: 0.dp
+    val paddingBottom = element.paddingBottom?.dp ?: 0.dp
+
+    val context = LocalContext.current
+
+    val buttonColor = try {
+        Color(android.graphics.Color.parseColor(element.ctaBoxColor ?: "#000000"))
+    } catch (e: Exception) {
+        Color.Black
+    }
+
+    val textColor = try {
+        Color(android.graphics.Color.parseColor(element.ctaTextColour ?: "#FFFFFF"))
+    } catch (e: Exception) {
+        Color.White
+    }
+
+    val borderRadius = element.ctaBorderRadius?.dp ?: 5.dp
+    val buttonHeight = element.ctaHeight?.dp ?: 50.dp
+    val buttonWidth = element.ctaWidth?.dp ?: 100.dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(color = Color(android.graphics.Color.parseColor(element.ctaBackgroundColor ?: "#FFFFFF")))
+            .padding(
+                start = paddingLeft,
+                end = paddingRight,
+                top = paddingTop,
+                bottom = paddingBottom
+            ),
+        contentAlignment = when (element.alignment) {
+            "left" -> Alignment.CenterStart
+            "right" -> Alignment.CenterEnd
+            else -> Alignment.Center
+        }
+    ) {
+        Button(
+            onClick = onClick,
+            shape = RoundedCornerShape(borderRadius),
+            colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+            modifier = Modifier
+                .height(buttonHeight)
+                .then(
+                    if (element.ctaFullWidth == true) Modifier.fillMaxWidth()
+                    else Modifier.width(buttonWidth)
+                )
+        ) {
+
+            val decoration = element.ctaFontDecoration
+
+            val ctaFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal
+            val ctaFontStyle = if (decoration == "italic") FontStyle.Italic else FontStyle.Normal
+            val ctaTextDecoration = if (decoration == "underline") TextDecoration.Underline else null
+
+            Text(
+                text = element.ctaText ?: "Click",
+                color = textColor,
+                fontSize = (element.ctaFontSize?.toFloatOrNull() ?: 14f).sp,
+                fontWeight = ctaFontWeight,
+                fontStyle = ctaFontStyle,
+                textDecoration = ctaTextDecoration
+            )
         }
     }
 }

@@ -47,6 +47,7 @@ internal fun PipVideo(
     link: String,
     bottomPadding: Dp = 0.dp,
     topPadding: Dp = 0.dp,
+    isMovable: Boolean = true,
     onClose: () -> Unit,
     onButtonClick: () -> Unit,
     onExpandClick: () -> Unit = {}
@@ -138,19 +139,25 @@ internal fun PipVideo(
                         isFullScreen = true
                         pipPlayer.pause()
                     }
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            offsetX = (offsetX + dragAmount.x).coerceIn(
-                                boundaryPaddingPx,
-                                screenWidth - pipSize.width - boundaryPaddingPx
-                            )
-                            offsetY = (offsetY + dragAmount.y).coerceIn(
-                                boundaryPaddingPx + topPaddingPx,
-                                screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
-                            )
+                    .then(
+                        if (isMovable) {
+                            Modifier.pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    offsetX = (offsetX + dragAmount.x).coerceIn(
+                                        boundaryPaddingPx,
+                                        screenWidth - pipSize.width - boundaryPaddingPx
+                                    )
+                                    offsetY = (offsetY + dragAmount.y).coerceIn(
+                                        boundaryPaddingPx + topPaddingPx,
+                                        screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
+                                    )
+                                }
+                            }
+                        } else {
+                            Modifier
                         }
-                    },
+                    ),
                 shape = RoundedCornerShape(12.dp),
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {

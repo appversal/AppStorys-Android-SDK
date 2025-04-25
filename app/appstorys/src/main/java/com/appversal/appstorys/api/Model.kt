@@ -301,3 +301,63 @@ import com.google.gson.annotations.SerializedName
     val campaign: String?,
     val button_text: String?
 )
+
+@Keep data class BottomSheetDetails(
+    @SerializedName("_id") val id: String?,
+    val campaign: String?,
+    val name: String?,
+    val elements: List<BottomSheetElement>?,
+    val cornerRadius: String?,
+    val enableCrossButton: String?,
+    val triggerType: String?,
+    val selectedEvent: String?,
+)
+
+@Keep data class BottomSheetElement(
+    val type: String?,
+    val alignment: String?,
+    val order: Int?,
+    val id: String?,
+
+    // Image-specific
+    val url: String? = null,
+
+    // Body-specific
+    val titleText: String? = null,
+    val titleFontStyle: FontStyle? = null,
+    val titleFontSize: Int? = null,
+    val descriptionText: String? = null,
+    val descriptionFontStyle: FontStyle? = null,
+    val descriptionFontSize: Int? = null,
+    val titleLineHeight: Float? = null,
+    val descriptionLineHeight: Float? = null,
+    val spacingBetweenTitleDesc: Float? = null,
+    val bodyBackgroundColor: String? = null,
+
+    // CTA-specific
+    val ctaText: String? = null,
+    val ctaLink: String? = null,
+    val position: String? = null,
+    val ctaBorderRadius: Int? = null,
+    val ctaHeight: Int? = null,
+    val ctaWidth: Int? = null,
+    val ctaTextColour: String? = null,
+    val ctaFontSize: String? = null,
+    val ctaFontFamily: String? = null,
+    val ctaFontDecoration: String? = null,
+    val ctaBoxColor: String? = null,
+    val ctaBackgroundColor: String? = null,
+    val ctaFullWidth: Boolean? = null,
+
+    // Shared paddings
+    val paddingLeft: Int? = null,
+    val paddingRight: Int? = null,
+    val paddingTop: Int? = null,
+    val paddingBottom: Int? = null
+)
+
+@Keep data class FontStyle(
+    val fontFamily: String?,
+    val colour: String?,
+    val decoration: String?
+)
