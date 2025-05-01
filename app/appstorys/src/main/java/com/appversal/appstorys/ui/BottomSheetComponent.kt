@@ -49,18 +49,15 @@ import androidx.compose.ui.text.style.TextAlign
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BottomSheetComponent(
-    onClick: () -> Unit = {},
+    onClick: (String?) -> Unit = { _ -> },
     onDismissRequest: () -> Unit = {},
     bottomSheetDetails: BottomSheetDetails,
 ) {
-    val context = LocalContext.current
-
     val coroutineScope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true, // This will prevent the partially expanded state
+        skipPartiallyExpanded = true,
     )
 
-    // Expand the sheet on first composition
     LaunchedEffect(Unit) {
         coroutineScope.launch {
             sheetState.expand()
@@ -107,20 +104,20 @@ internal fun BottomSheetComponent(
                             Row(modifier = Modifier.fillMaxWidth()) {
                                 if (leftCTA != null) {
                                     Box(modifier = Modifier.weight(1f)) {
-                                        CTAElement(leftCTA, onClick = onClick)
+                                        CTAElement(leftCTA) { onClick(leftCTA.ctaLink) }
                                     }
                                 } else Spacer(modifier = Modifier.weight(1f))
 
                                 if (rightCTA != null) {
                                     Box(modifier = Modifier.weight(1f)) {
-                                        CTAElement(rightCTA, onClick = onClick)
+                                        CTAElement(rightCTA) { onClick(rightCTA.ctaLink) }
                                     }
                                 } else Spacer(modifier = Modifier.weight(1f))
                             }
                         }
 
-                        centerCTAs.forEach {
-                            CTAElement(it, onClick = onClick)
+                        centerCTAs.forEach { cta ->
+                            CTAElement(cta) { onClick(cta.ctaLink) }
                         }
                     }
                 }
@@ -139,25 +136,24 @@ internal fun BottomSheetComponent(
                         Row(modifier = Modifier.fillMaxWidth()) {
                             if (leftCTA != null) {
                                 Box(modifier = Modifier.weight(1f)) {
-                                    CTAElement(leftCTA, onClick = onClick)
+                                    CTAElement(leftCTA) { onClick(leftCTA.ctaLink) }
                                 }
                             } else Spacer(modifier = Modifier.weight(1f))
 
                             if (rightCTA != null) {
                                 Box(modifier = Modifier.weight(1f)) {
-                                    CTAElement(rightCTA, onClick = onClick)
+                                    CTAElement(rightCTA) { onClick(rightCTA.ctaLink) }
                                 }
                             } else Spacer(modifier = Modifier.weight(1f))
                         }
                     }
 
-                    centerCTAs.forEach {
-                        CTAElement(it, onClick = onClick)
+                    centerCTAs.forEach { cta ->
+                        CTAElement(cta) { onClick(cta.ctaLink) }
                     }
                 }
             }
 
-            // Add cross button if enabled
             if (bottomSheetDetails.enableCrossButton == "true") {
                 IconButton(
                     onClick = onDismissRequest,
@@ -173,7 +169,6 @@ internal fun BottomSheetComponent(
                 }
             }
         }
-
     }
 }
 
@@ -271,7 +266,6 @@ private fun BodyElement(element: BottomSheetElement) {
 
         Spacer(modifier = Modifier.height((element.spacingBetweenTitleDesc?.toInt() ?: 0).dp))
 
-        // Description Text
         element.descriptionText?.let { description ->
             val descriptionColor = try {
                 Color(android.graphics.Color.parseColor(element.descriptionFontStyle?.colour ?: "#000000"))
@@ -301,7 +295,7 @@ private fun BodyElement(element: BottomSheetElement) {
 }
 
 @Composable
-private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {},) {
+private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
     val paddingLeft = element.paddingLeft?.dp ?: 0.dp
     val paddingRight = element.paddingRight?.dp ?: 0.dp
     val paddingTop = element.paddingTop?.dp ?: 0.dp
@@ -352,7 +346,6 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {},) {
                     else Modifier.width(buttonWidth)
                 )
         ) {
-
             val decoration = element.ctaFontDecoration
 
             val ctaFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal

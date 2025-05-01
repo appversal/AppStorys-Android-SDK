@@ -46,7 +46,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.appversal.appstorys.ui.PopupModal
 import com.example.carousal.ui.theme.CarousalTheme
 
 
@@ -237,7 +236,7 @@ fun HomeScreen(padding: PaddingValues) {
         }
 
         if (showPopupModal) {
-            PopupModal(imageLink = "https://plus.unsplash.com/premium_photo-1664474619075-644dd191935f?fm=jpg&q=60&w=3000&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8aW1hZ2V8ZW58MHx8MHx8fDA%3D", onCloseClick = { showPopupModal = false },)
+            campaignManager.Modals(onCloseClick = { showPopupModal = false },)
         }
     }
 }
@@ -327,7 +326,10 @@ fun PayScreen(padding: PaddingValues) {
 //            campaignManager.PinnedBanner(
 //                modifier = Modifier.fillMaxWidth(),
 //                placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-//                position = null
+//                position = null,
+//                contentScale = ContentScale.Fit,
+//                staticWidth = 300.dp,
+//                placeholderContent = {}
 //            )
         }
     }

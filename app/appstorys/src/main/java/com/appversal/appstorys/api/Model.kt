@@ -361,3 +361,20 @@ import com.google.gson.annotations.SerializedName
     val colour: String?,
     val decoration: String?
 )
+
+@Keep data class ModalDetails(
+    @SerializedName("_id") val id: String?,
+    val campaign: String?,
+    val modals: List<Modal>?,
+)
+
+@Keep data class Modal(
+    @SerializedName("media_type") val mediaType: String?,
+    val size: String?,
+    val link: String?,
+    val borderRadius: String?,
+    val backgroundOpacity: Double? = null,
+    val name: String?,
+    val url: String?,
+    @SerializedName("_id") val id: String?,
+)

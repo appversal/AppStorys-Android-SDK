@@ -147,7 +147,8 @@ internal fun StoryScreen(
     onDismiss: () -> Unit,
     slides: List<StorySlide>,
     onStoryGroupEnd: () -> Unit,
-    sendEvent: (Pair<StorySlide, String>) -> Unit
+    sendEvent: (Pair<StorySlide, String>) -> Unit,
+    sendClickEvent: (Pair<StorySlide, String>) -> Unit
 ) {
     var currentSlideIndex by remember { mutableIntStateOf(0) }
     val currentSlide = slides.get(currentSlideIndex)
@@ -355,6 +356,7 @@ internal fun StoryScreen(
                         onClick = {
                             uriHandler.openUri(currentSlide.link)
                             sendEvent(Pair(currentSlide, "CLK"))
+                            sendClickEvent(Pair(currentSlide, "clicked"))
                         },
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -502,7 +504,7 @@ internal fun StoryScreen(
 }
 
 @Composable
-internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, viewedStories: List<String>, storyViewed: (String) -> Unit) {
+internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, viewedStories: List<String>, storyViewed: (String) -> Unit, sendClickEvent: (Pair<StorySlide, String>) -> Unit) {
     var selectedStoryGroup by remember { mutableStateOf<StoryGroup?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -535,7 +537,8 @@ internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySli
                                 selectedStoryGroup = null
                             }
                         },
-                        sendEvent = sendEvent
+                        sendEvent = sendEvent,
+                        sendClickEvent = sendClickEvent
                     )
                 }
             }
@@ -544,7 +547,7 @@ internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySli
 }
 
 @Composable
-internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit) {
+internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, sendClickEvent: (Pair<StorySlide, String>) -> Unit) {
 
     val context = LocalContext.current
     var viewedStories by remember { mutableStateOf(getViewedStories(context.getSharedPreferences("AppStory", Context.MODE_PRIVATE))) }
@@ -566,7 +569,9 @@ internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<Sto
             viewedStories = list
             saveViewedStories(idList = list, sharedPreferences = context.getSharedPreferences("AppStory", Context.MODE_PRIVATE))
         }
-    })
+    },
+        sendClickEvent = sendClickEvent
+        )
 }
 
 internal fun saveViewedStories(idList: List<String>, sharedPreferences: SharedPreferences) {

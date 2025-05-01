@@ -54,8 +54,6 @@ import com.appversal.appstorys.ui.FullScreenVideoScreen
 import com.appversal.appstorys.ui.ImageCard
 import com.appversal.appstorys.ui.OverlayFloater
 import com.appversal.appstorys.ui.ReelsRow
-import com.appversal.appstorys.ui.ShowcaseHighlight
-import com.appversal.appstorys.ui.ShowcaseView
 import com.appversal.appstorys.ui.TooltipContent
 import com.appversal.appstorys.ui.TooltipPopup
 import com.appversal.appstorys.ui.TooltipPopupPosition
@@ -70,13 +68,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.appversal.appstorys.api.ApiResult
 import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.IdentifyTooltips
+import com.appversal.appstorys.api.ModalDetails
 import com.appversal.appstorys.api.PipDetails
 import com.appversal.appstorys.api.ReelActionRequest
 import com.appversal.appstorys.api.ReelStatusRequest
@@ -87,6 +86,7 @@ import com.appversal.appstorys.api.TrackActionStories
 import com.appversal.appstorys.api.TrackActionTooltips
 import com.appversal.appstorys.ui.BottomSheetComponent
 import com.appversal.appstorys.ui.PipVideo
+import com.appversal.appstorys.ui.PopupModal
 import com.appversal.appstorys.ui.StoryAppMain
 import com.appversal.appstorys.ui.getLikedReels
 import com.appversal.appstorys.ui.saveLikedReels
@@ -110,7 +110,7 @@ public interface AppStorysAPI {
     )
 
     fun getScreenCampaigns(screenName: String, positionList: List<String>)
-    fun trackEvents(event_type: String, campaign_id: String? = null, metadata: Map<String, Any>? = null)
+    fun trackEvents(campaign_id: String? = null, event: String, metadata: Map<String, Any>? = null)
 
     @Composable fun CSAT(modifier: Modifier, displayDelaySeconds: Long, position: String?)
     @Composable fun Floater(boxModifier: Modifier, iconModifier: Modifier)
@@ -121,6 +121,7 @@ public interface AppStorysAPI {
     @Composable fun Stories()
     @Composable fun Reels(modifier: Modifier)
     @Composable fun BottomSheet(onDismissRequest: () -> Unit)
+    @Composable fun Modals(onCloseClick: () -> Unit,)
     @Composable fun getBannerHeight(): Dp
 
     companion object {
@@ -258,8 +259,8 @@ internal object AppStorys : AppStorysAPI {
     }
 
     override fun trackEvents(
-        event_type: String,
         campaign_id: String?,
+        event: String,
         metadata: Map<String, Any>?
     ) {
         coroutineScope.launch {
@@ -267,8 +268,8 @@ internal object AppStorys : AppStorysAPI {
                 try {
                     val requestBody = JSONObject().apply {
                         put("user_id", userId)
-                        put("event_type", event_type)
                         campaign_id?.let { put("campaign_id", it) }
+                        put("event", event)
                         metadata?.let { put("metadata", it) }
                     }
                     val client = OkHttpClient()
@@ -319,6 +320,7 @@ internal object AppStorys : AppStorysAPI {
                 LaunchedEffect(Unit) {
                     campaign?.id?.let {
                         trackCampaignActions(it, "IMP")
+                        trackEvents(it, "viewed")
                     }
                     delay(updatedDelay * 1000)
                     isVisibleState = true
@@ -326,7 +328,7 @@ internal object AppStorys : AppStorysAPI {
 
                 Box(
                     modifier = modifier.fillMaxSize(),
-                    contentAlignment = Alignment.BottomCenter  // Position at bottom
+                    contentAlignment = Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
                         modifier = modifier,
@@ -354,6 +356,7 @@ internal object AppStorys : AppStorysAPI {
                                             feedback_option = feedback.feedbackOption
                                         )
                                     )
+                                    trackEvents(csatDetails.campaign, "clicked")
                                 }
                             },
                             csatDetails = csatDetails
@@ -383,6 +386,7 @@ internal object AppStorys : AppStorysAPI {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
                     trackCampaignActions(it, "IMP")
+                    trackEvents(it, "viewed")
                 }
 
             }
@@ -399,6 +403,7 @@ internal object AppStorys : AppStorysAPI {
                     onClick = {
                         if (campaign?.id != null && floaterDetails.link != null) {
                             clickEvent(link = floaterDetails.link, campaignId = campaign.id)
+                            trackEvents(campaign.id, "clicked")
                         }
 
                     },
@@ -444,6 +449,7 @@ internal object AppStorys : AppStorysAPI {
                         tooltip_id = currentToolTipTarget!!.id
                     )
                 )
+                trackEvents(campaign?.id, "viewed", mapOf("tooltip_id" to currentToolTipTarget!!.id!!))
             }
         }
 
@@ -514,6 +520,7 @@ internal object AppStorys : AppStorysAPI {
                                             tooltip_id = currentToolTipTarget!!.id
                                         )
                                     )
+                                    trackEvents(campaign?.id, "clicked", mapOf("tooltip_id" to currentToolTipTarget!!.id!!))
                                 } else {
                                     coroutineScope.launch {
                                         _tooltipTargetView.emit(null)
@@ -551,8 +558,8 @@ internal object AppStorys : AppStorysAPI {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
                     trackCampaignActions(it, "IMP")
+                    trackEvents(it, "viewed")
                 }
-
             }
 
             Box(modifier = modifier.fillMaxWidth()) {
@@ -577,6 +584,7 @@ internal object AppStorys : AppStorysAPI {
                                 onButtonClick = {
                                     campaign?.id?.let { campaignId ->
                                         trackCampaignActions(campaignId, "CLK")
+                                        trackEvents(campaignId, "clicked")
                                     }
                                     if (!isValidUrl(pipDetails.link)) {
                                         navigateToScreen(pipDetails.link)
@@ -636,7 +644,9 @@ internal object AppStorys : AppStorysAPI {
         val storiesDetails = (campaign?.details as? List<*>)?.filterIsInstance<StoryGroup>()
 
         if (!storiesDetails.isNullOrEmpty()) {
-            StoryAppMain(apiStoryGroups = storiesDetails, sendEvent = {
+            StoryAppMain(
+                apiStoryGroups = storiesDetails,
+                sendEvent = {
                 coroutineScope.launch {
                     repository.trackStoriesActions(
                         accessToken, TrackActionStories(
@@ -646,8 +656,12 @@ internal object AppStorys : AppStorysAPI {
                             event_type = it.second
                         )
                     )
+                    trackEvents(campaign.id, "viewed", mapOf("story_slide" to it.first.id!!))
                 }
-            }
+            },
+                sendClickEvent = {
+                    trackEvents(campaign.id, it.second, mapOf("story_slide" to it.first.id!!))
+                }
             )
         }
     }
@@ -787,6 +801,7 @@ internal object AppStorys : AppStorysAPI {
                                             campaign_id = campaignId
                                         )
                                     )
+                                    trackEvents(campaignId, "viewed", mapOf("reel_id" to it.first.id!!))
                                 }
                             }
                         } else {
@@ -800,6 +815,7 @@ internal object AppStorys : AppStorysAPI {
                                         campaign_id = campaignId
                                     )
                                 )
+                                trackEvents(campaignId, "clicked", mapOf("reel_id" to it.first.id!!))
                             }
                         }
 
@@ -866,6 +882,7 @@ internal object AppStorys : AppStorysAPI {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
                     trackCampaignActions(it, "IMP")
+                    trackEvents(it, "viewed")
                 }
             }
 
@@ -873,6 +890,7 @@ internal object AppStorys : AppStorysAPI {
                 modifier = modifier.clickable {
                     campaign?.id?.let {
                         clickEvent(link = bannerDetails.link, campaignId = it)
+                        trackEvents(it, "clicked")
                     }
                 },
                 imageUrl = bannerUrl ?: "",
@@ -990,6 +1008,7 @@ internal object AppStorys : AppStorysAPI {
                             "IMP",
                             widgetDetails.widgetImages[pagerState.currentPage].id
                         )
+                        trackEvents(it, "viewed", mapOf("widget_image" to widgetDetails.widgetImages[pagerState.currentPage].id!!))
                     }
                 }
             }
@@ -1017,6 +1036,8 @@ internal object AppStorys : AppStorysAPI {
                                     campaignId = campaign.id,
                                     widgetImageId = widgetDetails.widgetImages[index].id
                                 )
+
+                                trackEvents(campaign.id, "clicked", mapOf("widget_image" to widgetDetails.widgetImages[index].id!!))
                             },
                             contentScale = contentScale,
                             imageUrl = widgetDetails.widgetImages[index].image ?: "",
@@ -1079,11 +1100,15 @@ internal object AppStorys : AppStorysAPI {
                             widgetImagesPairs[pagerState.currentPage].first.id
                         )
 
+                        trackEvents(it, "viewed", mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!))
+
                         trackCampaignActions(
                             it,
                             "IMP",
                             widgetImagesPairs[pagerState.currentPage].second.id
                         )
+
+                        trackEvents(it, "viewed", mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!))
                     }
                 }
             }
@@ -1121,6 +1146,8 @@ internal object AppStorys : AppStorysAPI {
                                                 campaignId = campaign.id,
                                                 widgetImageId = leftImage.id
                                             )
+
+                                            trackEvents(campaign.id, "clicked", mapOf("widget_image" to leftImage.id!!))
                                         }
 
                                     },
@@ -1141,6 +1168,8 @@ internal object AppStorys : AppStorysAPI {
                                                 campaignId = campaign.id,
                                                 widgetImageId = rightImage.id
                                             )
+
+                                            trackEvents(campaign.id, "clicked", mapOf("widget_image" to rightImage.id!!))
                                         }
                                     },
                                 imageUrl = rightImage.image,
@@ -1152,26 +1181,6 @@ internal object AppStorys : AppStorysAPI {
                     }
                 }
             )
-        }
-    }
-
-    private fun clickEvent(link: Any?, campaignId: String, widgetImageId: String? = null) {
-
-        if (link != null && link is String) {
-            val url = link as String
-            if (url.isNotEmpty()) {
-                if (!isValidUrl(url)) {
-                    navigateToScreen(url)
-                } else {
-                    openUrl(url)
-                }
-                trackCampaignActions(campaignId, "CLK", widgetImageId)
-            }
-        } else if (link is Map<*, *>) {
-            val json = JSONObject(link)
-            handleDeepLink(json, campaignId, widgetImageId)
-        } else if (link is JSONObject) {
-            handleDeepLink(link, campaignId, widgetImageId)
         }
     }
 
@@ -1194,26 +1203,83 @@ internal object AppStorys : AppStorysAPI {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
                     trackCampaignActions(it, "IMP")
+                    trackEvents(it, "viewed")
                 }
             }
-
-            val ctaLinks: List<String?> = bottomSheetDetails.elements
-                ?.filter { it.type == "cta" }
-                ?.map { it.ctaLink }
-                ?: emptyList()
 
             BottomSheetComponent(
                 onDismissRequest = onDismissRequest,
                 bottomSheetDetails = bottomSheetDetails,
-                onClick = {
-                        campaign?.id?.let {
-                            ctaLinks.forEach { link ->
-                                clickEvent(link = link, campaignId = it)
-                            }
-
-                        }
+                onClick = { ctaLink ->
+                    campaign?.id?.let { campaignId ->
+                        clickEvent(link = ctaLink, campaignId = campaignId)
+                        trackEvents(campaignId, "clicked")
+                    }
                 }
             )
+        }
+    }
+
+    @Composable
+    override fun Modals(
+        onCloseClick: () -> Unit,
+    ) {
+
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+
+        val campaign =
+            campaignsData.value.firstOrNull { it.campaignType == "MOD" && it.details is ModalDetails }
+
+        val modalDetails = when (val details = campaign?.details) {
+            is ModalDetails -> details
+            else -> null
+        }
+
+        if (modalDetails != null){
+
+            LaunchedEffect(Unit) {
+                campaign?.id?.let {
+                    trackCampaignActions(it, "IMP")
+                    trackEvents(it, "viewed")
+                }
+            }
+
+            PopupModal(
+                onCloseClick = onCloseClick,
+                modalDetails = modalDetails,
+                onModalClick = {
+                    campaign?.id?.let { campaignId ->
+                        trackCampaignActions(campaignId, "CLK")
+                        trackEvents(campaignId, "clicked")
+                    }
+                    val link = modalDetails.modals?.getOrNull(0)?.link
+                    if (!isValidUrl(link)) {
+                        link?.let { navigateToScreen(it) }
+                    } else {
+                        link?.let { openUrl(it) }
+                    }
+                },
+            )
+        }
+    }
+
+    private fun clickEvent(link: Any?, campaignId: String, widgetImageId: String? = null) {
+
+        if (link != null && link is String) {
+            val url = link as String
+            if (url.isNotEmpty()) {
+                if (!isValidUrl(url)) {
+                    navigateToScreen(url)
+                } else {
+                    openUrl(url)
+                }
+                trackCampaignActions(campaignId, "CLK", widgetImageId)
+            }
+        } else if (link is Map<*, *>) {
+            val json = JSONObject(link)
+            handleDeepLink(json, campaignId, widgetImageId)
+        } else if (link is JSONObject) {
+            handleDeepLink(link, campaignId, widgetImageId)
         }
     }
 
@@ -1261,6 +1327,7 @@ internal object AppStorys : AppStorysAPI {
                         accessToken,
                         TrackAction(campId, userId, eventType, widgetImageId)
                     )
+
                 } else if (!impressions.value.contains(campId)) {
                     val impressions = ArrayList(impressions.value)
                     impressions.add(campId)
