@@ -321,6 +321,9 @@ import com.google.gson.annotations.SerializedName
 
     // Image-specific
     val url: String? = null,
+    val imageLink: String? = null,
+    val overlayButton: Boolean? = null,
+
 
     // Body-specific
     val titleText: String? = null,
