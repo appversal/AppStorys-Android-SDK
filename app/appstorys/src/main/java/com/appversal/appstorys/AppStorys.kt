@@ -1211,11 +1211,13 @@ internal object AppStorys : AppStorysAPI {
                 onDismissRequest = onDismissRequest,
                 bottomSheetDetails = bottomSheetDetails,
                 onClick = { ctaLink ->
-                    campaign?.id?.let { campaignId ->
-                        clickEvent(link = ctaLink, campaignId = campaignId)
-                        trackEvents(campaignId, "clicked")
+                    if (!ctaLink.isNullOrEmpty()) {
+                        campaign?.id?.let { campaignId ->
+                            clickEvent(link = ctaLink, campaignId = campaignId)
+                            trackEvents(campaignId, "clicked")
+                        }
                     }
-                }
+                },
             )
         }
     }

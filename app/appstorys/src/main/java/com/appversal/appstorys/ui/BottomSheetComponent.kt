@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,11 +84,11 @@ internal fun BottomSheetComponent(
             val bodyElements = sortedElements.filter { it.type == "body" }
             val ctaElements = sortedElements.filter { it.type == "cta" }
 
-            if (imageElement != null) {
+            if (imageElement?.overlayButton == true) {
                 Box(modifier = Modifier
                     .fillMaxWidth()
                 ) {
-                    ImageElement(imageElement)
+                    ImageElement(imageElement, onClick = onClick)
 
                     Column(
                         modifier = Modifier
@@ -126,6 +128,8 @@ internal fun BottomSheetComponent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    ImageElement(imageElement!!, onClick = onClick)
+
                     bodyElements.forEach { BodyElement(it) }
 
                     val leftCTA = ctaElements.firstOrNull { it.position == "left" }
@@ -173,11 +177,13 @@ internal fun BottomSheetComponent(
 }
 
 @Composable
-private fun ImageElement(element: BottomSheetElement) {
+private fun ImageElement(element: BottomSheetElement, onClick: (String?) -> Unit = { _ -> }) {
     val paddingLeft = element.paddingLeft?.dp ?: 0.dp
     val paddingRight = element.paddingRight?.dp ?: 0.dp
     val paddingTop = element.paddingTop?.dp ?: 0.dp
     val paddingBottom = element.paddingBottom?.dp ?: 0.dp
+
+    val interactionSource = remember { MutableInteractionSource() }
 
     Box(
         modifier = Modifier
@@ -187,7 +193,14 @@ private fun ImageElement(element: BottomSheetElement) {
                 end = paddingRight,
                 top = paddingTop,
                 bottom = paddingBottom
-            ),
+            )
+            .clickable (
+                interactionSource = interactionSource,
+                indication = null
+            ){
+                onClick(element.imageLink)
+            }
+        ,
         contentAlignment = when (element.alignment) {
             "left" -> Alignment.CenterStart
             "right" -> Alignment.CenterEnd
@@ -234,7 +247,6 @@ private fun BodyElement(element: BottomSheetElement) {
             ),
         horizontalAlignment = alignment
     ) {
-        // Title Text
         element.titleText?.let { title ->
 
             if (element.titleText.isNotBlank()) {
