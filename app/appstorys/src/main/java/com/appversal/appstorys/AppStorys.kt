@@ -552,8 +552,6 @@ internal object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        val isMovable = false
-
         if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty()) {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -580,7 +578,7 @@ internal object AppStorys : AppStorysAPI {
                                 position = pipDetails.position.toString(),
                                 bottomPadding = bottomPadding,
                                 topPadding = topPadding,
-                                isMovable = isMovable,
+                                isMovable = pipDetails.styling?.isMovable!!,
                                 onButtonClick = {
                                     campaign?.id?.let { campaignId ->
                                         trackCampaignActions(campaignId, "CLK")
