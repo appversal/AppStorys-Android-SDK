@@ -1,6 +1,5 @@
 [versions]
 agp = "8.7.3"
-appstorys = "2.0"
 exoplayer = "2.19.1"
 kotlin = "2.0.0"
 coreKtx = "1.13.1"
