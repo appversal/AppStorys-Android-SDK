@@ -8,14 +8,14 @@ plugins {
 
 android {
     namespace = "com.appversal.appstorys"
-    compileSdk = 34
+    compileSdk = 33
     publishing {
         singleVariant("release") {
             withSourcesJar()
         }
     }
     defaultConfig {
-        minSdk = 22
+        minSdk = 21
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
@@ -43,18 +43,16 @@ android {
 
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.material3)
+//    implementation(libs.androidx.material3)
     implementation(libs.coil.compose)
-    implementation( "com.squareup.retrofit2:retrofit:2.9.0")
-    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
-    implementation ("com.squareup.retrofit2:converter-scalars:2.9.0")
-    implementation("com.google.accompanist:accompanist-coil:0.15.0")
-
-    implementation ("com.airbnb.android:lottie-compose:6.0.0")
-
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation( libs.retrofit)
+    implementation (libs.converter.gson)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation (libs.converter.scalars)
+    implementation(libs.accompanist.coil)
+    implementation (libs.lottie.compose)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.gif)
@@ -68,7 +66,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.exoplayer.hls)
-
+    implementation(libs.androidx.material3.android)
 }
 
 afterEvaluate {
@@ -78,7 +76,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.appversal"
                 artifactId = "appstorys"
-                version = "3.4.0"
+                version = "3.4.4"
             }
         }
     }
