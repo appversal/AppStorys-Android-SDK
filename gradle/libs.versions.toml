@@ -1,7 +1,6 @@
 [versions]
 accompanistCoil = "0.15.0"
 agp = "8.7.3"
-appstorys = "2.0"
 converterGson = "2.9.0"
 exoplayer = "2.19.1"
 kotlin = "2.0.0"
