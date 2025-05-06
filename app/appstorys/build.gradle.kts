@@ -8,15 +8,14 @@ plugins {
 
 android {
     namespace = "com.appversal.appstorys"
-    compileSdk = 35
+    compileSdk = 34
     publishing {
         singleVariant("release") {
             withSourcesJar()
         }
     }
     defaultConfig {
-        minSdk = 24
-
+        minSdk = 22
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
