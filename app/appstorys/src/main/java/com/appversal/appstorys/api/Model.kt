@@ -297,9 +297,14 @@ import com.google.gson.annotations.SerializedName
     val large_video: String?,
     val height: Int?,
     val width: Int?,
+    val styling: PipStyling?,
     val link: String?,
     val campaign: String?,
     val button_text: String?
+)
+
+@Keep data class PipStyling(
+    val isMovable: Boolean?
 )
 
 @Keep data class BottomSheetDetails(
