@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <com.appversal.appstorys.ui.xml.PinnedBannerView
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        app:placeHolder="@drawable/ic_launcher_foreground"/>
+
+
+    <com.appversal.appstorys.ui.xml.WidgetView
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        app:position="widget_fifty"
+        app:placeHolder="@drawable/ic_launcher_foreground"/>
+
+    <com.appversal.appstorys.ui.xml.WidgetView
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        app:position="widget_four"
+        app:placeHolder="@drawable/ic_launcher_foreground"/>
+
+
+
+</LinearLayout>
