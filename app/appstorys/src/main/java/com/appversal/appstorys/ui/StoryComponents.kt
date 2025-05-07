@@ -571,7 +571,7 @@ internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<Sto
         }
     },
         sendClickEvent = sendClickEvent
-        )
+    )
 }
 
 internal fun saveViewedStories(idList: List<String>, sharedPreferences: SharedPreferences) {
