@@ -1,33 +1,45 @@
 [versions]
+accompanistCoil = "0.15.0"
 agp = "8.7.3"
+converterGson = "2.9.0"
 exoplayer = "2.19.1"
 kotlin = "2.0.0"
 coreKtx = "1.13.1"
 junit = "4.13.2"
 junitVersion = "1.2.1"
 espressoCore = "3.6.1"
+kotlinxCoroutinesAndroid = "1.7.1"
+kotlinxCoroutinesCore = "1.7.1"
 lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.9.0"
-composeBom = "2025.02.00"
-coilCompose = "2.6.0"
+activityCompose = "1.8.2"
+composeBom = "2023.10.01"
+coilCompose = "2.4.0"
 appcompat = "1.7.0"
+lifecycleViewmodelCompose = "2.8.5"
+lottieCompose = "6.0.0"
 material = "1.12.0"
 gson = "2.12.1"
 kotlinxSerializationJson = "1.8.0"
-coilGif = "2.7.0"
-activityKtx = "1.9.0"
-media3Exoplayer = "1.3.1"
-media3Ui = "1.3.1"
+coilGif = "2.4.0"
+activityKtx = "1.8.2"
+media3Exoplayer = "1.2.1"
+media3Ui = "1.2.1"
 exoplayerUi = "2.19.1"
 exoplayerCore = "2.19.1"
 navigationCompose = "2.8.8"
-activityComposeVersion = "1.9.0"
-foundation = "1.6.0"
-media3ExoplayerDash = "1.3.1"
-media3ExoplayerHls = "1.3.1"
+activityComposeVersion = "1.8.2"
+foundation = "1.5.4"
+media3ExoplayerDash = "1.2.1"
+media3ExoplayerHls = "1.2.1"
+retrofit = "2.9.0"
+material3Android = "1.3.2"
 
 [libraries]
+accompanist-coil = { module = "com.google.accompanist:accompanist-coil", version.ref = "accompanistCoil" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
+converter-gson = { module = "com.squareup.retrofit2:converter-gson", version.ref = "converterGson" }
+converter-scalars = { module = "com.squareup.retrofit2:converter-scalars", version.ref = "converterGson" }
 exoplayer = { module = "com.google.android.exoplayer:exoplayer", version.ref = "exoplayer" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
@@ -41,9 +53,12 @@ androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
+#androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coilCompose" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutinesAndroid" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+lottie-compose = { module = "com.airbnb.android:lottie-compose", version.ref = "lottieCompose" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
@@ -58,6 +73,8 @@ activity-compose = { group = "androidx.activity", name = "activity-compose", ver
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
 androidx-media3-exoplayer-dash = { group = "androidx.media3", name = "media3-exoplayer-dash", version.ref = "media3ExoplayerDash" }
 androidx-media3-exoplayer-hls = { group = "androidx.media3", name = "media3-exoplayer-hls", version.ref = "media3ExoplayerHls" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+androidx-material3-android = { group = "androidx.compose.material3", name = "material3-android", version.ref = "material3Android" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
