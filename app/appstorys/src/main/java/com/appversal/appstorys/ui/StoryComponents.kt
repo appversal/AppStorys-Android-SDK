@@ -137,7 +137,7 @@ internal fun StoryItem(
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(modifier = Modifier.width(60.dp).align(Alignment.CenterHorizontally), text = username, maxLines = 2, fontSize = 12.sp, color = nameColor, textAlign = TextAlign.Center, lineHeight = 15.sp, onTextLayout = {})
+        Text(modifier = Modifier.width(60.dp).align(Alignment.CenterHorizontally), text = username, maxLines = 2, fontSize = 12.sp, color = nameColor, textAlign = TextAlign.Center, lineHeight = 15.sp)
     }
 }
 
@@ -363,10 +363,9 @@ internal fun StoryScreen(
                             .padding(bottom = 32.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.White
-                        ),
-                        interactionSource = remember { MutableInteractionSource() }
+                        )
                     ) {
-                        Text(text = currentSlide.buttonText, color = Color.Black, onTextLayout = {})
+                        Text(text = currentSlide.buttonText, color = Color.Black)
                     }
                 }
             }
@@ -387,13 +386,13 @@ internal fun StoryScreen(
                     }
 
                     LinearProgressIndicator(
-                        progress = progressValue,
+                        progress = { progressValue },
                         modifier = Modifier
                             .weight(1f)
                             .height(4.dp),
                         color = Color.White,
                         trackColor = Color.Gray.copy(alpha = 0.5f),
-//                        drawStopIndicator = {}
+                        drawStopIndicator = {}
                     )
                 }
             }
@@ -421,8 +420,7 @@ internal fun StoryScreen(
                     Text(
                         text = it,
                         color = Color.White,
-                        fontSize = 14.sp,
-                        onTextLayout = {}
+                        fontSize = 14.sp
                     )
                 }
             }
@@ -573,7 +571,7 @@ internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<Sto
         }
     },
         sendClickEvent = sendClickEvent
-        )
+    )
 }
 
 internal fun saveViewedStories(idList: List<String>, sharedPreferences: SharedPreferences) {
