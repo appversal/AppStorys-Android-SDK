@@ -1,6 +1,8 @@
 package com.appversal.appstorys.api
 
+import android.util.Log
 import retrofit2.HttpException
+import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Header
 import retrofit2.http.POST
@@ -63,12 +65,12 @@ internal interface ApiService {
         @Body request: TrackActionTooltips
     )
 
-    @POST("api/v1/appinfo/identify-elements/")
+    @POST("api/v1/appinfo/identify-elements-old/")
     suspend fun identifyTooltips(
         @Header("Authorization") token: String,
         @Query("screen") screen: String,
         @Body request: IdentifyTooltips
-    )
+    ): Response<Unit>
 }
 
 internal sealed class ApiResult<out T> {
@@ -80,10 +82,16 @@ internal suspend fun <T> safeApiCall(apiCall: suspend () -> T): ApiResult<T> {
     return try {
         ApiResult.Success(apiCall())
     } catch (e: HttpException) {
-        ApiResult.Error(e.message ?: "Unknown error", e.code())
+        ApiResult.Error(e.message ?: "Unknown error", e.code()).apply {
+            Log.e("ApiCall", message, e)
+        }
     } catch (e: IOException) {
-        ApiResult.Error("Network error. Please check your internet connection.")
+        ApiResult.Error("Network error. Please check your internet connection.").apply {
+            Log.e("ApiCall", message, e)
+        }
     } catch (e: Exception) {
-        ApiResult.Error("Unexpected error occurred.")
+        ApiResult.Error("Unexpected error occurred.").apply {
+            Log.e("ApiCall", message, e)
+        }
     }
 }

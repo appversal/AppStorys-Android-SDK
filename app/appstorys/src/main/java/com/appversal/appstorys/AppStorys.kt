@@ -7,6 +7,9 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.util.Log
 import android.util.Patterns
+import android.view.View
+import android.view.ViewGroup
+import android.widget.TextView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -67,9 +70,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.appversal.appstorys.api.ApiResult
@@ -121,7 +126,7 @@ public interface AppStorysAPI {
     @Composable fun Stories()
     @Composable fun Reels(modifier: Modifier)
     @Composable fun BottomSheet(onDismissRequest: () -> Unit)
-    @Composable fun Modals(onCloseClick: () -> Unit,)
+    @Composable fun Modals()
     @Composable fun getBannerHeight(): Dp
 
     companion object {
@@ -130,7 +135,7 @@ public interface AppStorysAPI {
     }
 }
 
-internal object AppStorys : AppStorysAPI {
+object AppStorys : AppStorysAPI {
     private lateinit var context: Application
     private lateinit var appId: String
     private lateinit var accountId: String
@@ -270,7 +275,7 @@ internal object AppStorys : AppStorysAPI {
                         put("user_id", userId)
                         campaign_id?.let { put("campaign_id", it) }
                         put("event", event)
-                        metadata?.let { put("metadata", it) }
+                        metadata?.let { put("metadata", JSONObject(it)) }
                     }
                     val client = OkHttpClient()
                     val request = Request.Builder()
@@ -438,6 +443,8 @@ internal object AppStorys : AppStorysAPI {
 
         LaunchedEffect(currentToolTipTarget) {
             if (currentToolTipTarget?.target == targetKey) {
+                delay(600)
+
                 val campaign =
                     campaigns.value.firstOrNull { it.campaignType == "TTP" && it.details is TooltipsDetails }
 
@@ -1222,10 +1229,10 @@ internal object AppStorys : AppStorysAPI {
 
     @Composable
     override fun Modals(
-        onCloseClick: () -> Unit,
     ) {
-
         val campaignsData = campaigns.collectAsStateWithLifecycle()
+
+        var showPopupModal by remember { mutableStateOf(true) }
 
         val campaign =
             campaignsData.value.firstOrNull { it.campaignType == "MOD" && it.details is ModalDetails }
@@ -1235,7 +1242,7 @@ internal object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (modalDetails != null){
+        if (modalDetails != null && showPopupModal){
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1245,7 +1252,9 @@ internal object AppStorys : AppStorysAPI {
             }
 
             PopupModal(
-                onCloseClick = onCloseClick,
+                onCloseClick = {
+                    showPopupModal = false
+                },
                 modalDetails = modalDetails,
                 onModalClick = {
                     campaign?.id?.let { campaignId ->
@@ -1359,4 +1368,49 @@ internal object AppStorys : AppStorysAPI {
         } catch (_: Exception) {
         }
     }
+
+    fun analyzeViewTree(root: View, indent: String = "") {
+        val builder = StringBuilder()
+        builder.append("${root::class.java.simpleName} (id=${getIdName(root)})\n")
+        builder.append("$indent- Visibility: ${visibilityToString(root.visibility)}\n")
+        builder.append("$indent- Size: width=${root.width}, height=${root.height}\n")
+        builder.append("$indent- Position: x=${root.x}, y=${root.y}\n")
+        builder.append("$indent- Clickable: ${root.isClickable}, Focusable: ${root.isFocusable}\n")
+        builder.append("$indent- ContentDescription: ${root.contentDescription}\n")
+
+        if (root is TextView) {
+            builder.append("$indent- Text: \"${root.text}\"\n")
+        }
+
+        Log.d("ViewTree", indent + builder.toString().trim())
+
+        if (root is ViewGroup) {
+            for (i in 0 until root.childCount) {
+                analyzeViewTree(root.getChildAt(i), "$indent  ")
+            }
+        }
+    }
+
+    fun getIdName(view: View): String {
+        return try {
+            if (view.id != View.NO_ID) {
+                view.resources.getResourceEntryName(view.id)
+            } else {
+                "no-id"
+            }
+        } catch (e: Exception) {
+            "unknown-id"
+        }
+    }
+
+    fun visibilityToString(visibility: Int): String {
+        return when (visibility) {
+            View.VISIBLE -> "VISIBLE"
+            View.INVISIBLE -> "INVISIBLE"
+            View.GONE -> "GONE"
+            else -> "UNKNOWN"
+        }
+    }
+
+
 }

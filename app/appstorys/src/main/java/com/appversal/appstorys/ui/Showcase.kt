@@ -1,5 +1,6 @@
 package com.appversal.appstorys.ui
 
+import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
@@ -7,7 +8,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -24,10 +28,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.appversal.appstorys.api.Tooltip
 
 internal class ShowcaseDuration(val enterMillis: Int, val exitMillis: Int) {
     companion object {
@@ -118,15 +126,14 @@ sealed interface ShowcaseHighlight {
     @Composable
     fun create(targetCoordinates: LayoutCoordinates): HighlightProperties
 
-    data class Rectangular(val cornerRadius: Dp = 8.dp, val padding: Dp = 8.dp) : ShowcaseHighlight {
+    data class Rectangular(val cornerRadius: Dp = 8.dp, val padding: Dp = 8.dp) :
+        ShowcaseHighlight {
 
         @Composable
-        override fun create(
-            targetCoordinates: LayoutCoordinates
-        ): HighlightProperties {
+        override fun create(targetCoordinates: LayoutCoordinates): HighlightProperties {
             val highlightBounds = createHighlightBounds(
-                targetCoordinates.boundsInRoot(),
-                with(LocalDensity.current) { padding.toPx() }
+                targetCoordinates.boundsInWindow(),
+                with(LocalDensity.current) { padding.toPx() },
             )
             return HighlightProperties(
                 drawHighlight = { rectangularHighlight(cornerRadius.toPx(), highlightBounds) },
@@ -147,13 +154,18 @@ sealed interface ShowcaseHighlight {
             )
         }
 
+        @Composable
         private fun createHighlightBounds(
             targetRect: Rect,
-            targetMargin: Float
+            targetMargin: Float,
         ): Rect {
+            val rectangle = android.graphics.Rect()
+            LocalView.current.getWindowVisibleDisplayFrame(rectangle)
+            val shift = rectangle.top
+
             return Rect(
-                top = targetRect.top - targetMargin,
-                bottom = targetRect.bottom + targetMargin,
+                top = targetRect.top - (targetMargin + shift),
+                bottom = (targetRect.bottom - shift) + (targetMargin),
                 left = targetRect.left - targetMargin,
                 right = targetRect.right + targetMargin
             )
