@@ -2,6 +2,7 @@
 
 package com.example.carousal
 
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -46,6 +47,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.appversal.appstorys.AppStorys.analyzeViewTree
 import com.example.carousal.ui.theme.CarousalTheme
 
 
@@ -138,10 +140,16 @@ fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
+    LaunchedEffect(Unit) {
+        val activity = context as? Activity
+        val rootView = activity?.window?.decorView?.rootView
+        rootView?.let {
+            analyzeViewTree(it)
+        }
+    }
+
     val sheetState = rememberModalBottomSheetState()
     var showBottomSheet by remember { mutableStateOf(false) }
-
-    var showPopupModal by remember { mutableStateOf(true) }
 
     campaignManager.getScreenCampaigns(
         "Home Screen",
@@ -235,9 +243,7 @@ fun HomeScreen(padding: PaddingValues) {
             campaignManager.CSAT(modifier = Modifier, displayDelaySeconds = 5, position = null)
         }
 
-        if (showPopupModal) {
-            campaignManager.Modals(onCloseClick = { showPopupModal = false },)
-        }
+            campaignManager.Modals()
     }
 }
 

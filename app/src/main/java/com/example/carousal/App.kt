@@ -31,8 +31,8 @@ class App : Application() {
         // Initialize CampaignManager with userId and appId
         appStorysApi.initialize(
             context = this,
-            appId = "5a2ecc86-346a-4895-b14c-f662cc12071b",
-            accountId = "70ddda52-2106-453b-919a-d63d1287bdf7",
+            appId = "afadf960-3975-4ba2-933b-fac71ccc2002",
+            accountId = "13555479-077f-445e-87f0-e6eae2e215c5",
             userId = "premjcbsub",
             attributes = attributes,
             navigateToScreen = { screen ->

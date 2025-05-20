@@ -4,4 +4,11 @@
         <attr name="position" format="string" />
         <attr name="placeHolder" format="reference" />
     </declare-styleable>
+    <declare-styleable name="ToolTipWrapperView">
+        <attr name="targetKey" format="string" />
+        <attr name="isNavigationBarItem" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="BottomSheetView">
+        <attr name="open" format="boolean" />
+    </declare-styleable>
 </resources>
