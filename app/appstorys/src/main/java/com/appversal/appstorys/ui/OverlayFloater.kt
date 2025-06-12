@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
@@ -26,6 +27,7 @@ internal fun OverlayFloater(
     image: String,
     height: Dp,
     width: Dp,
+    borderRadiusValues: RoundedCornerShape,
     onClick: () -> Unit
 ) {
     val url =
@@ -45,22 +47,22 @@ internal fun OverlayFloater(
             .padding(16.dp)
             .height(height)
             .width(width)
-            .background(Color.Unspecified, CircleShape)
-            .clip(CircleShape)
+            .background(Color.Unspecified)
+            .clip(borderRadiusValues)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(),
                 onClick = onClick
             ),
-        shape = CircleShape
+        shape = borderRadiusValues
     ) {
         AsyncImage(
             model = imageRequest,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
+            contentScale = ContentScale.FillBounds,
+            modifier = modifier
                 .fillMaxSize()
-                .clip(CircleShape)
+                .clip(borderRadiusValues)
         )
     }
 }

@@ -1,10 +1,13 @@
 package com.appversal.appstorys.api
 
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.HttpException
 import retrofit2.http.Body
 import retrofit2.http.Header
+import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.Query
+import retrofit2.http.Part
 import java.io.IOException
 
 internal interface ApiService {
@@ -63,11 +66,14 @@ internal interface ApiService {
         @Body request: TrackActionTooltips
     )
 
+    @Multipart
     @POST("api/v1/appinfo/identify-elements/")
     suspend fun identifyTooltips(
         @Header("Authorization") token: String,
-        @Query("screen") screen: String,
-        @Body request: IdentifyTooltips
+        @Part("screenName") screenName: RequestBody,
+        @Part("user_id") user_id: RequestBody,
+        @Part("children") children: RequestBody,
+        @Part screenshot: MultipartBody.Part
     )
 }
 

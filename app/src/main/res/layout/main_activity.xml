@@ -1,28 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
 
     <com.appversal.appstorys.ui.xml.PinnedBannerView
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        app:placeHolder="@drawable/ic_launcher_foreground"/>
-
-
-    <com.appversal.appstorys.ui.xml.WidgetView
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        app:position="widget_fifty"
-        app:placeHolder="@drawable/ic_launcher_foreground"/>
+            android:id="@+id/widget_one"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            app:placeholder="@drawable/ic_launcher_foreground" />
 
     <com.appversal.appstorys.ui.xml.WidgetView
-        android:layout_width="match_parent"
-        android:layout_height="100dp"
-        app:position="widget_four"
-        app:placeHolder="@drawable/ic_launcher_foreground"/>
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            app:position="widget_fifty"
+            app:placeholder="@drawable/ic_launcher_foreground" />
 
+    <com.appversal.appstorys.ui.xml.WidgetView
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            app:position="widget_four"
+            app:placeholder="@drawable/ic_launcher_foreground" />
 
+    <TextView
+            android:id="@+id/tooltip_home"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name" />
 
+    <com.appversal.appstorys.ui.xml.PipView
+        android:id="@+id/pip_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp" />
 </LinearLayout>

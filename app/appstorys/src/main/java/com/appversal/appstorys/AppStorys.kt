@@ -1,5 +1,6 @@
 package com.appversal.appstorys
 
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
@@ -7,22 +8,32 @@ import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.util.Log
 import android.util.Patterns
+import android.view.View
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -30,34 +41,61 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appversal.appstorys.api.ApiRepository
 import com.appversal.appstorys.api.BannerDetails
+import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.CSATDetails
 import com.appversal.appstorys.api.Campaign
 import com.appversal.appstorys.api.CsatFeedbackPostRequest
 import com.appversal.appstorys.api.FloaterDetails
+import com.appversal.appstorys.api.ModalDetails
+import com.appversal.appstorys.api.PipDetails
+import com.appversal.appstorys.api.ReelActionRequest
+import com.appversal.appstorys.api.ReelStatusRequest
 import com.appversal.appstorys.api.ReelsDetails
 import com.appversal.appstorys.api.RetrofitClient
+import com.appversal.appstorys.api.StoryGroup
+import com.appversal.appstorys.api.Tooltip
+import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackAction
+import com.appversal.appstorys.api.TrackActionStories
+import com.appversal.appstorys.api.TrackActionTooltips
 import com.appversal.appstorys.api.WidgetDetails
 import com.appversal.appstorys.api.WidgetImage
 import com.appversal.appstorys.ui.AutoSlidingCarousel
+import com.appversal.appstorys.ui.BottomSheetComponent
 import com.appversal.appstorys.ui.CarousalImage
 import com.appversal.appstorys.ui.CsatDialog
 import com.appversal.appstorys.ui.DoubleWidgets
 import com.appversal.appstorys.ui.FullScreenVideoScreen
 import com.appversal.appstorys.ui.ImageCard
+import com.appversal.appstorys.ui.OverlayContainer
+import com.appversal.appstorys.ui.OverlayContainer.toAppStorysCoordinates
 import com.appversal.appstorys.ui.OverlayFloater
+import com.appversal.appstorys.ui.PipVideo
+import com.appversal.appstorys.ui.PopupModal
 import com.appversal.appstorys.ui.ReelsRow
+import com.appversal.appstorys.ui.StoryAppMain
 import com.appversal.appstorys.ui.TooltipContent
 import com.appversal.appstorys.ui.TooltipPopup
 import com.appversal.appstorys.ui.TooltipPopupPosition
 import com.appversal.appstorys.ui.calculateTooltipPopupPosition
+import com.appversal.appstorys.ui.getLikedReels
+import com.appversal.appstorys.ui.saveLikedReels
+import com.appversal.appstorys.utils.ViewTreeAnalyzer
+import com.appversal.appstorys.utils.appstorysViewTagProperty
+import com.appversal.appstorys.utils.toMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -65,41 +103,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.appversal.appstorys.api.ApiResult
-import com.appversal.appstorys.api.BottomSheetDetails
-import com.appversal.appstorys.api.IdentifyTooltips
-import com.appversal.appstorys.api.ModalDetails
-import com.appversal.appstorys.api.PipDetails
-import com.appversal.appstorys.api.ReelActionRequest
-import com.appversal.appstorys.api.ReelStatusRequest
-import com.appversal.appstorys.api.StoryGroup
-import com.appversal.appstorys.api.Tooltip
-import com.appversal.appstorys.api.TooltipsDetails
-import com.appversal.appstorys.api.TrackActionStories
-import com.appversal.appstorys.api.TrackActionTooltips
-import com.appversal.appstorys.ui.BottomSheetComponent
-import com.appversal.appstorys.ui.PipVideo
-import com.appversal.appstorys.ui.PopupModal
-import com.appversal.appstorys.ui.StoryAppMain
-import com.appversal.appstorys.ui.getLikedReels
-import com.appversal.appstorys.ui.saveLikedReels
-import com.appversal.appstorys.utils.toMap
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.json.JSONObject
 
-public interface AppStorysAPI {
+interface AppStorysAPI {
     fun initialize(
         context: Application,
         appId: String,
@@ -109,20 +122,77 @@ public interface AppStorysAPI {
         navigateToScreen: (String) -> Unit
     )
 
-    fun getScreenCampaigns(screenName: String, positionList: List<String>)
-    fun trackEvents(campaign_id: String? = null, event: String, metadata: Map<String, Any>? = null)
+    fun getScreenCampaigns(
+        screenName: String,
+        positionList: List<String>,
+    )
 
-    @Composable fun CSAT(modifier: Modifier, displayDelaySeconds: Long, position: String?)
-    @Composable fun Floater(boxModifier: Modifier, iconModifier: Modifier)
-    @Composable fun ToolTipWrapper(targetModifier: Modifier, targetKey: String, isNavigationBarItem: Boolean, requesterView: @Composable (Modifier) -> Unit)
-    @Composable fun Pip(modifier: Modifier, bottomPadding: Dp, topPadding: Dp)
-    @Composable fun PinnedBanner(modifier: Modifier, contentScale: ContentScale, staticWidth: Dp?, placeHolder: Drawable?, placeholderContent: (@Composable () -> Unit)?, position: String?)
-    @Composable fun Widget(modifier: Modifier, contentScale: ContentScale, staticWidth: Dp?, placeHolder: Drawable?, placeholderContent: (@Composable () -> Unit)?, position: String?)
-    @Composable fun Stories()
-    @Composable fun Reels(modifier: Modifier)
-    @Composable fun BottomSheet(onDismissRequest: () -> Unit)
-    @Composable fun Modals(onCloseClick: () -> Unit,)
-    @Composable fun getBannerHeight(): Dp
+    fun trackEvents(
+        campaign_id: String? = null,
+        event: String,
+        metadata: Map<String, Any>? = null
+    )
+
+    @Composable
+    fun CSAT(bottomPadding: Dp)
+
+    @Composable
+    fun Floater(
+        modifier: Modifier? = Modifier,
+        bottomPadding: Dp
+    )
+
+    @Composable
+    fun ToolTipWrapper(
+        targetModifier: Modifier,
+        targetKey: String,
+        isNavigationBarItem: Boolean,
+        requesterView: @Composable (Modifier) -> Unit,
+    )
+
+    @Composable
+    fun Pip(
+        modifier: Modifier? = Modifier,
+        bottomPadding: Dp,
+        topPadding: Dp,
+    )
+
+    @Composable
+    fun PinnedBanner(
+        modifier: Modifier? = Modifier,
+        placeHolder: Drawable? = null,
+        placeholderContent: (@Composable () -> Unit)? = null,
+        bottomPadding: Dp,
+    )
+
+    @Composable
+    fun Widget(
+        modifier: Modifier = Modifier,
+        placeholder: Drawable? = null,
+        placeholderContent: (@Composable () -> Unit)? = null,
+        position: String? = null,
+    )
+
+    @Composable
+    fun Stories()
+
+    @Composable
+    fun Reels(modifier: Modifier = Modifier)
+
+    @Composable
+    fun BottomSheet(onDismissRequest: () -> Unit)
+
+    @Composable
+    fun Modals()
+
+    @Composable
+    fun TestUserButton(
+        modifier: Modifier = Modifier,
+        screenName: String? = null
+    )
+
+    @Composable
+    fun getBannerHeight(): Dp
 
     companion object {
         @JvmStatic
@@ -130,7 +200,7 @@ public interface AppStorysAPI {
     }
 }
 
-internal object AppStorys : AppStorysAPI {
+object AppStorys : AppStorysAPI {
     private lateinit var context: Application
     private lateinit var appId: String
     private lateinit var accountId: String
@@ -188,7 +258,10 @@ internal object AppStorys : AppStorysAPI {
     private var accessToken = ""
     private var currentScreen = ""
 
+    private var isScreenCaptureEnabled by mutableStateOf(false)
+
     private var showCsat = false
+    private var showModal = true
 
     private var isDataFetched = false
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -211,12 +284,17 @@ internal object AppStorys : AppStorysAPI {
                 currentScreen = "Home Screen"
                 val campaignList = repository.getCampaigns(accessToken, currentScreen, null)
 
-                if (campaignList?.isNotEmpty() == true) {
+//                if (campaignList?.isNotEmpty() == true) {
                     val campaignsData =
-                        repository.getCampaignData(accessToken, userId, campaignList, attributes)
+                        repository.getCampaignData(accessToken, userId, campaignList ?: emptyList<String>()
+                            , attributes)
 
-                    campaignsData?.campaigns?.let { _campaigns.emit(it) }
-                }
+                    campaignsData?.let { response ->
+                        isScreenCaptureEnabled = response.is_screen_capture_enabled ?: false
+
+                        response.campaigns?.let { _campaigns.emit(it) }
+                    }
+//                }
             }
         } catch (exception: Exception) {
             Log.e("AppStorys", exception.message ?: "Error Fetch Data")
@@ -233,6 +311,7 @@ internal object AppStorys : AppStorysAPI {
                     if (currentScreen != screenName) {
                         _disabledCampaigns.emit(emptyList())
                         _impressions.emit(emptyList())
+                        _campaigns.emit(emptyList())
                         currentScreen = screenName
                     }
                     val campaignList =
@@ -241,16 +320,18 @@ internal object AppStorys : AppStorysAPI {
                             currentScreen,
                             positionList
                         )
-                    if (campaignList?.isNotEmpty() == true) {
+//                    if (campaignList?.isNotEmpty() == true) {
                         val campaignsData =
                             repository.getCampaignData(
                                 accessToken,
                                 userId,
-                                campaignList,
+                                campaignList ?: emptyList<String>(),
                                 attributes
                             )
                         campaignsData?.campaigns?.let { _campaigns.emit(it) }
-                    }
+//                    } else {
+//                        _campaigns.emit(emptyList())
+//                    }
                 }
             }
         } catch (exception: Exception) {
@@ -270,7 +351,7 @@ internal object AppStorys : AppStorysAPI {
                         put("user_id", userId)
                         campaign_id?.let { put("campaign_id", it) }
                         put("event", event)
-                        metadata?.let { put("metadata", it) }
+                        metadata?.let { put("metadata", JSONObject(it)) }
                     }
                     val client = OkHttpClient()
                     val request = Request.Builder()
@@ -291,13 +372,24 @@ internal object AppStorys : AppStorysAPI {
         }
     }
 
+    suspend fun analyzeViewRoot(
+        root: View, screenName: String, activity: Activity
+    ) {
+        ViewTreeAnalyzer.analyzeViewRoot(
+            root = root,
+            screenName = screenName,
+            user_id = userId,
+            accessToken = accessToken,
+            activity = activity
+        )
+    }
+
     @Composable
     override fun CSAT(
-        modifier: Modifier,
-        displayDelaySeconds: Long,
-        position: String?
+        bottomPadding: Dp
     ) {
         if (!showCsat) {
+            val position = null
             val campaignsData = campaigns.collectAsStateWithLifecycle()
 
             val campaign =
@@ -314,7 +406,7 @@ internal object AppStorys : AppStorysAPI {
                 val style = csatDetails.styling
                 var isVisibleState by remember { mutableStateOf(false) }
                 val updatedDelay by rememberUpdatedState(
-                    style?.displayDelay?.toLong() ?: displayDelaySeconds
+                    style?.displayDelay?.toLong()
                 )
 
                 LaunchedEffect(Unit) {
@@ -322,16 +414,16 @@ internal object AppStorys : AppStorysAPI {
                         trackCampaignActions(it, "IMP")
                         trackEvents(it, "viewed")
                     }
-                    delay(updatedDelay * 1000)
+                    delay(updatedDelay?.times(1000) ?: 0)
                     isVisibleState = true
                 }
 
                 Box(
-                    modifier = modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().padding(bottom = bottomPadding),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
-                        modifier = modifier,
+                        modifier = Modifier,
                         visible = isVisibleState,
                         enter = slideInVertically() { it },
                         exit = slideOutVertically { it }
@@ -369,8 +461,8 @@ internal object AppStorys : AppStorysAPI {
 
     @Composable
     override fun Floater(
-        boxModifier: Modifier,
-        iconModifier: Modifier
+        modifier: Modifier?,
+        bottomPadding: Dp
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
 
@@ -391,7 +483,7 @@ internal object AppStorys : AppStorysAPI {
 
             }
 
-            Box(modifier = boxModifier.fillMaxWidth()) {
+            Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomPadding)) {
                 val alignmentModifier = when (floaterDetails.position) {
                     "right" -> Modifier.align(Alignment.BottomEnd)
                     "left" -> Modifier.align(Alignment.BottomStart)
@@ -399,7 +491,7 @@ internal object AppStorys : AppStorysAPI {
                 }
 
                 OverlayFloater(
-                    modifier = iconModifier.then(alignmentModifier),
+                    modifier = (modifier ?: Modifier).then(alignmentModifier),
                     onClick = {
                         if (campaign?.id != null && floaterDetails.link != null) {
                             clickEvent(link = floaterDetails.link, campaignId = campaign.id)
@@ -409,7 +501,16 @@ internal object AppStorys : AppStorysAPI {
                     },
                     image = floaterDetails.image,
                     height = floaterDetails.height?.dp ?: 60.dp,
-                    width = floaterDetails.width?.dp ?: 60.dp
+                    width = floaterDetails.width?.dp ?: 60.dp,
+                    borderRadiusValues = RoundedCornerShape(
+                        topStart = (floaterDetails.styling?.topLeftRadius?.toFloatOrNull()
+                            ?: 0f).dp,
+                        topEnd = (floaterDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
+                        bottomStart = (floaterDetails.styling?.bottomLeftRadius?.toFloatOrNull()
+                            ?: 0f).dp,
+                        bottomEnd = (floaterDetails.styling?.bottomRightRadius?.toFloatOrNull()
+                            ?: 0f).dp
+                    )
                 )
             }
         }
@@ -428,14 +529,6 @@ internal object AppStorys : AppStorysAPI {
         val visibleShowcase by showcaseVisible.collectAsStateWithLifecycle()
         val currentToolTipTarget by tooltipTargetView.collectAsStateWithLifecycle()
 
-        LaunchedEffect(targetKey) {
-            repository.tooltipIdentify(
-                accessToken = accessToken,
-                screen = currentScreen,
-                actions = IdentifyTooltips(element = targetKey)
-            )
-        }
-
         LaunchedEffect(currentToolTipTarget) {
             if (currentToolTipTarget?.target == targetKey) {
                 val campaign =
@@ -449,7 +542,11 @@ internal object AppStorys : AppStorysAPI {
                         tooltip_id = currentToolTipTarget!!.id
                     )
                 )
-                trackEvents(campaign?.id, "viewed", mapOf("tooltip_id" to currentToolTipTarget!!.id!!))
+                trackEvents(
+                    campaign?.id,
+                    "viewed",
+                    mapOf("tooltip_id" to currentToolTipTarget!!.id!!)
+                )
             }
         }
 
@@ -462,7 +559,7 @@ internal object AppStorys : AppStorysAPI {
                     }
                     position = calculateTooltipPopupPosition(
                         view,
-                        coordinates,
+                        coordinates.toAppStorysCoordinates(),
                         currentToolTipTarget,
                         isNavigationBarItem
                     )
@@ -471,65 +568,75 @@ internal object AppStorys : AppStorysAPI {
             backgroundColor = Color.Transparent,
             position = position,
             isShowTooltip = visibleShowcase && currentToolTipTarget?.target == targetKey,
-            onDismissRequest = {
-                coroutineScope.launch {
-                    _tooltipTargetView.emit(null)
-                    _showcaseVisible.emit(false)
-                }
-            },
+            onDismissRequest = ::dismissTooltip,
             tooltip = if (currentToolTipTarget?.target == targetKey) currentToolTipTarget else null,
             isNavigationBarItem = isNavigationBarItem,
             tooltipContent = {
                 if (currentToolTipTarget?.target == targetKey) {
-                    TooltipContent(
-                        tooltip = currentToolTipTarget!!,
-                        exitUnit = {
-                            coroutineScope.launch {
-                                _tooltipTargetView.emit(null)
-                                _showcaseVisible.emit(false)
-                            }
-                        },
-                        onClick = {
-                            coroutineScope.launch {
-                                if (!currentToolTipTarget!!.link.isNullOrEmpty()) {
-                                    if (currentToolTipTarget!!.clickAction == "deepLink") {
-                                        if (!isValidUrl(currentToolTipTarget!!.link)) {
-                                            currentToolTipTarget!!.link?.let {
-                                                navigateToScreen(
-                                                    it
-                                                )
-                                            }
-                                        } else {
-                                            currentToolTipTarget!!.link?.let { openUrl(it) }
-                                        }
-                                    } else {
-                                        coroutineScope.launch {
-                                            _tooltipTargetView.emit(null)
-                                            _showcaseVisible.emit(false)
-                                        }
-                                    }
+                    CurrentTooltipContent(currentToolTipTarget!!)
+                }
+            }
+        )
+    }
 
-                                    val campaign =
-                                        campaigns.value.firstOrNull { it.campaignType == "TTP" && it.details is TooltipsDetails }
+    @Composable
+    fun CurrentTooltipContent(
+        tooltip: Tooltip
+    ) {
+        LaunchedEffect(tooltip) {
+            val campaign =
+                campaigns.value.firstOrNull { it.campaignType == "TTP" && it.details is TooltipsDetails }
 
-                                    repository.trackTooltipsActions(
-                                        accessToken, TrackActionTooltips(
-                                            campaign_id = campaign?.id,
-                                            user_id = userId,
-                                            event_type = "CLK",
-                                            tooltip_id = currentToolTipTarget!!.id
-                                        )
-                                    )
-                                    trackEvents(campaign?.id, "clicked", mapOf("tooltip_id" to currentToolTipTarget!!.id!!))
-                                } else {
-                                    coroutineScope.launch {
-                                        _tooltipTargetView.emit(null)
-                                        _showcaseVisible.emit(false)
-                                    }
-                                }
+            repository.trackTooltipsActions(
+                accessToken, TrackActionTooltips(
+                    campaign_id = campaign?.id,
+                    user_id = userId,
+                    event_type = "IMP",
+                    tooltip_id = tooltip!!.id
+                )
+            )
+            trackEvents(
+                campaign?.id,
+                "viewed",
+                mapOf("tooltip_id" to tooltip!!.id!!)
+            )
+        }
+
+        TooltipContent(
+            tooltip = tooltip,
+            exitUnit = ::dismissTooltip,
+            onClick = {
+                coroutineScope.launch {
+                    if (!tooltip.deepLinkUrl.isNullOrEmpty()) {
+                        if (tooltip.clickAction == "deepLink") {
+                            if (!isValidUrl(tooltip.deepLinkUrl)) {
+                                navigateToScreen(tooltip.deepLinkUrl)
+                            } else {
+                                openUrl(tooltip.deepLinkUrl)
                             }
+                        } else {
+                            dismissTooltip()
                         }
-                    )
+
+                        val campaign =
+                            campaigns.value.firstOrNull { it.campaignType == "TTP" && it.details is TooltipsDetails }
+
+                        repository.trackTooltipsActions(
+                            accessToken, TrackActionTooltips(
+                                campaign_id = campaign?.id,
+                                user_id = userId,
+                                event_type = "CLK",
+                                tooltip_id = tooltip.id
+                            )
+                        )
+                        trackEvents(
+                            campaign?.id,
+                            "clicked",
+                            mapOf("tooltip_id" to tooltip.id!!)
+                        )
+                    } else {
+                        dismissTooltip()
+                    }
                 }
             }
         )
@@ -537,7 +644,7 @@ internal object AppStorys : AppStorysAPI {
 
     @Composable
     override fun Pip(
-        modifier: Modifier,
+        modifier: Modifier?,
         bottomPadding: Dp,
         topPadding: Dp,
     ) {
@@ -560,43 +667,44 @@ internal object AppStorys : AppStorysAPI {
                 }
             }
 
-            Box(modifier = modifier.fillMaxWidth()) {
-
+            Box(modifier = modifier?.fillMaxWidth() ?: Modifier.fillMaxWidth()) {
                 if (showPip) {
-                    pipDetails?.large_video?.let {
-                        pipDetails.link?.let { it1 ->
-                            PipVideo(
-                                videoUri = pipDetails.small_video,
-                                fullScreenVideoUri = it,
-                                onClose = {
-                                    showPip = false
-                                },
-                                height = pipDetails.height?.dp ?: 180.dp,
-                                width = pipDetails.width?.dp ?: 120.dp,
-                                button_text = pipDetails.button_text.toString(),
-                                link = it1,
-                                position = pipDetails.position.toString(),
-                                bottomPadding = bottomPadding,
-                                topPadding = topPadding,
-                                isMovable = pipDetails.styling?.isMovable!!,
-                                onButtonClick = {
-                                    campaign?.id?.let { campaignId ->
-                                        trackCampaignActions(campaignId, "CLK")
-                                        trackEvents(campaignId, "clicked")
-                                    }
-                                    if (!isValidUrl(pipDetails.link)) {
-                                        navigateToScreen(pipDetails.link)
-                                    } else {
-                                        openUrl(pipDetails.link)
-                                    }
-                                },
-                                onExpandClick = {
-                                    campaign?.id?.let { campaignId ->
-                                        trackCampaignActions(campaignId, "IMP")
-                                    }
+                    pipDetails.small_video.let { it ->
+                        PipVideo(
+                            videoUri = it,
+                            fullScreenVideoUri = if (!pipDetails.large_video.isNullOrEmpty()) {
+                                pipDetails.large_video
+                            } else {
+                                null
+                            },
+                            onClose = {
+                                showPip = false
+                            },
+                            height = pipDetails.height?.dp ?: 180.dp,
+                            width = pipDetails.width?.dp ?: 120.dp,
+                            button_text = pipDetails.button_text.toString(),
+                            link = pipDetails.link.toString(),
+                            position = pipDetails.position.toString(),
+                            bottomPadding = bottomPadding,
+                            topPadding = topPadding,
+                            isMovable = pipDetails.styling?.isMovable!!,
+                            onButtonClick = {
+                                campaign?.id?.let { campaignId ->
+                                    trackCampaignActions(campaignId, "CLK")
+                                    trackEvents(campaignId, "clicked")
                                 }
-                            )
-                        }
+                                if (!isValidUrl(pipDetails.link)) {
+                                    navigateToScreen(pipDetails.link.toString())
+                                } else {
+                                    openUrl(pipDetails.link.toString())
+                                }
+                            },
+                            onExpandClick = {
+                                campaign?.id?.let { campaignId ->
+                                    trackCampaignActions(campaignId, "IMP")
+                                }
+                            }
+                        )
                     }
                 }
             }
@@ -616,17 +724,14 @@ internal object AppStorys : AppStorysAPI {
                     for (tooltip in tooltipsDetails.tooltips?.sortedBy { it.order }
                         ?: emptyList()) {
                         if (tooltip.target != null && !_tooltipViewed.value.contains(tooltip.target)) {
-
-                            if (coordinates.contains(tooltip.target)) {
-                                while (_tooltipTargetView.value != null) {
-                                    delay(500L)
-                                }
-                                _tooltipTargetView.emit(tooltip)
-                                _showcaseVisible.emit(true)
-                                _tooltipViewed.emit(
-                                    tooltipViewed.value.toMutableList()
-                                        .apply { add(tooltip.target) })
+                            while (_tooltipTargetView.value != null) {
+                                delay(500L)
                             }
+                            _tooltipTargetView.emit(tooltip)
+                            _showcaseVisible.emit(true)
+                            _tooltipViewed.emit(
+                                tooltipViewed.value.toMutableList()
+                                    .apply { add(tooltip.target) })
                         }
                     }
                 }
@@ -645,18 +750,18 @@ internal object AppStorys : AppStorysAPI {
             StoryAppMain(
                 apiStoryGroups = storiesDetails,
                 sendEvent = {
-                coroutineScope.launch {
-                    repository.trackStoriesActions(
-                        accessToken, TrackActionStories(
-                            campaign_id = campaign.id,
-                            user_id = userId,
-                            story_slide = it.first.id,
-                            event_type = it.second
+                    coroutineScope.launch {
+                        repository.trackStoriesActions(
+                            accessToken, TrackActionStories(
+                                campaign_id = campaign.id,
+                                user_id = userId,
+                                story_slide = it.first.id,
+                                event_type = it.second
+                            )
                         )
-                    )
-                    trackEvents(campaign.id, "viewed", mapOf("story_slide" to it.first.id!!))
-                }
-            },
+                        trackEvents(campaign.id, "viewed", mapOf("story_slide" to it.first.id!!))
+                    }
+                },
                 sendClickEvent = {
                     trackEvents(campaign.id, it.second, mapOf("story_slide" to it.first.id!!))
                 }
@@ -799,7 +904,11 @@ internal object AppStorys : AppStorysAPI {
                                             campaign_id = campaignId
                                         )
                                     )
-                                    trackEvents(campaignId, "viewed", mapOf("reel_id" to it.first.id!!))
+                                    trackEvents(
+                                        campaignId,
+                                        "viewed",
+                                        mapOf("reel_id" to it.first.id!!)
+                                    )
                                 }
                             }
                         } else {
@@ -813,7 +922,11 @@ internal object AppStorys : AppStorysAPI {
                                         campaign_id = campaignId
                                     )
                                 )
-                                trackEvents(campaignId, "clicked", mapOf("reel_id" to it.first.id!!))
+                                trackEvents(
+                                    campaignId,
+                                    "clicked",
+                                    mapOf("reel_id" to it.first.id!!)
+                                )
                             }
                         }
 
@@ -843,18 +956,18 @@ internal object AppStorys : AppStorysAPI {
 
     @Composable
     override fun PinnedBanner(
-        modifier: Modifier,
-        contentScale: ContentScale,
-        staticWidth: Dp?,
-        placeHolder: Drawable?,
+        modifier: Modifier?,
+        placeholder: Drawable?,
         placeholderContent: (@Composable () -> Unit)?,
-        position: String?
+        bottomPadding: Dp,
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
         val disabledCampaigns = disabledCampaigns.collectAsStateWithLifecycle()
 
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
+
+        val position = null
 
         val campaign =
             campaignsData.value.filter { it.campaignType == "BAN" && it.details is BannerDetails }
@@ -869,13 +982,19 @@ internal object AppStorys : AppStorysAPI {
             val style = bannerDetails.styling
             val bannerUrl = bannerDetails.image
 
-            val calculatedHeight = if (bannerDetails.width != null && bannerDetails.height != null) {
-                val aspectRatio = bannerDetails.height.toFloat() / bannerDetails.width.toFloat()
-                val actualWidth = staticWidth ?: screenWidth
-                (actualWidth.value * aspectRatio).dp
-            } else {
-                bannerDetails.height?.dp
-            }
+            val calculatedHeight =
+                if (bannerDetails.width != null && bannerDetails.height != null) {
+                    val aspectRatio = bannerDetails.height.toFloat() / bannerDetails.width.toFloat()
+
+                    val marginLeft = style?.marginLeft?.dp ?: 0.dp
+                    val marginRight = style?.marginRight?.dp ?: 0.dp
+
+                    val actualWidth = screenWidth - marginLeft - marginRight
+
+                    (actualWidth.value * aspectRatio).dp
+                } else {
+                    bannerDetails.height?.dp
+                }
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -884,47 +1003,51 @@ internal object AppStorys : AppStorysAPI {
                 }
             }
 
-            com.appversal.appstorys.ui.PinnedBanner(
-                modifier = modifier.clickable {
-                    campaign?.id?.let {
-                        clickEvent(link = bannerDetails.link, campaignId = it)
-                        trackEvents(it, "clicked")
-                    }
-                },
-                imageUrl = bannerUrl ?: "",
-                lottieUrl = bannerDetails.lottie_data,
-                width = bannerDetails.width?.dp ?: staticWidth,
-                exitIcon = style?.isClose ?: false,
-                exitUnit = {
-                    val ids: ArrayList<String> = ArrayList(_disabledCampaigns.value)
-                    campaign?.id?.let {
-                        ids.add(it)
-                        coroutineScope.launch {
-                            _disabledCampaigns.emit(ids.toList())
+            Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomPadding)) {
+                com.appversal.appstorys.ui.PinnedBanner(
+                    modifier = (modifier ?: Modifier)
+                        .align(Alignment.BottomCenter)
+                        .clickable {
+                            campaign?.id?.let {
+                                clickEvent(link = bannerDetails.link, campaignId = it)
+                                trackEvents(it, "clicked")
+                            }
+                        },
+                    imageUrl = bannerUrl ?: "",
+                    lottieUrl = bannerDetails.lottie_data,
+                    width = bannerDetails.width?.dp ?: screenWidth,
+                    exitIcon = style?.enableCloseButton ?: false,
+                    exitUnit = {
+                        val ids: ArrayList<String> = ArrayList(_disabledCampaigns.value)
+                        campaign?.id?.let {
+                            ids.add(it)
+                            coroutineScope.launch {
+                                _disabledCampaigns.emit(ids.toList())
+                            }
                         }
-                    }
-                },
-                shape = RoundedCornerShape(
-                    topStart = style?.topLeftRadius?.dp ?: 0.dp,
-                    topEnd = style?.topRightRadius?.dp ?: 0.dp,
-                    bottomEnd = style?.bottomRightRadius?.dp ?: 0.dp,
-                    bottomStart = style?.bottomLeftRadius?.dp ?: 0.dp
-                ),
-                bottomMargin = style?.marginBottom?.dp ?: 0.dp,
-                contentScale = contentScale,
-                height = calculatedHeight,
-                placeHolder = placeHolder,
-                placeholderContent = placeholderContent
-            )
+                    },
+                    shape = RoundedCornerShape(
+                        topStart = style?.topLeftRadius?.dp ?: 0.dp,
+                        topEnd = style?.topRightRadius?.dp ?: 0.dp,
+                        bottomEnd = style?.bottomRightRadius?.dp ?: 0.dp,
+                        bottomStart = style?.bottomLeftRadius?.dp ?: 0.dp
+                    ),
+                    bottomMargin = style?.marginBottom?.dp ?: 0.dp,
+                    leftMargin = style?.marginLeft?.dp ?: 0.dp,
+                    rightMargin = style?.marginRight?.dp ?: 0.dp,
+                    contentScale = ContentScale.Fit,
+                    height = calculatedHeight,
+                    placeHolder = placeholder,
+                    placeholderContent = placeholderContent
+                )
+            }
         }
     }
 
     @Composable
     override fun Widget(
         modifier: Modifier,
-        contentScale: ContentScale,
-        staticWidth: Dp?,
-        placeHolder: Drawable?,
+        placeholder: Drawable?,
         placeholderContent: (@Composable () -> Unit)?,
         position: String?
     ) {
@@ -940,9 +1063,9 @@ internal object AppStorys : AppStorysAPI {
 
                 FullWidget(
                     modifier = modifier,
-                    staticWidth = staticWidth,
-                    placeHolder = placeHolder,
-                    contentScale = contentScale,
+                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
+                    placeHolder = placeholder,
+                    contentScale = ContentScale.FillWidth,
                     position = position,
                     placeholderContent = placeholderContent
                 )
@@ -950,9 +1073,9 @@ internal object AppStorys : AppStorysAPI {
             } else if (widgetDetails.type == "half") {
                 DoubleWidget(
                     modifier = modifier,
-                    staticWidth = staticWidth,
+                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
                     position = position,
-                    placeHolder = placeHolder,
+                    placeHolder = placeholder,
                     placeholderContent = placeholderContent
                 )
             }
@@ -990,13 +1113,19 @@ internal object AppStorys : AppStorysAPI {
             })
             val widthInDp: Dp? = widgetDetails.width?.dp
 
-            val calculatedHeight = if (widgetDetails.width != null && widgetDetails.height != null) {
-                val aspectRatio = widgetDetails.height.toFloat() / widgetDetails.width.toFloat()
-                val actualWidth = staticWidth ?: screenWidth
-                (actualWidth.value.minus(32) * aspectRatio).dp
-            } else {
-                widgetDetails.height?.dp
-            }
+            val calculatedHeight =
+                if (widgetDetails.width != null && widgetDetails.height != null) {
+                    val aspectRatio = widgetDetails.height.toFloat() / widgetDetails.width.toFloat()
+
+                    val marginLeft = widgetDetails.styling?.leftMargin?.toFloatOrNull()?.dp ?: 0.dp
+                    val marginRight =
+                        widgetDetails.styling?.rightMargin?.toFloatOrNull()?.dp ?: 0.dp
+
+                    val actualWidth = (staticWidth ?: screenWidth) - marginLeft - marginRight
+                    (actualWidth.value.minus(32) * aspectRatio).dp
+                } else {
+                    widgetDetails.height?.dp
+                }
 
             LaunchedEffect(pagerState.currentPage, isVisible) {
                 if (isVisible) {
@@ -1006,39 +1135,57 @@ internal object AppStorys : AppStorysAPI {
                             "IMP",
                             widgetDetails.widgetImages[pagerState.currentPage].id
                         )
-                        trackEvents(it, "viewed", mapOf("widget_image" to widgetDetails.widgetImages[pagerState.currentPage].id!!))
+                        trackEvents(
+                            it,
+                            "viewed",
+                            mapOf("widget_image" to widgetDetails.widgetImages[pagerState.currentPage].id!!)
+                        )
                     }
                 }
             }
 
             AutoSlidingCarousel(
-                modifier = modifier.onGloballyPositioned { layoutCoordinates ->
-                    val visibilityRect = layoutCoordinates.boundsInWindow()
-                    val parentHeight = layoutCoordinates.parentLayoutCoordinates?.size?.height ?: 0
-                    val widgetHeight = layoutCoordinates.size.height
-                    val isAtLeastHalfVisible = visibilityRect.top < parentHeight &&
-                            visibilityRect.bottom > 0 &&
-                            (visibilityRect.height >= widgetHeight * 0.5f)
+                modifier = modifier
+                    .padding(
+                        top = (widgetDetails.styling?.topMargin?.toFloatOrNull() ?: 0f).dp,
+                        bottom = (widgetDetails.styling?.bottomMargin?.toFloatOrNull() ?: 0f).dp,
+                        start = (widgetDetails.styling?.leftMargin?.toFloatOrNull() ?: 0f).dp,
+                        end = (widgetDetails.styling?.rightMargin?.toFloatOrNull() ?: 0f).dp,
+                    )
+                    .onGloballyPositioned { layoutCoordinates ->
+                        val visibilityRect = layoutCoordinates.boundsInWindow()
+                        val parentHeight =
+                            layoutCoordinates.parentLayoutCoordinates?.size?.height ?: 0
+                        val widgetHeight = layoutCoordinates.size.height
+                        val isAtLeastHalfVisible = visibilityRect.top < parentHeight &&
+                                visibilityRect.bottom > 0 &&
+                                (visibilityRect.height >= widgetHeight * 0.5f)
 
-                    isVisible = isAtLeastHalfVisible
-                },
+                        isVisible = isAtLeastHalfVisible
+                    },
+                widgetDetails = widgetDetails,
                 pagerState = pagerState,
                 itemsCount = widgetDetails.widgetImages.count(),
                 width = staticWidth,
                 itemContent = { index ->
                     widgetDetails.widgetImages[index].image?.let {
                         CarousalImage(
-                            modifier = Modifier.clickable {
+                            modifier = modifier.clickable {
                                 clickEvent(
                                     link = widgetDetails.widgetImages[index].link,
                                     campaignId = campaign.id,
                                     widgetImageId = widgetDetails.widgetImages[index].id
                                 )
 
-                                trackEvents(campaign.id, "clicked", mapOf("widget_image" to widgetDetails.widgetImages[index].id!!))
+                                trackEvents(
+                                    campaign.id,
+                                    "clicked",
+                                    mapOf("widget_image" to widgetDetails.widgetImages[index].id!!)
+                                )
                             },
                             contentScale = contentScale,
                             imageUrl = widgetDetails.widgetImages[index].image ?: "",
+                            lottieUrl = widgetDetails.widgetImages[index].lottie_data ?: "",
                             placeHolder = placeHolder,
                             height = calculatedHeight,
                             width = widthInDp ?: staticWidth,
@@ -1076,13 +1223,21 @@ internal object AppStorys : AppStorysAPI {
         ) {
             val widthInDp: Dp? = widgetDetails.width?.dp
 
-            val calculatedHeight = if (widgetDetails.width != null && widgetDetails.height != null) {
-                val aspectRatio = widgetDetails.height.toFloat() / widgetDetails.width.toFloat()
-                val actualWidth = staticWidth ?: screenWidth
-                ((actualWidth.value.minus(48) * aspectRatio).div(2)).dp
-            } else {
-                (widgetDetails.height?.minus(48))?.div(2)?.dp
-            }
+            val calculatedHeight =
+                if (widgetDetails.width != null && widgetDetails.height != null) {
+                    val aspectRatio = widgetDetails.height.toFloat() / widgetDetails.width.toFloat()
+
+                    val marginLeft = widgetDetails.styling?.leftMargin?.toFloatOrNull()?.dp ?: 0.dp
+                    val marginRight =
+                        widgetDetails.styling?.rightMargin?.toFloatOrNull()?.dp ?: 0.dp
+
+                    val horizontalMargin = marginLeft + marginRight
+
+                    val actualWidth = (staticWidth ?: screenWidth) - horizontalMargin
+                    ((actualWidth.value.minus(12) * aspectRatio).div(2)).dp
+                } else {
+                    (widgetDetails.height?.minus(12))?.div(2)?.dp
+                }
 
             val widgetImagesPairs = widgetDetails.widgetImages.turnToPair()
             val pagerState = rememberPagerState(pageCount = {
@@ -1098,7 +1253,11 @@ internal object AppStorys : AppStorysAPI {
                             widgetImagesPairs[pagerState.currentPage].first.id
                         )
 
-                        trackEvents(it, "viewed", mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!))
+                        trackEvents(
+                            it,
+                            "viewed",
+                            mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!)
+                        )
 
                         trackCampaignActions(
                             it,
@@ -1106,22 +1265,34 @@ internal object AppStorys : AppStorysAPI {
                             widgetImagesPairs[pagerState.currentPage].second.id
                         )
 
-                        trackEvents(it, "viewed", mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!))
+                        trackEvents(
+                            it,
+                            "viewed",
+                            mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!)
+                        )
                     }
                 }
             }
 
             DoubleWidgets(
-                modifier = modifier.onGloballyPositioned { layoutCoordinates ->
-                    val visibilityRect = layoutCoordinates.boundsInWindow()
-                    val parentHeight = layoutCoordinates.parentLayoutCoordinates?.size?.height ?: 0
-                    val widgetHeight = layoutCoordinates.size.height
-                    val isAtLeastHalfVisible = visibilityRect.top < parentHeight &&
-                            visibilityRect.bottom > 0 &&
-                            (visibilityRect.height >= widgetHeight * 0.5f)
+                modifier = modifier
+                    .padding(
+                        top = (widgetDetails.styling?.topMargin?.toFloatOrNull() ?: 0f).dp,
+                        bottom = (widgetDetails.styling?.bottomMargin?.toFloatOrNull() ?: 0f).dp,
+                        start = (widgetDetails.styling?.leftMargin?.toFloatOrNull() ?: 0f).dp,
+                        end = (widgetDetails.styling?.rightMargin?.toFloatOrNull() ?: 0f).dp,
+                    )
+                    .onGloballyPositioned { layoutCoordinates ->
+                        val visibilityRect = layoutCoordinates.boundsInWindow()
+                        val parentHeight =
+                            layoutCoordinates.parentLayoutCoordinates?.size?.height ?: 0
+                        val widgetHeight = layoutCoordinates.size.height
+                        val isAtLeastHalfVisible = visibilityRect.top < parentHeight &&
+                                visibilityRect.bottom > 0 &&
+                                (visibilityRect.height >= widgetHeight * 0.5f)
 
-                    isVisible = isAtLeastHalfVisible
-                },
+                        isVisible = isAtLeastHalfVisible
+                    },
                 pagerState = pagerState,
                 itemsCount = widgetImagesPairs.count(),
                 width = widthInDp ?: staticWidth,
@@ -1129,9 +1300,8 @@ internal object AppStorys : AppStorysAPI {
                     val (leftImage, rightImage) = widgetImagesPairs[index]
                     Row(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            .fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         if (leftImage.image != null) {
                             ImageCard(
@@ -1145,11 +1315,16 @@ internal object AppStorys : AppStorysAPI {
                                                 widgetImageId = leftImage.id
                                             )
 
-                                            trackEvents(campaign.id, "clicked", mapOf("widget_image" to leftImage.id!!))
+                                            trackEvents(
+                                                campaign.id,
+                                                "clicked",
+                                                mapOf("widget_image" to leftImage.id!!)
+                                            )
                                         }
 
                                     },
                                 imageUrl = leftImage.image,
+                                widgetDetails = widgetDetails,
                                 height = calculatedHeight,
                                 placeHolder = placeHolder,
                                 placeholderContent = placeholderContent
@@ -1167,10 +1342,15 @@ internal object AppStorys : AppStorysAPI {
                                                 widgetImageId = rightImage.id
                                             )
 
-                                            trackEvents(campaign.id, "clicked", mapOf("widget_image" to rightImage.id!!))
+                                            trackEvents(
+                                                campaign.id,
+                                                "clicked",
+                                                mapOf("widget_image" to rightImage.id!!)
+                                            )
                                         }
                                     },
                                 imageUrl = rightImage.image,
+                                widgetDetails = widgetDetails,
                                 height = calculatedHeight,
                                 placeHolder = placeHolder,
                                 placeholderContent = placeholderContent
@@ -1196,7 +1376,7 @@ internal object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (bottomSheetDetails != null){
+        if (bottomSheetDetails != null) {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1221,11 +1401,10 @@ internal object AppStorys : AppStorysAPI {
     }
 
     @Composable
-    override fun Modals(
-        onCloseClick: () -> Unit,
-    ) {
-
+    override fun Modals() {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
+
+        var showPopupModal by remember { mutableStateOf(showModal) }
 
         val campaign =
             campaignsData.value.firstOrNull { it.campaignType == "MOD" && it.details is ModalDetails }
@@ -1235,7 +1414,7 @@ internal object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (modalDetails != null){
+        if (modalDetails != null && showPopupModal) {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1245,7 +1424,10 @@ internal object AppStorys : AppStorysAPI {
             }
 
             PopupModal(
-                onCloseClick = onCloseClick,
+                onCloseClick = {
+                    showPopupModal = false
+                    showModal = false
+                },
                 modalDetails = modalDetails,
                 onModalClick = {
                     campaign?.id?.let { campaignId ->
@@ -1258,8 +1440,73 @@ internal object AppStorys : AppStorysAPI {
                     } else {
                         link?.let { openUrl(it) }
                     }
+
+                    showPopupModal = false
+                    showModal = false
                 },
             )
+        }
+    }
+
+
+    @Composable
+    override fun TestUserButton(
+        modifier: Modifier,
+        screenName: String?
+    ) {
+        val context = LocalContext.current
+        var shouldAnalyze by remember { mutableStateOf(false) }
+        var isCapturing by remember { mutableStateOf(false) }
+
+        val snackbarHostState = remember { SnackbarHostState() }
+        val coroutineScope = rememberCoroutineScope()
+
+        LaunchedEffect(shouldAnalyze) {
+            if (shouldAnalyze) {
+                isCapturing = true
+                delay(500)
+                val activity = context as? Activity
+                val rootView = activity?.window?.decorView?.rootView
+                rootView?.let {
+                    val screenToAnalyze = screenName ?: currentScreen
+                    analyzeViewRoot(it, screenToAnalyze, activity)
+
+                    coroutineScope.launch {
+                        snackbarHostState.showSnackbar("Screen captured successfully!")
+                    }
+                }
+                shouldAnalyze = false
+                isCapturing = false
+            }
+        }
+
+        if (
+            isScreenCaptureEnabled &&
+            !isCapturing) {
+            Box(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                FloatingActionButton(
+                    onClick = {
+                        shouldAnalyze = true
+                    },
+                    modifier = modifier.padding(bottom = 86.dp, end = 16.dp)
+                        .align(Alignment.BottomEnd),
+                    containerColor = Color.White
+                ) {
+                    Text(
+                        modifier = Modifier.padding(horizontal = 12.dp),
+                        text = "Capture Screen"
+                    )
+                }
+
+                SnackbarHost(
+                    hostState = snackbarHostState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 80.dp)
+                )
+            }
         }
     }
 
@@ -1358,5 +1605,26 @@ internal object AppStorys : AppStorysAPI {
             context.startActivity(intent)
         } catch (_: Exception) {
         }
+    }
+
+    fun dismissTooltip() {
+        coroutineScope.launch {
+            _tooltipTargetView.emit(null)
+            _showcaseVisible.emit(false)
+        }
+    }
+
+    /**
+     * Identify this composable as a view
+     *
+     * @param tag the view tag, which should uniquely identify this element within the full Composition being rendered.
+     */
+    @Stable
+    fun Modifier.appstorys(tag: String): Modifier = semantics(
+        properties = {
+            appstorysViewTagProperty = tag
+        }
+    ).onGloballyPositioned {
+        OverlayContainer.addConstraint(tag, it)
     }
 }

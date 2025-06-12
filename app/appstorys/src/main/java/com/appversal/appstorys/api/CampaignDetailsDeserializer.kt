@@ -15,6 +15,7 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
 
         val userId = jsonObject.get("user_id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: ""
         val campaignsJsonArray = jsonObject.getAsJsonArray("campaigns")?.takeIf { !it.isJsonNull }
+        val isScreenCaptureEnabled = jsonObject.get("is_screen_capture_enabled")?.takeIf { !it.isJsonNull }?.asBoolean ?: false
 
         val campaigns = campaignsJsonArray?.map { campaignElement ->
             val campaignObject = campaignElement.asJsonObject
@@ -44,6 +45,10 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
                 position = position
             )
         }
-        return CampaignResponse(userId, campaigns ?: emptyList())
+        return CampaignResponse(
+            user_id = userId,
+            campaigns =  campaigns ?: emptyList(),
+            is_screen_capture_enabled = isScreenCaptureEnabled,
+            )
     }
 }

@@ -388,7 +388,7 @@ private fun ThankYouContent(
             )
         ) {
             Text(
-                text = if (selectedStars < 4) "Done" else "Review us",
+                text = (if (selectedStars < 4) csatDetails.lowStarText else csatDetails.highStarText).toString(),
                 color = styling["csatCtaTextColor"]!!
             )
         }

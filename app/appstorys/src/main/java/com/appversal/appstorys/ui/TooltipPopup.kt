@@ -1,8 +1,11 @@
 package com.appversal.appstorys.ui
 
+import android.graphics.Rect
+import android.graphics.RectF
 import android.util.Log
 import android.view.View
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,6 +47,8 @@ import com.appversal.appstorys.AppStorys.showcaseVisible
 import com.appversal.appstorys.AppStorys.tooltipTargetView
 import com.appversal.appstorys.AppStorys.viewsCoordinates
 import com.appversal.appstorys.api.Tooltip
+import com.appversal.appstorys.ui.OverlayContainer.toAppStorysCoordinates
+import com.appversal.appstorys.utils.AppStorysCoordinates
 import com.appversal.appstorys.utils.toColor
 
 
@@ -137,7 +142,7 @@ internal fun TooltipPopup(
                 if (it.isAttached) {
                     ShowcaseView(
                         visible = visibleShowcase,
-                        targetCoordinates = it,
+                        targetCoordinates = it.toAppStorysCoordinates(),
                         highlight = ShowcaseHighlight.Rectangular(
                             cornerRadius = currentToolTipTarget?.styling?.highlightRadius?.toIntOrNull()?.dp ?: 8.dp,
                             padding = currentToolTipTarget?.styling?.highlightPadding?.toIntOrNull()?.dp ?: 8.dp
@@ -193,7 +198,9 @@ internal fun TooltipPopup(
         horizontalPadding.toPx()
     }
 
-    var arrowPositionX by remember { mutableStateOf(position.centerPositionX) }
+    var arrowPositionX by remember { mutableFloatStateOf(position.centerPositionX) }
+
+//    Log.e("TooltipPopup", "Position: $position, Offset: $offset, Alignment: $alignment, arrowPositionX: $arrowPositionX")
 
     with(LocalDensity.current) {
         val arrowPaddingPx = arrowHeight.toPx().roundToInt() * 2
@@ -230,33 +237,36 @@ internal fun TooltipPopup(
         onDismissRequest = onDismissRequest,
         properties = PopupProperties(dismissOnBackPress = false),
     ) {
-        BubbleLayout(
-            modifier = Modifier
-                .padding(vertical = maxOf((tooltip?.styling?.highlightPadding?.toIntOrNull()?.dp ?: 0.dp), (tooltip?.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp ?: 0.dp)))
-                .then(
-                    Modifier.height(
-                        tooltip?.styling?.tooltipDimensions?.height?.toIntOrNull()?.dp ?: 200.dp
-                    )
-                )
-                .then(
-
-                    Modifier.width(
-                        tooltip?.styling?.tooltipDimensions?.width?.toIntOrNull()?.dp ?: 300.dp
-                    )
-                )
-                .padding(horizontal = horizontalPadding)
-                .background(
-                    color = tooltip?.styling?.backgroudColor.toColor(backgroundColor) ,
-                    shape = if (tooltip!!.styling?.tooltipDimensions?.cornerRadius != null) RoundedCornerShape(
-                        tooltip.styling?.tooltipDimensions?.cornerRadius?.toIntOrNull()?.dp ?: 12.dp) else backgroundShape,
-                ),
-            alignment = position.alignment,
-            arrowHeight = tooltip.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp ?: arrowHeight,
-            arrowWidth =  tooltip.styling?.tooltipArrow?.arrowWidth?.toIntOrNull()?.dp ?: arrowWidth,
-            backgroundColor = backgroundColor,
-            arrowPositionX = arrowPositionX,
+        Box(
+//            modifier = Modifier.border(color = Color.Green, width = 1.dp)
         ) {
-            content()
+            BubbleLayout(
+                modifier = Modifier
+                    .padding(vertical = maxOf((tooltip?.styling?.highlightPadding?.toIntOrNull()?.dp ?: 0.dp), (tooltip?.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp ?: 0.dp)))
+                    .then(
+                        Modifier.height(
+                            tooltip?.styling?.tooltipDimensions?.height?.toIntOrNull()?.dp ?: 200.dp
+                        )
+                    )
+                    .then(
+                        Modifier.width(
+                            tooltip?.styling?.tooltipDimensions?.width?.toIntOrNull()?.dp ?: 300.dp
+                        )
+                    )
+                    .padding(horizontal = horizontalPadding)
+                    .background(
+                        color = tooltip?.styling?.backgroudColor.toColor(backgroundColor) ,
+                        shape = if (tooltip!!.styling?.tooltipDimensions?.cornerRadius != null) RoundedCornerShape(
+                            tooltip.styling.tooltipDimensions.cornerRadius.toIntOrNull()?.dp ?: 12.dp) else backgroundShape,
+                    ),
+                alignment = position.alignment,
+                arrowHeight = tooltip.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp ?: arrowHeight,
+                arrowWidth =  tooltip.styling?.tooltipArrow?.arrowWidth?.toIntOrNull()?.dp ?: arrowWidth,
+                backgroundColor = backgroundColor,
+                arrowPositionX = arrowPositionX,
+            ) {
+                content()
+            }
         }
     }
 }
@@ -322,15 +332,13 @@ internal data class TooltipPopupPosition(
 )
 
 internal fun calculateTooltipPopupPosition(
-    view: View,
-    coordinates: LayoutCoordinates?,
+    rootView: View,
+    coordinates: AppStorysCoordinates,
     tooltip: Tooltip?,
     inBottomNavigation: Boolean,
 ): TooltipPopupPosition {
-    coordinates ?: return TooltipPopupPosition()
-
-    val visibleWindowBounds = android.graphics.Rect()
-    view.getWindowVisibleDisplayFrame(visibleWindowBounds)
+    val visibleWindowBounds = Rect()
+    rootView.getWindowVisibleDisplayFrame(visibleWindowBounds)
 
     val boundsInWindow = coordinates.boundsInWindow()
 
@@ -339,12 +347,12 @@ internal fun calculateTooltipPopupPosition(
 
     val centerPositionX = boundsInWindow.right - (boundsInWindow.right - boundsInWindow.left) / 2
 
-    val offsetX = centerPositionX - visibleWindowBounds.centerX()
+    val offsetX = centerPositionX.roundToInt() - visibleWindowBounds.centerX()
 
     return if (heightAbove < heightBelow) {
         val offset = IntOffset(
-            y = if ((tooltip?.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp?.coerceAtLeast(0.dp) ?: 0.dp) < 8.dp) coordinates.size.height - 30 else coordinates.size.height,
-            x = offsetX.toInt()
+            y = if ((tooltip?.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp?.coerceAtLeast(0.dp) ?: 0.dp) < 8.dp) coordinates.height - 30 else coordinates.height,
+            x = offsetX
         )
         TooltipPopupPosition(
             offset = offset,
@@ -354,8 +362,9 @@ internal fun calculateTooltipPopupPosition(
     } else {
         TooltipPopupPosition(
             offset = IntOffset(
-                y = if ((tooltip?.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp?.coerceAtLeast(0.dp) ?: 0.dp) < 8.dp) -coordinates.size.height + ( if (inBottomNavigation) 30 else 60) else -coordinates.size.height,
-                x = offsetX.toInt()
+//                y =if ((tooltip?.styling?.tooltipArrow?.arrowHeight?.toIntOrNull()?.dp?.coerceAtLeast(0.dp) ?: 0.dp) < 8.dp) -coordinates.height + ( if (inBottomNavigation) 30 else 60) else -coordinates.height,
+                y = 0,
+                x = offsetX
             ),
             alignment = TooltipAlignment.BottomCenter,
             centerPositionX = centerPositionX,
@@ -407,6 +416,8 @@ internal class TooltipAlignmentOffsetPositionProvider(
         )
 
         popupPosition += resolvedOffset
+
+//        Log.e("TooltipPopup", "Popup Position: $popupPosition, Popup Content Size: $popupContentSize, alignment: $alignment, anchorBounds: $anchorBounds, offset: $offset")
 
         val leftSpace = centerPositionX - horizontalPaddingInPx
         val rightSpace = windowSize.width - centerPositionX - horizontalPaddingInPx

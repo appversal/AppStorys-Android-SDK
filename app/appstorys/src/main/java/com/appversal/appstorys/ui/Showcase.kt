@@ -21,13 +21,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.boundsInParent
-import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.appversal.appstorys.api.Tooltip
+import com.appversal.appstorys.utils.AppStorysCoordinates
 
 internal class ShowcaseDuration(val enterMillis: Int, val exitMillis: Int) {
     companion object {
@@ -41,19 +38,19 @@ internal sealed interface ShowcaseDisplayState {
 }
 
 class HighlightProperties internal constructor(
-    val drawHighlight: DrawScope.(LayoutCoordinates) -> Unit,
+    val drawHighlight: DrawScope.(AppStorysCoordinates) -> Unit,
     val highlightBounds: Rect
 )
 
 @Composable
 internal fun ShowcaseView(
     visible: Boolean,
-    targetCoordinates: LayoutCoordinates,
+    targetCoordinates: AppStorysCoordinates,
     duration: ShowcaseDuration = ShowcaseDuration.Default,
     onDisplayStateChanged: (ShowcaseDisplayState) -> Unit = {},
     highlight: ShowcaseHighlight = ShowcaseHighlight.Rectangular()
 ) {
-    val transition =  remember { MutableTransitionState(false) }
+    val transition = remember { MutableTransitionState(false) }
     val highlightDrawer = highlight.create(targetCoordinates = targetCoordinates)
 
     AnimatedVisibility(
@@ -66,7 +63,6 @@ internal fun ShowcaseView(
                 coordinates = targetCoordinates,
                 drawHighlight = highlightDrawer.drawHighlight
             )
-
         }
     }
     LaunchedEffect(key1 = visible) {
@@ -85,8 +81,8 @@ internal fun ShowcaseView(
 
 @Composable
 private fun ShowcaseBackground(
-    coordinates: LayoutCoordinates,
-    drawHighlight: DrawScope.(LayoutCoordinates) -> Unit
+    coordinates: AppStorysCoordinates,
+    drawHighlight: DrawScope.(AppStorysCoordinates) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -116,13 +112,14 @@ private fun ShowcaseBackground(
 
 sealed interface ShowcaseHighlight {
     @Composable
-    fun create(targetCoordinates: LayoutCoordinates): HighlightProperties
+    fun create(targetCoordinates: AppStorysCoordinates): HighlightProperties
 
-    data class Rectangular(val cornerRadius: Dp = 8.dp, val padding: Dp = 8.dp) : ShowcaseHighlight {
+    data class Rectangular(val cornerRadius: Dp = 8.dp, val padding: Dp = 8.dp) :
+        ShowcaseHighlight {
 
         @Composable
         override fun create(
-            targetCoordinates: LayoutCoordinates
+            targetCoordinates: AppStorysCoordinates
         ): HighlightProperties {
             val highlightBounds = createHighlightBounds(
                 targetCoordinates.boundsInRoot(),
@@ -163,7 +160,7 @@ sealed interface ShowcaseHighlight {
     data class Circular(val targetMargin: Dp = 4.dp) : ShowcaseHighlight {
 
         @Composable
-        override fun create(targetCoordinates: LayoutCoordinates): HighlightProperties {
+        override fun create(targetCoordinates: AppStorysCoordinates): HighlightProperties {
             val targetMargin = with(LocalDensity.current) { targetMargin.toPx() }
             return HighlightProperties(
                 drawHighlight = { circularHighlight(it, targetMargin) },
@@ -175,7 +172,7 @@ sealed interface ShowcaseHighlight {
         }
 
         private fun DrawScope.circularHighlight(
-            coordinates: LayoutCoordinates,
+            coordinates: AppStorysCoordinates,
             targetMargin: Float
         ) {
             val targetRect = coordinates.boundsInRoot()

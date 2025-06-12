@@ -3,30 +3,27 @@
 package com.example.carousal
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBox
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -34,18 +31,22 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.appversal.appstorys.AppStorys.appstorys
+import com.appversal.appstorys.ui.OverlayContainer
 import com.example.carousal.ui.theme.CarousalTheme
 
 
@@ -54,7 +55,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CarousalTheme {
-                MyApp()
+                Box {
+                    MyApp()
+                    OverlayContainer.Content()
+                }
             }
         }
     }
@@ -70,7 +74,7 @@ fun MyApp() {
     var currentScreen by remember { mutableStateOf("HomeScreen") }
 
     LaunchedEffect(screenName) {
-        if (screenName.isNotEmpty() && currentScreen != screenName){
+        if (screenName.isNotEmpty() && currentScreen != screenName) {
             currentScreen = screenName
             app.resetNavigation()
         }
@@ -99,8 +103,7 @@ fun MyApp() {
                                 painter = painterResource(id = R.drawable.topbar),
                                 contentDescription = "App Logo",
                                 modifier = Modifier
-                                    .height(56.dp)
-                                ,
+                                    .height(56.dp),
                                 contentScale = ContentScale.Fit
                             )
                         }
@@ -119,11 +122,9 @@ fun MyApp() {
             }
         ) { innerPadding ->
             edgeToEdgePadding = innerPadding
-            if (currentScreen == "PayScreen"){
+            if (currentScreen == "PayScreen") {
                 PayScreen(innerPadding)
-            }
-
-            else{
+            } else {
                 when (selectedTab) {
                     0 -> HomeScreen(innerPadding)
                     1 -> PayScreen(innerPadding)
@@ -138,13 +139,12 @@ fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
-    val sheetState = rememberModalBottomSheetState()
+    val screenName  = "Home Screen"
+
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    var showPopupModal by remember { mutableStateOf(true) }
-
     campaignManager.getScreenCampaigns(
-        "Home Screen",
+        screenName,
         listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty"),
     )
 
@@ -157,11 +157,14 @@ fun HomeScreen(padding: PaddingValues) {
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding()), // Add this line,
-            horizontalAlignment = Alignment.CenterHorizontally, // Center align items horizontally
+                .appstorys("lazy_column")
+                .padding(
+                    top = padding.calculateTopPadding(),
+                    bottom = padding.calculateBottomPadding()
+                ), // Add this line,
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             item {
-
                 Image(
                     painter = painterResource(id = R.drawable.home_one),
                     contentDescription = "App Logo",
@@ -170,27 +173,23 @@ fun HomeScreen(padding: PaddingValues) {
 //                        .clickable { showBottomSheet = true },
                     contentScale = ContentScale.Fit
                 )
+                Box(modifier = Modifier.height(20.dp))
 
-                campaignManager.ToolTipWrapper(
-                    targetModifier = Modifier,
-                    targetKey = "tooltip_home",
-                    isNavigationBarItem = false
-                ) {
                 campaignManager.Widget(
-                    modifier = it.fillMaxWidth(),
-                    placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-                    position = null,
-                    contentScale = ContentScale.Fit,
-                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
-                    placeholderContent = null
+                    modifier = Modifier.appstorys("tooltip_home"),
                 )
-            }
+
+                campaignManager.Widget(
+                    modifier = Modifier.fillMaxWidth().appstorys("tooltip_home_prem_test"),
+                    placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
+                    position = "widget_two",
+                )
 
                 Image(
                     painter = painterResource(id = R.drawable.home_two),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .fillMaxWidth(),
+                        .fillMaxWidth().appstorys("app_logo"),
                     contentScale = ContentScale.Fit
                 )
 
@@ -199,45 +198,52 @@ fun HomeScreen(padding: PaddingValues) {
                         .fillMaxSize(),
                     contentAlignment = Alignment.BottomCenter
                 ) {
-                    Button(onClick = { showBottomSheet = true }) {
+                    Button(
+                        onClick = {
+//                            showBottomSheet = true
+                            campaignManager.trackEvents(
+                                event = "Button clicked"
+                            )
+                                  },
+                        modifier = Modifier.appstorys("open_bottom_sheet")
+                    ) {
                         Text("Open Bottom Sheet")
                     }
                 }
-
-//                campaignManager.ToolTipWrapper(
-//                    targetModifier = Modifier,
-//                    targetKey = "premNewTooltipnew"
-//                ) {
-//                    Button(
-//                        modifier = it,
-//                        onClick = {}
-//                    ) {
-//                        Text("Button")
-//                    }
-//                }
-//
-//                campaignManager.Widget(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-//                    position = "widget_three"
-//                )
             }
         }
+
+        campaignManager.TestUserButton(
+            modifier = Modifier.align(Alignment.BottomEnd),
+            screenName = screenName
+        )
 
         if (showBottomSheet) {
             campaignManager.BottomSheet(
                 onDismissRequest = { showBottomSheet = false },
             )
         }
-        Box(
-            modifier = Modifier.padding(bottom = padding.calculateBottomPadding())
-        ){
-            campaignManager.CSAT(modifier = Modifier, displayDelaySeconds = 5, position = null)
-        }
-
-        if (showPopupModal) {
-            campaignManager.Modals(onCloseClick = { showPopupModal = false },)
-        }
+//
+//        campaignManager.CSAT(
+//            bottomPadding = padding.calculateBottomPadding()
+//        )
+//
+//        campaignManager.Floater(
+//            modifier = Modifier.appstorys("home_floater"),
+//            bottomPadding = padding.calculateBottomPadding()
+//        )
+//
+        campaignManager.Modals()
+//
+//        campaignManager.PinnedBanner(
+//            modifier = Modifier.appstorys("banner_home_screen"),
+//            bottomPadding = padding.calculateBottomPadding()
+//        )
+//
+//        campaignManager.Pip(
+//            bottomPadding = padding.calculateBottomPadding(),
+//            topPadding = padding.calculateTopPadding(),
+//        )
     }
 }
 
@@ -254,7 +260,7 @@ fun PayScreen(padding: PaddingValues) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = padding.calculateTopPadding(),bottom = padding.calculateBottomPadding())
+            .padding(top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding())
             .background(Color(0xFFf1f2f4)),
         contentAlignment = Alignment.TopCenter
     ) {
@@ -267,114 +273,95 @@ fun PayScreen(padding: PaddingValues) {
                     .fillMaxWidth()
             ) {
                 Row {
-                    campaignManager.ToolTipWrapper(
-                    targetModifier = Modifier,
-                    targetKey = "cashbook",
-                        isNavigationBarItem = false
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.more_one),
-                            contentDescription = "App Logo",
-                            modifier = it.weight(1f),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.more_one),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.weight(1f).appstorys("cashbook"),
+                        contentScale = ContentScale.Fit
+                    )
 
-                    campaignManager.ToolTipWrapper(
-                        targetModifier = Modifier,
-                        targetKey = "bills",
-                        isNavigationBarItem = false
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.more_two),
-                            contentDescription = "App Logo",
-                            modifier = it.weight(1f),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.more_two),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.weight(1f).appstorys("bills"),
+                        contentScale = ContentScale.Fit
+                    )
 
-                    campaignManager.ToolTipWrapper(
-                        targetModifier = Modifier,
-                        targetKey = "items",
-                        isNavigationBarItem = false
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.more_three),
-                            contentDescription = "App Logo",
-                            modifier = it.weight(1f),
-                            contentScale = ContentScale.Fit
-                        )
-                    }
+                    Image(
+                        painter = painterResource(id = R.drawable.more_three),
+                        contentDescription = "App Logo",
+                        modifier = Modifier.weight(1f).appstorys("items"),
+                        contentScale = ContentScale.Fit
+                    )
                 }
                 Image(
                     painter = painterResource(id = R.drawable.more_bottom),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .fillMaxWidth()
-                    ,
+                        .fillMaxWidth(),
                     contentScale = ContentScale.Fit
                 )
-//                campaignManager.Widget(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-//                    position = null,
-//                    contentScale = ContentScale.Fit,
-//                    staticWidth = LocalConfiguration.current.screenWidthDp.dp,
-//                    placeholderContent = null
-//                )
             }
-//            campaignManager.PinnedBanner(
-//                modifier = Modifier.fillMaxWidth(),
-//                placeHolder = context.getDrawable(R.drawable.ic_launcher_foreground),
-//                position = null,
-//                contentScale = ContentScale.Fit,
-//                staticWidth = 300.dp,
-//                placeholderContent = {}
-//            )
         }
     }
-    campaignManager.Pip(bottomPadding = padding.calculateBottomPadding(), topPadding = padding.calculateTopPadding(), modifier = Modifier)
+
+    campaignManager.PinnedBanner(
+        modifier = Modifier.appstorys("banner_more_screen"),
+        bottomPadding = 70.dp
+    )
+
+    campaignManager.Floater(
+        bottomPadding = padding.calculateBottomPadding()
+    )
+    campaignManager.Pip(
+        bottomPadding = padding.calculateBottomPadding(),
+        topPadding = padding.calculateTopPadding(),
+    )
+
+    campaignManager.TestUserButton()
+
 }
 
 @Composable
 fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
-    NavigationBar (
+    NavigationBar(
         containerColor = Color.White, // Add this line to set the background color to white
         modifier = Modifier.fillMaxWidth().height(70.dp)
 
-    ){
+    ) {
         val items = listOf("Parties", "More")
         val icons = listOf(Icons.Filled.Person, Icons.Filled.List)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceAround // Adjust spacing here
-        ){
+        ) {
             items.forEachIndexed { index, title ->
-                    NavigationBarItem(
-                        selected = selectedTab == index,
-                        onClick = { onTabSelected(index) },
-                        icon = {
-                            Icon(
-                                modifier = Modifier.size(24.dp), // Apply modifier from ToolTipWrapper
-                                imageVector = icons[index],
-                                contentDescription = title,
-                                tint = if (selectedTab == index) Color(0xFF186fd9) else Color.Gray
-                            )
-//                        }
-                        },
-                        label = {
-                            Text(
-                                title,
-                                color = if (selectedTab == index) Color(0xFF186fd9) else Color.Gray
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color(0xFF01C198),
-                            unselectedIconColor = Color.Gray,
-                            indicatorColor = Color.Transparent // Remove default background
+                NavigationBarItem(
+//                    modifier = if (index == 0) Modifier.appstorys("tooltip_home") else Modifier,
+                    selected = selectedTab == index,
+                    onClick = { onTabSelected(index) },
+                    icon = {
+                        Icon(
+                            modifier = Modifier.size(24.dp), // Apply modifier from ToolTipWrapper
+                            imageVector = icons[index],
+                            contentDescription = title,
+                            tint = if (selectedTab == index) Color(0xFF186fd9) else Color.Gray
                         )
+//                        }
+                    },
+                    label = {
+                        Text(
+                            title,
+                            color = if (selectedTab == index) Color(0xFF186fd9) else Color.Gray
+                        )
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = Color(0xFF01C198),
+                        unselectedIconColor = Color.Gray,
+                        indicatorColor = Color.Transparent // Remove default background
                     )
+                )
             }
         }
     }

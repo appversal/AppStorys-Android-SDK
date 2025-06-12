@@ -34,10 +34,6 @@ import com.google.gson.annotations.SerializedName
     val tooltip_id: String?
 )
 
-@Keep data class IdentifyTooltips(
-    val element: String?
-)
-
 @Keep data class ReelActionRequest(
     val user_id: String?,
     val event_type: String?,
@@ -66,6 +62,7 @@ import com.google.gson.annotations.SerializedName
 
 @Keep data class CampaignResponse(
     val user_id: String?,
+    val is_screen_capture_enabled: Boolean?,
     val campaigns: List<Campaign>?
 )
 
@@ -102,18 +99,21 @@ import com.google.gson.annotations.SerializedName
     val width: Int?,
     val height: Int?,
     val link: Any?,
-    val styling: Styling?,
+    val styling: BannerStyling?,
     val lottie_data: String?
 )
 
-@Keep data class Styling(
-    val isClose: Boolean?,
+@Keep data class BannerStyling(
+    val enableCloseButton: Boolean?,
+    val marginLeft: Int?,
+    val marginRight: Int?,
     val marginBottom: Int?,
     val topLeftRadius: Int?,
     val topRightRadius: Int?,
     val bottomLeftRadius: Int?,
     val bottomRightRadius: Int?
 )
+
 
 @Keep data class WidgetDetails(
     val id: String?,
@@ -123,14 +123,26 @@ import com.google.gson.annotations.SerializedName
     @SerializedName("widget_images") val widgetImages: List<WidgetImage>?,
     val campaign: String?,
     val screen: String?,
-    val styling: Styling?
+    val styling: WidgetStyling?
+)
+
+@Keep data class WidgetStyling(
+    val topMargin: String?,
+    val leftMargin: String?,
+    val rightMargin: String?,
+    val bottomMargin: String?,
+    val topLeftRadius: String?,
+    val topRightRadius: String?,
+    val bottomLeftRadius: String?,
+    val bottomRightRadius: String?,
 )
 
 @Keep data class WidgetImage(
     val id: String?,
     val image: String?,
     val link: Any?,
-    val order: Int?
+    val order: Int?,
+    val lottie_data: String?,
 )
 
 @Keep data class CSATDetails(
@@ -142,6 +154,8 @@ import com.google.gson.annotations.SerializedName
     val thankyouImage: String?,
     val thankyouText: String?,
     val thankyouDescription: String?,
+    val highStarText: String?,
+    val lowStarText: String?,
     @SerializedName("description_text") val descriptionText: String?,
     @SerializedName("feedback_option") val feedbackOption: FeedbackOption?,
     val campaign: String?,
@@ -155,7 +169,15 @@ import com.google.gson.annotations.SerializedName
     val height: Int?,
     val link: String?,
     val position: String?,
-    val campaign: String?
+    val campaign: String?,
+    val styling: FloaterStyling?
+)
+
+@Keep data class FloaterStyling(
+    val topLeftRadius: String?,
+    val topRightRadius: String?,
+    val bottomLeftRadius: String?,
+    val bottomRightRadius: String?
 )
 
 @Keep data class FeedbackOption(
@@ -250,7 +272,7 @@ import com.google.gson.annotations.SerializedName
     val type: String?,
     val url: String?,
     val clickAction: String?,
-    val link: String?,
+    val deepLinkUrl: String?,
     val target: String?,
     val order: Int?,
     val styling: TooltipStyling?,

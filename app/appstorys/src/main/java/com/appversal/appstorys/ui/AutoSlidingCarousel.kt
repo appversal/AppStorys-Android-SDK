@@ -2,6 +2,7 @@ package com.appversal.appstorys.ui
 
 import android.graphics.drawable.Drawable
 import android.os.Build.VERSION.SDK_INT
+import android.util.Log
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -33,6 +34,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -47,6 +49,11 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.appversal.appstorys.api.WidgetDetails
 import com.appversal.appstorys.utils.isGifUrl
 
 const val AUTO_SLIDE_DURATION = 5000L
@@ -54,6 +61,7 @@ const val AUTO_SLIDE_DURATION = 5000L
 @Composable
 internal fun AutoSlidingCarousel(
     modifier: Modifier = Modifier,
+    widgetDetails: WidgetDetails,
     autoSlideDuration: Long = AUTO_SLIDE_DURATION,
     pagerState: PagerState,
     itemsCount: Int,
@@ -92,14 +100,20 @@ internal fun AutoSlidingCarousel(
             colors = CardDefaults.cardColors(
                 containerColor = Color.Transparent,
             ),
-            modifier = Modifier.padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier,
+            shape = RoundedCornerShape(
+                topStart = (widgetDetails.styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                topEnd = (widgetDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
+                bottomStart = (widgetDetails.styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                bottomEnd = (widgetDetails.styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp,
+            ),
         ) {
             HorizontalPager(state = pagerState) { page ->
                 itemContent(page)
             }
         }
         if (itemsCount > 1) {
+            Spacer(modifier = Modifier.height(12.dp))
             DotsIndicator(
                 modifier = Modifier.padding(horizontal = 8.dp),
                 totalDots = itemsCount,
@@ -203,6 +217,7 @@ internal fun PageIndicatorView(
 internal fun CarousalImage(
     modifier: Modifier = Modifier,
     imageUrl: String,
+    lottieUrl: String?,
     contentScale: ContentScale = ContentScale.Crop,
     height: Dp?,
     width: Dp? = null,
@@ -211,70 +226,90 @@ internal fun CarousalImage(
 ) {
     val context = LocalContext.current
 
-    if (isGifUrl(imageUrl)) {
-        val imageLoader = ImageLoader.Builder(context)
-            .components {
-                if (SDK_INT >= 28) {
-                    add(ImageDecoderDecoder.Factory())
-                } else {
-                    add(GifDecoder.Factory())
-                }
+    Box(modifier = modifier) {
+        when {
+            !lottieUrl.isNullOrEmpty() -> {
+                val composition by rememberLottieComposition(
+                    spec = LottieCompositionSpec.Url(lottieUrl)
+                )
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier
+                        .height(height ?: Dp.Unspecified)
+                        .width(width ?: Dp.Unspecified)
+                )
             }
-            .build()
 
-        val painter = rememberAsyncImagePainter(
-            ImageRequest.Builder(context)
-                .data(data = imageUrl).memoryCacheKey(imageUrl)
-                .diskCacheKey(imageUrl)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .crossfade(true)
-                .apply(block = { size(coil.size.Size.ORIGINAL) }).build(), imageLoader = imageLoader
-        )
+            !imageUrl.isNullOrEmpty() -> {
+                if (isGifUrl(imageUrl)) {
+                    val imageLoader = ImageLoader.Builder(context)
+                        .components {
+                            if (SDK_INT >= 28) {
+                                add(ImageDecoderDecoder.Factory())
+                            } else {
+                                add(GifDecoder.Factory())
+                            }
+                        }
+                        .build()
 
-        Image(
-            painter = painter,
-            contentDescription = null,
-            contentScale = contentScale,
-            modifier = modifier
-                .then(if (height != null) Modifier.height(height) else Modifier)
-                .then(if (width != null) Modifier.width(width) else Modifier)
-        )
-    } else {
-        SubcomposeAsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(imageUrl)
-                .memoryCacheKey(imageUrl)
-                .diskCacheKey(imageUrl)
-                .diskCachePolicy(CachePolicy.ENABLED)
-                .memoryCachePolicy(CachePolicy.ENABLED)
-                .crossfade(true)
-                .build(),
-            contentDescription = null,
-            contentScale = contentScale,
-            modifier = modifier
-                .then(if (height != null) Modifier.height(height) else Modifier)
-                .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()),
-            loading = {
-                if (placeholderContent != null) {
-                    Box(
-                        modifier = Modifier
-                            .then(if (height != null) Modifier.height(height) else Modifier)
-                            .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
-                    ) {
-                        placeholderContent()
-                    }
-                } else if (placeHolder != null) {
+                    val painter = rememberAsyncImagePainter(
+                        ImageRequest.Builder(context)
+                            .data(data = imageUrl).memoryCacheKey(imageUrl)
+                            .diskCacheKey(imageUrl)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .crossfade(true)
+                            .apply(block = { size(coil.size.Size.ORIGINAL) }).build(),
+                        imageLoader = imageLoader
+                    )
+
                     Image(
-                        painter = rememberAsyncImagePainter(placeHolder),
+                        painter = painter,
                         contentDescription = null,
                         contentScale = contentScale,
-                        modifier = Modifier
+                        modifier = modifier
                             .then(if (height != null) Modifier.height(height) else Modifier)
-                            .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
+                            .then(if (width != null) Modifier.width(width) else Modifier)
+                    )
+                } else {
+                    SubcomposeAsyncImage(
+                        model = ImageRequest.Builder(context)
+                            .data(imageUrl)
+                            .memoryCacheKey(imageUrl)
+                            .diskCacheKey(imageUrl)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        contentScale = contentScale,
+                        modifier = modifier
+                            .then(if (height != null) Modifier.height(height) else Modifier)
+                            .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()),
+                        loading = {
+                            if (placeholderContent != null) {
+                                Box(
+                                    modifier = Modifier
+                                        .then(if (height != null) Modifier.height(height) else Modifier)
+                                        .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
+                                ) {
+                                    placeholderContent()
+                                }
+                            } else if (placeHolder != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(placeHolder),
+                                    contentDescription = null,
+                                    contentScale = contentScale,
+                                    modifier = Modifier
+                                        .then(if (height != null) Modifier.height(height) else Modifier)
+                                        .then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth())
+                                )
+                            }
+                        }
                     )
                 }
             }
-        )
+        }
     }
 }

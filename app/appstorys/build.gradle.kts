@@ -47,14 +47,15 @@ dependencies {
     implementation(libs.coil.compose)
     implementation( "com.squareup.retrofit2:retrofit:2.9.0")
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
     implementation ("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation("com.google.accompanist:accompanist-coil:0.15.0")
 
     implementation ("com.airbnb.android:lottie-compose:6.0.0")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.gif)
@@ -68,7 +69,6 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.exoplayer.hls)
-
 }
 
 afterEvaluate {

@@ -41,7 +41,7 @@ internal fun PipVideo(
     height: Dp,
     width: Dp,
     videoUri: String,
-    fullScreenVideoUri: String,
+    fullScreenVideoUri: String?,
     button_text: String,
     position: String?,
     link: String,
@@ -109,7 +109,7 @@ internal fun PipVideo(
         pipPlayer.volume = if (isMuted) 0f else 1.0f
     }
 
-    if (isFullScreen) {
+    if (isFullScreen && !fullScreenVideoUri.isNullOrEmpty()) {
         FullScreenVideoDialog(
             videoUri = fullScreenVideoUri,
             onDismiss = {
@@ -135,9 +135,11 @@ internal fun PipVideo(
                         pipSize = coordinates.size
                     }
                     .clickable {
-                        onExpandClick()
-                        isFullScreen = true
-                        pipPlayer.pause()
+                        if (!fullScreenVideoUri.isNullOrEmpty()) {
+                            onExpandClick()
+                            isFullScreen = true
+                            pipPlayer.pause()
+                        }
                     }
                     .then(
                         if (isMovable) {
@@ -198,25 +200,29 @@ internal fun PipVideo(
                             modifier = Modifier.size(14.dp)
                         )
                     }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                            .clickable {
-                                onExpandClick()
-                                isFullScreen = true
-                                pipPlayer.pause()
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.expand),
-                            contentDescription = "Maximize",
-                            tint = Color.White,
-                            modifier = Modifier.size(12.dp)
-                        )
+                    if(!fullScreenVideoUri.isNullOrEmpty()){
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(4.dp)
+                                .size(24.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .clickable {
+                                    if (!fullScreenVideoUri.isNullOrEmpty()) {
+                                        onExpandClick()
+                                        isFullScreen = true
+                                        pipPlayer.pause()
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.expand),
+                                contentDescription = "Maximize",
+                                tint = Color.White,
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
                     }
                 }
             }

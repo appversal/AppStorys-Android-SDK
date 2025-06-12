@@ -7,6 +7,7 @@ import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
@@ -26,6 +27,7 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.appversal.appstorys.api.WidgetDetails
 
 @Composable
 internal fun DoubleWidgets(
@@ -61,8 +63,8 @@ internal fun DoubleWidgets(
             itemContent(page)
 
         }
-        Spacer(modifier = Modifier.height(spacingBetweenImagesAndDots))
         if (itemsCount > 1) {
+            Spacer(modifier = Modifier.height(spacingBetweenImagesAndDots))
             DotsIndicator(
                 modifier = Modifier.padding(horizontal = 8.dp).then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()),
                 totalDots = itemsCount,
@@ -80,6 +82,7 @@ internal fun DoubleWidgets(
 internal fun ImageCard(
     modifier: Modifier = Modifier,
     imageUrl: String,
+    widgetDetails: WidgetDetails,
     height: Dp?,
     placeHolder: Drawable? = null,
     placeholderContent: (@Composable () -> Unit)? = null,
@@ -87,6 +90,12 @@ internal fun ImageCard(
     val context = LocalContext.current
 
     Card(
+        shape = RoundedCornerShape(
+            topStart = (widgetDetails.styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
+            topEnd = (widgetDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
+            bottomStart = (widgetDetails.styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
+            bottomEnd = (widgetDetails.styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp,
+        ),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = modifier
     ) {
