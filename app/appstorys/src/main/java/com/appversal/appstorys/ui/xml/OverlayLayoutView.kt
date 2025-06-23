@@ -8,7 +8,10 @@ import android.view.View
 import android.widget.FrameLayout
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.unit.dp
+import androidx.core.content.withStyledAttributes
 import com.appversal.appstorys.AppStorys.tooltipTargetView
+import com.appversal.appstorys.R
 import com.appversal.appstorys.ui.OverlayContainer
 
 /**
@@ -30,7 +33,19 @@ class OverlayLayoutView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
+    private var topPadding = 0
+    private var bottomPadding = 0
+
     init {
+        attrs?.let {
+            context.withStyledAttributes(it, R.styleable.OverlayContent) {
+                topPadding = getDimensionPixelSize(R.styleable.OverlayContent_topPadding, 0)
+                bottomPadding = getDimensionPixelSize(
+                    R.styleable.OverlayContent_bottomPadding,
+                    0
+                )
+            }
+        }
         // Add a ComposeView to the layout and set its content to render the OverlayContainer.
         addView(
             ComposeView(context).apply {
@@ -43,7 +58,10 @@ class OverlayLayoutView @JvmOverloads constructor(
                     }
 
                     // Render the OverlayContainer content.
-                    OverlayContainer.Content()
+                    OverlayContainer.Content(
+                        topPadding = topPadding.toDp(),
+                        bottomPadding = bottomPadding.toDp(),
+                    )
                 }
             }
         )

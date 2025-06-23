@@ -57,7 +57,6 @@ class MainActivity : ComponentActivity() {
             CarousalTheme {
                 Box {
                     MyApp()
-                    OverlayContainer.Content()
                 }
             }
         }
@@ -176,7 +175,7 @@ fun HomeScreen(padding: PaddingValues) {
                 Box(modifier = Modifier.height(20.dp))
 
                 campaignManager.Widget(
-                    modifier = Modifier.appstorys("tooltip_home"),
+                    modifier = Modifier.appstorys("tooltip_home")
                 )
 
                 campaignManager.Widget(
@@ -184,6 +183,25 @@ fun HomeScreen(padding: PaddingValues) {
                     placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
                     position = "widget_two",
                 )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 12.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    Button(
+                        onClick = {
+                            showBottomSheet = true
+                            campaignManager.trackEvents(
+                                event = "Button clicked"
+                            )
+                        },
+                        modifier = Modifier.appstorys("open_bottom_sheet")
+                    ) {
+                        Text("Open Bottom Sheet")
+                    }
+                }
 
                 Image(
                     painter = painterResource(id = R.drawable.home_two),
@@ -193,57 +211,19 @@ fun HomeScreen(padding: PaddingValues) {
                     contentScale = ContentScale.Fit
                 )
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize(),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    Button(
-                        onClick = {
-//                            showBottomSheet = true
-                            campaignManager.trackEvents(
-                                event = "Button clicked"
-                            )
-                                  },
-                        modifier = Modifier.appstorys("open_bottom_sheet")
-                    ) {
-                        Text("Open Bottom Sheet")
-                    }
-                }
             }
         }
-
-        campaignManager.TestUserButton(
-            modifier = Modifier.align(Alignment.BottomEnd),
-            screenName = screenName
-        )
 
         if (showBottomSheet) {
             campaignManager.BottomSheet(
                 onDismissRequest = { showBottomSheet = false },
             )
         }
-//
-//        campaignManager.CSAT(
-//            bottomPadding = padding.calculateBottomPadding()
-//        )
-//
-//        campaignManager.Floater(
-//            modifier = Modifier.appstorys("home_floater"),
-//            bottomPadding = padding.calculateBottomPadding()
-//        )
-//
-        campaignManager.Modals()
-//
-//        campaignManager.PinnedBanner(
-//            modifier = Modifier.appstorys("banner_home_screen"),
-//            bottomPadding = padding.calculateBottomPadding()
-//        )
-//
-//        campaignManager.Pip(
-//            bottomPadding = padding.calculateBottomPadding(),
-//            topPadding = padding.calculateTopPadding(),
-//        )
+
+        OverlayContainer.Content(
+            topPadding = 70.dp,
+            bottomPadding = 70.dp
+        )
     }
 }
 
@@ -305,20 +285,10 @@ fun PayScreen(padding: PaddingValues) {
         }
     }
 
-    campaignManager.PinnedBanner(
-        modifier = Modifier.appstorys("banner_more_screen"),
+    OverlayContainer.Content(
+        topPadding = 70.dp,
         bottomPadding = 70.dp
     )
-
-    campaignManager.Floater(
-        bottomPadding = padding.calculateBottomPadding()
-    )
-    campaignManager.Pip(
-        bottomPadding = padding.calculateBottomPadding(),
-        topPadding = padding.calculateTopPadding(),
-    )
-
-    campaignManager.TestUserButton()
 
 }
 

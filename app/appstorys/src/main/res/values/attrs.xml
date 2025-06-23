@@ -31,4 +31,8 @@
         <attr name="placeholder" />
         <attr name="position" format="string" />
     </declare-styleable>
+    <declare-styleable name="OverlayContent">
+        <attr name="topPadding" format="dimension" />
+        <attr name="bottomPadding" />
+    </declare-styleable>
 </resources>

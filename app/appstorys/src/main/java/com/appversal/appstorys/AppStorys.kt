@@ -406,7 +406,7 @@ object AppStorys : AppStorysAPI {
                 val style = csatDetails.styling
                 var isVisibleState by remember { mutableStateOf(false) }
                 val updatedDelay by rememberUpdatedState(
-                    style?.displayDelay?.toLong()
+                    style?.displayDelay?.takeIf { it.isNotBlank() }?.toLongOrNull() ?: 0L
                 )
 
                 LaunchedEffect(Unit) {
