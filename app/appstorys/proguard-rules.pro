@@ -36,11 +36,15 @@
 -keep class com.appversal.appstorys.AppStorysAPI { *; }
 -keep class com.appversal.appstorys.AppStorysAPI$* { *; }
 
+
 # Keep composable functions annotations
 -keep class androidx.compose.runtime.* { *; }
 -keepclassmembers class * {
     @androidx.compose.runtime.Composable *;
 }
+
+# Do NOT obfuscate utils package
+-keep class com.appversal.appstorys.utils.** { *; }
 
 # Obfuscate all internal implementation
 -keep,allowobfuscation,allowoptimization class com.appversal.appstorys.** { *; }

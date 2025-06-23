@@ -45,8 +45,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.appversal.appstorys.AppStorys.appstorys
 import com.appversal.appstorys.ui.OverlayContainer
+import com.appversal.appstorys.utils.appstorys
 import com.example.carousal.ui.theme.CarousalTheme
 
 
@@ -181,7 +181,7 @@ fun HomeScreen(padding: PaddingValues) {
                 campaignManager.Widget(
                     modifier = Modifier.fillMaxWidth().appstorys("tooltip_home_prem_test"),
                     placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
-                    position = "widget_two",
+                    position = "widget_one",
                 )
 
                 Box(
@@ -220,9 +220,9 @@ fun HomeScreen(padding: PaddingValues) {
             )
         }
 
-        OverlayContainer.Content(
+        campaignManager.overlayElements(
             topPadding = 70.dp,
-            bottomPadding = 70.dp
+            bottomPadding = 70.dp,
         )
     }
 }
@@ -285,9 +285,9 @@ fun PayScreen(padding: PaddingValues) {
         }
     }
 
-    OverlayContainer.Content(
+    campaignManager.overlayElements(
         topPadding = 70.dp,
-        bottomPadding = 70.dp
+        bottomPadding = 70.dp,
     )
 
 }

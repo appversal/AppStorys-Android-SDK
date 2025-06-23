@@ -25,7 +25,6 @@ class WidgetView @JvmOverloads constructor(
     private var placeholder: Drawable? = null
 
     private var composed = false
-    private val staticHeight = mutableStateOf(200.dp)
     private val staticWidth: MutableState<Dp?> = mutableStateOf(null)
 
     init {
@@ -57,11 +56,6 @@ class WidgetView @JvmOverloads constructor(
         val widthPx = MeasureSpec.getSize(widthMeasureSpec)
 
         val newWidth = context.pxToDp(widthPx.toFloat())
-        val newHeight = context.pxToDp(heightPx.toFloat())
-
-        if (staticHeight.value != newHeight) {
-            staticHeight.value = newHeight
-        }
 
         if (staticWidth.value != newWidth) {
             staticWidth.value = newWidth

@@ -54,40 +54,44 @@
                 android:scaleType="fitXY"
                 android:src="@drawable/more_bottom"
                 android:contentDescription="Bottom Image" />
+        <com.appversal.appstorys.ui.xml.WidgetView
+            android:id="@+id/tooltip_home"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
-    <com.appversal.appstorys.ui.xml.PinnedBannerView
-            android:id="@+id/banner_more_screen"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom"
-            app:bottomPadding="70dp" />
+<!--    <com.appversal.appstorys.ui.xml.PinnedBannerView-->
+<!--            android:id="@+id/banner_more_screen"-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="bottom"-->
+<!--            app:bottomPadding="70dp" />-->
 
-    <com.appversal.appstorys.ui.xml.CsatView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom"
-        app:bottomPadding="70dp" />
+<!--    <com.appversal.appstorys.ui.xml.CsatView-->
+<!--        android:layout_width="match_parent"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_gravity="bottom"-->
+<!--        app:bottomPadding="70dp" />-->
 
-    <com.appversal.appstorys.ui.xml.FloaterView
-            android:id="@+id/floater_more_screen"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end" />
+<!--    <com.appversal.appstorys.ui.xml.FloaterView-->
+<!--            android:id="@+id/floater_more_screen"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="bottom|end" />-->
 
-    <com.appversal.appstorys.ui.xml.PipView
-            android:id="@+id/pip_more_screen"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            app:bottomPadding="70dp"
-            app:topPadding="70dp" />
+<!--    <com.appversal.appstorys.ui.xml.PipView-->
+<!--            android:id="@+id/pip_more_screen"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="top|end"-->
+<!--            app:bottomPadding="70dp"-->
+<!--            app:topPadding="70dp" />-->
 
-    <com.appversal.appstorys.ui.xml.TestUserButtonView
-            android:id="@+id/test_user_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp" />
+<!--    <com.appversal.appstorys.ui.xml.TestUserButtonView-->
+<!--            android:id="@+id/test_user_button"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="bottom|end"-->
+<!--            android:layout_margin="16dp" />-->
 
 </com.appversal.appstorys.ui.xml.OverlayLayoutView>
