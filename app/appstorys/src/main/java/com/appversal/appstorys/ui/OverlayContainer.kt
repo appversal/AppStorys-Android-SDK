@@ -22,6 +22,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -31,8 +32,10 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import com.appversal.appstorys.AppStorys.CurrentTooltipContent
+import com.appversal.appstorys.AppStorys.appstorys
 import com.appversal.appstorys.AppStorys.dismissTooltip
 import com.appversal.appstorys.AppStorys.tooltipTargetView
+import com.appversal.appstorys.AppStorysAPI
 import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.utils.AppStorysCoordinates
 import kotlin.math.roundToInt
@@ -89,7 +92,10 @@ object OverlayContainer {
      * @param modifier The `Modifier` to be applied to the overlay container.
      */
     @Composable
-    fun Content(modifier: Modifier = Modifier) {
+    fun Content(modifier: Modifier = Modifier, topPadding: Dp, bottomPadding: Dp) {
+
+        val campaignManager = AppStorysAPI.getInstance()
+
         // Collects the target view for tooltips and updates the tooltip list.
         LaunchedEffect(Unit) {
             tooltipTargetView.collect { target ->
@@ -103,6 +109,30 @@ object OverlayContainer {
         Box(
             modifier = modifier.fillMaxSize(),
             content = {
+
+                campaignManager.PinnedBanner(
+                    bottomPadding = bottomPadding
+                )
+
+                campaignManager.Floater(
+                    bottomPadding = bottomPadding
+                )
+
+                campaignManager.Pip(
+                    bottomPadding = bottomPadding,
+                    topPadding = topPadding,
+                )
+
+                campaignManager.CSAT(
+                    bottomPadding = bottomPadding
+                )
+
+                // Add Bottom Sheet here
+
+                campaignManager.TestUserButton()
+
+                // Add Survey here
+
                 val visibleTooltips by remember {
                     derivedStateOf {
                         tooltips.filter { constraints.containsKey(it.target) }
@@ -169,24 +199,10 @@ object OverlayContainer {
                                 CurrentTooltipContent(tooltip)
                             }
                         }
-//                        Box(
-//                            modifier = Modifier
-//                                .offset {
-//                                    IntOffset(
-//                                        x = coordinates!!.x.roundToInt(),
-//                                        y = coordinates!!.y.roundToInt()
-//                                    )
-//                                }.border(
-//                                    width = 1.dp,
-//                                    color = Color.Red,
-//                                )
-//                                .size(
-//                                    width = coordinates!!.width.toDp(),
-//                                    height = coordinates!!.height.toDp(),
-//                                )
-//                        )
                     }
                 }
+
+                campaignManager.Modals()
             }
         )
     }
