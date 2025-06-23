@@ -31,12 +31,11 @@ import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
-private val AppstorysViewTagKey = SemanticsPropertyKey<String>("AppstorysViewTagKey")
+val AppstorysViewTagKey = SemanticsPropertyKey<String>("AppstorysViewTagKey")
 
 private val repository = ApiRepository(apiService)
 
-// used by the public appstorysViewTag Modifier in AppStorys.kt provided by SDK
-internal var SemanticsPropertyReceiver.appstorysViewTagProperty by AppstorysViewTagKey
+var SemanticsPropertyReceiver.appstorysViewTagProperty by AppstorysViewTagKey
 
 internal object ViewTreeAnalyzer {
     private const val ANDROID_COMPOSE_VIEW_CLASS_NAME =
@@ -230,19 +229,6 @@ internal object ViewTreeAnalyzer {
         }
     }
 
-//                addProperty("type", view.javaClass.simpleName)
-//                addProperty("clickable", view.isClickable)
-//                addProperty("focusable", view.isFocusable)
-//                addProperty(
-//                    "visibility", when (view.visibility) {
-//                        View.VISIBLE -> "visible"
-//                        View.INVISIBLE -> "invisible"
-//                        View.GONE -> "gone"
-//                        else -> "unknown"
-//                    }
-//                )
-                // Report frame in pixels relative to the application window
-
     /**
      * Analyzes the Compose tree within a AndroidComposeView using reflection.
      * WARNING: This uses reflection on internal Compose APIs and is highly fragile.
@@ -310,21 +296,6 @@ internal object ViewTreeAnalyzer {
 
             val elementJson = JsonObject().apply {
                 addProperty("id", nodeId)
-
-//                // Optional type (e.g., Role)
-//                semanticsNode.config.getOrNull(SemanticsProperties.Role)?.let {
-//                    addProperty("type", it.toString())
-//                }
-//
-//                // Optional text
-//                semanticsNode.config.getOrNull(SemanticsProperties.Text)?.let {
-//                    addProperty("text", it.joinToString(""))
-//                }
-//
-//                // Optional contentDescription
-//                semanticsNode.config.getOrNull(SemanticsProperties.ContentDescription)?.let {
-//                    addProperty("contentDescription", it.joinToString(""))
-//                }
 
                 // Position and size
                 add("frame", JsonObject().apply {

@@ -32,7 +32,6 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import com.appversal.appstorys.AppStorys.CurrentTooltipContent
-import com.appversal.appstorys.AppStorys.appstorys
 import com.appversal.appstorys.AppStorys.dismissTooltip
 import com.appversal.appstorys.AppStorys.tooltipTargetView
 import com.appversal.appstorys.AppStorysAPI

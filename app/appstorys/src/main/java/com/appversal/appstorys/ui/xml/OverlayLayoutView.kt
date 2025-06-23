@@ -33,26 +33,35 @@ class OverlayLayoutView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    init {
-        // Add a ComposeView to the layout and set its content to render the OverlayContainer.
-        addView(
-            ComposeView(context).apply {
-                setContent {
-                    // Collect tooltip target updates and handle them.
-                    LaunchedEffect(Unit) {
-                        tooltipTargetView.collect { target ->
-                            handleTargetView(target?.target)
-                        }
-                    }
+    private lateinit var overlayComposeView: ComposeView
 
-                    // Render the OverlayContainer content.
-                    OverlayContainer.Content(
-                        topPadding = 0.dp,
-                        bottomPadding = 0.dp
-                    )
+    init {
+        // Initialize ComposeView but delay adding it until onFinishInflate()
+        overlayComposeView = ComposeView(context).apply {
+            setContent {
+                LaunchedEffect(Unit) {
+                    tooltipTargetView.collect { target ->
+                        handleTargetView(target?.target)
+                    }
                 }
+
+                // Composable overlay content
+                OverlayContainer.Content(
+                    topPadding = 0.dp,
+                    bottomPadding = 0.dp
+                )
             }
-        )
+        }
+    }
+
+    override fun onFinishInflate() {
+        super.onFinishInflate()
+
+        // Add ComposeView after all XML children to ensure it's on top
+        addView(overlayComposeView)
+
+        // Optional: force it to front in case of future dynamic view additions
+        overlayComposeView.bringToFront()
     }
 
     /**

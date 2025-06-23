@@ -5,10 +5,6 @@
         android:layout_height="match_parent"
         android:background="#f1f2f4">
 
-    <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
         <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -24,9 +20,9 @@
                     android:src="@drawable/home_one"
                     android:contentDescription="App Logo" />
 
-            <Space
-                    android:layout_width="match_parent"
-                    android:layout_height="20dp" />
+<!--            <Space-->
+<!--                    android:layout_width="match_parent"-->
+<!--                    android:layout_height="20dp" />-->
 
             <com.appversal.appstorys.ui.xml.WidgetView
                     android:id="@+id/tooltip_home"
@@ -38,7 +34,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     app:placeholder="@drawable/ic_launcher_foreground"
-                    app:position="widget_two" />
+                    app:position="widget_one" />
 
             <ImageView
                     android:id="@+id/app_logo"
@@ -62,32 +58,31 @@
                     android:layout_height="wrap_content"
                     android:text="Open More Screen" />
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
 
-    <com.appversal.appstorys.ui.xml.TestUserButtonView
-            android:id="@+id/test_user_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="16dp"
-            app:screenName="Home Screen" />
+<!--    <com.appversal.appstorys.ui.xml.TestUserButtonView-->
+<!--            android:id="@+id/test_user_button"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="bottom|end"-->
+<!--            android:layout_margin="16dp"-->
+<!--            app:screenName="Home Screen" />-->
 
-    <com.appversal.appstorys.ui.xml.PipView
-            android:id="@+id/pip_home_screen"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="top|end"
-            app:bottomPadding="70dp"
-            app:topPadding="70dp" />
+<!--    <com.appversal.appstorys.ui.xml.PipView-->
+<!--            android:id="@+id/pip_home_screen"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:layout_gravity="top|end"-->
+<!--            app:bottomPadding="70dp"-->
+<!--            app:topPadding="70dp" />-->
 
-    <com.appversal.appstorys.ui.xml.BottomSheetView
-            android:id="@+id/bottom_sheet_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+<!--    <com.appversal.appstorys.ui.xml.BottomSheetView-->
+<!--            android:id="@+id/bottom_sheet_view"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content" />-->
 
-    <com.appversal.appstorys.ui.xml.ModalView
-            android:id="@+id/modal_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+<!--    <com.appversal.appstorys.ui.xml.ModalView-->
+<!--            android:id="@+id/modal_view"-->
+<!--            android:layout_width="wrap_content"-->
+<!--            android:layout_height="wrap_content" />-->
 
 </com.appversal.appstorys.ui.xml.OverlayLayoutView>

@@ -134,6 +134,12 @@ interface AppStorysAPI {
     )
 
     @Composable
+    fun overlayElements(
+        bottomPadding: Dp,
+        topPadding: Dp,
+    )
+
+    @Composable
     fun CSAT(bottomPadding: Dp)
 
     @Composable
@@ -370,6 +376,17 @@ object AppStorys : AppStorysAPI {
                 }
             }
         }
+    }
+
+    @Composable
+    override fun overlayElements(
+        bottomPadding: Dp,
+        topPadding: Dp,
+    ) {
+        OverlayContainer.Content(
+            bottomPadding = bottomPadding,
+            topPadding = topPadding,
+        )
     }
 
     suspend fun analyzeViewRoot(
@@ -1612,19 +1629,5 @@ object AppStorys : AppStorysAPI {
             _tooltipTargetView.emit(null)
             _showcaseVisible.emit(false)
         }
-    }
-
-    /**
-     * Identify this composable as a view
-     *
-     * @param tag the view tag, which should uniquely identify this element within the full Composition being rendered.
-     */
-    @Stable
-    fun Modifier.appstorys(tag: String): Modifier = semantics(
-        properties = {
-            appstorysViewTagProperty = tag
-        }
-    ).onGloballyPositioned {
-        OverlayContainer.addConstraint(tag, it)
     }
 }

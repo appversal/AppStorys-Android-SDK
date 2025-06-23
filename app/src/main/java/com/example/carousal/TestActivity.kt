@@ -18,7 +18,7 @@ class TestActivity : ComponentActivity() {
         setContentView(R.layout.activity_home)
 
         findViewById<Button>(R.id.open_bottom_sheet).setOnClickListener {
-            findViewById<BottomSheetView>(R.id.bottom_sheet_view).open()
+//            findViewById<BottomSheetView>(R.id.bottom_sheet_view).open()
         }
         findViewById<Button>(R.id.open_more_screen).setOnClickListener {
             startActivity(Intent(this, MoreActivity::class.java))
