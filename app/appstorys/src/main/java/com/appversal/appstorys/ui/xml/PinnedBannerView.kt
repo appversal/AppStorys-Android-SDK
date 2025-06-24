@@ -4,13 +4,14 @@ import android.content.Context
 import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import androidx.annotation.Keep
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.core.content.withStyledAttributes
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 
-class PinnedBannerView @JvmOverloads constructor(
+@Keep class PinnedBannerView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

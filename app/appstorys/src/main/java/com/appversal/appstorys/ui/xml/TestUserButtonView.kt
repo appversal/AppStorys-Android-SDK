@@ -3,12 +3,13 @@ package com.appversal.appstorys.ui.xml
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import androidx.annotation.Keep
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.content.withStyledAttributes
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 
-class TestUserButtonView @JvmOverloads constructor(
+@Keep class TestUserButtonView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
