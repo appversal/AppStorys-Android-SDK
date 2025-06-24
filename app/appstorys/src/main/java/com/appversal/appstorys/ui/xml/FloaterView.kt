@@ -3,6 +3,7 @@ package com.appversal.appstorys.ui.xml
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
+import androidx.annotation.Keep
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
@@ -13,7 +14,7 @@ import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 import com.appversal.appstorys.utils.pxToDp
 
-class FloaterView @JvmOverloads constructor(
+@Keep class FloaterView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

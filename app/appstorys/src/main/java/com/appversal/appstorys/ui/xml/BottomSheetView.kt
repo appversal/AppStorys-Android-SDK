@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.widget.FrameLayout
+import androidx.annotation.Keep
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -12,7 +13,7 @@ import androidx.core.content.withStyledAttributes
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 
-class BottomSheetView @JvmOverloads constructor(
+@Keep class BottomSheetView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

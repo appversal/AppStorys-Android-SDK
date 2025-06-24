@@ -6,6 +6,7 @@ import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
+import androidx.annotation.Keep
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
@@ -27,7 +28,7 @@ import com.appversal.appstorys.ui.OverlayContainer
  * @param attrs The attributes of the XML tag that is inflating the view.
  * @param defStyleAttr An attribute in the current theme that contains a reference to a style resource.
  */
-class OverlayLayoutView @JvmOverloads constructor(
+@Keep class OverlayLayoutView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0

@@ -5,6 +5,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import androidx.annotation.Keep
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
@@ -14,7 +15,7 @@ import androidx.core.view.isNotEmpty
 import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 
-class TooltipWrapperView @JvmOverloads constructor(
+@Keep class TooltipWrapperView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : FrameLayout(context, attrs) {
