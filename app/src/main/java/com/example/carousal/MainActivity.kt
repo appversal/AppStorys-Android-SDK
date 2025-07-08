@@ -286,8 +286,6 @@ fun HomeScreen(padding: PaddingValues) {
                     Text("AppStorys Success Event")
                 }
 
-                Text(campaignManager.getBannerHeight())
-
                 campaignManager.Stories()
 
                 campaignManager.Reels()
