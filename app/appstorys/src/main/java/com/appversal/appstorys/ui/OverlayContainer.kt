@@ -1,7 +1,9 @@
 package com.appversal.appstorys.ui
 
 import android.graphics.Rect
+import android.os.Build
 import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -90,6 +92,7 @@ object OverlayContainer {
      *
      * @param modifier The `Modifier` to be applied to the overlay container.
      */
+    @RequiresApi(Build.VERSION_CODES.N)
     @Composable
     fun Content(modifier: Modifier = Modifier, topPadding: Dp, bottomPadding: Dp) {
 
@@ -126,7 +129,7 @@ object OverlayContainer {
                     bottomPadding = bottomPadding
                 )
 
-                // Add Bottom Sheet here
+                campaignManager.BottomSheet()
 
                 campaignManager.TestUserButton()
 

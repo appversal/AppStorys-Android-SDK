@@ -90,9 +90,4 @@
             android:layout_gravity="top|center_horizontal"
             android:layout_marginTop="150dp" />
 
-    <com.appversal.appstorys.ui.xml.PipView
-            android:id="@+id/widget_one"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            app:placeholder="@drawable/ic_launcher_foreground" />
 </com.appversal.appstorys.ui.xml.OverlayLayoutView>

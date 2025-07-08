@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -48,14 +49,17 @@ import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.BottomSheetElement
 import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
+import androidx.media3.common.util.Log
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun BottomSheetComponent(
     onClick: (String?) -> Unit = { _ -> },
-    onDismissRequest: () -> Unit = {},
+    onDismissRequest: () -> Unit,
     bottomSheetDetails: BottomSheetDetails,
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -88,8 +92,9 @@ internal fun BottomSheetComponent(
             val ctaElements = sortedElements.filter { it.type == "cta" }
 
             if (imageElement?.overlayButton == true) {
-                Box(modifier = Modifier
-                    .fillMaxWidth()
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
                 ) {
                     ImageElement(imageElement, onClick = onClick)
 
@@ -103,7 +108,8 @@ internal fun BottomSheetComponent(
 
                         val leftCTA = ctaElements.firstOrNull { it.position == "left" }
                         val rightCTA = ctaElements.firstOrNull { it.position == "right" }
-                        val centerCTAs = ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
+                        val centerCTAs =
+                            ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
 
                         if (leftCTA != null || rightCTA != null) {
                             Row(modifier = Modifier.fillMaxWidth()) {
@@ -131,13 +137,16 @@ internal fun BottomSheetComponent(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    ImageElement(imageElement!!, onClick = onClick)
+                    imageElement?.let {
+                        ImageElement(it, onClick = onClick)
+                    }
 
                     bodyElements.forEach { BodyElement(it) }
 
                     val leftCTA = ctaElements.firstOrNull { it.position == "left" }
                     val rightCTA = ctaElements.firstOrNull { it.position == "right" }
-                    val centerCTAs = ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
+                    val centerCTAs =
+                        ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
 
                     if (leftCTA != null || rightCTA != null) {
                         Row(modifier = Modifier.fillMaxWidth()) {
@@ -203,13 +212,12 @@ private fun ImageElement(element: BottomSheetElement, onClick: (String?) -> Unit
                 top = paddingTop,
                 bottom = paddingBottom
             )
-            .clickable (
+            .clickable(
                 interactionSource = interactionSource,
                 indication = null
-            ){
+            ) {
                 onClick(element.imageLink)
-            }
-        ,
+            },
         contentAlignment = when (element.alignment) {
             "left" -> Alignment.CenterStart
             "right" -> Alignment.CenterEnd
@@ -247,7 +255,13 @@ private fun BodyElement(element: BottomSheetElement) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = Color(android.graphics.Color.parseColor(element.bodyBackgroundColor ?: "#FFFFFF")))
+            .background(
+                color = Color(
+                    android.graphics.Color.parseColor(
+                        element.bodyBackgroundColor ?: "#FFFFFF"
+                    )
+                )
+            )
             .padding(
                 start = paddingLeft,
                 end = paddingRight,
@@ -260,16 +274,23 @@ private fun BodyElement(element: BottomSheetElement) {
 
             if (element.titleText.isNotBlank()) {
                 val titleColor = try {
-                    Color(android.graphics.Color.parseColor(element.titleFontStyle?.colour ?: "#000000"))
+                    Color(
+                        android.graphics.Color.parseColor(
+                            element.titleFontStyle?.colour ?: "#000000"
+                        )
+                    )
                 } catch (e: Exception) {
                     Color.Black
                 }
 
-                val decoration = element.titleFontStyle?.decoration
+                val decoration = element.titleFontStyle?.decoration.orEmpty()
 
-                val titleFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal
-                val titleFontStyle = if (decoration == "italic") FontStyle.Italic else FontStyle.Normal
-                val titleTextDecoration = if (decoration == "underline") TextDecoration.Underline else null
+                val titleFontWeight =
+                    if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
+                val titleFontStyle =
+                    if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
+                val titleTextDecoration =
+                    if (decoration.contains("underline")) TextDecoration.Underline else null
 
                 Text(
                     text = title,
@@ -279,7 +300,8 @@ private fun BodyElement(element: BottomSheetElement) {
                     fontStyle = titleFontStyle,
                     textDecoration = titleTextDecoration,
                     textAlign = textAlign,
-                    lineHeight = ((element.titleLineHeight ?: 1f) * (element.titleFontSize ?: 16)).sp,
+                    lineHeight = ((element.titleLineHeight ?: 1f) * (element.titleFontSize
+                        ?: 16)).sp,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -289,16 +311,23 @@ private fun BodyElement(element: BottomSheetElement) {
 
         element.descriptionText?.let { description ->
             val descriptionColor = try {
-                Color(android.graphics.Color.parseColor(element.descriptionFontStyle?.colour ?: "#000000"))
+                Color(
+                    android.graphics.Color.parseColor(
+                        element.descriptionFontStyle?.colour ?: "#000000"
+                    )
+                )
             } catch (e: Exception) {
                 Color.Black
             }
 
-            val decoration = element.descriptionFontStyle?.decoration
+            val decoration = element.descriptionFontStyle?.decoration.orEmpty()
 
-            val descriptionFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal
-            val descriptionFontStyle = if (decoration == "italic") FontStyle.Italic else FontStyle.Normal
-            val descriptionTextDecoration = if (decoration == "underline") TextDecoration.Underline else null
+            val descriptionFontWeight =
+                if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
+            val descriptionFontStyle =
+                if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
+            val descriptionTextDecoration =
+                if (decoration.contains("underline")) TextDecoration.Underline else null
 
             Text(
                 text = description,
@@ -308,7 +337,8 @@ private fun BodyElement(element: BottomSheetElement) {
                 fontStyle = descriptionFontStyle,
                 textDecoration = descriptionTextDecoration,
                 textAlign = textAlign,
-                lineHeight = ((element.descriptionLineHeight ?: 1f) * (element.descriptionFontSize ?: 14)).sp,
+                lineHeight = ((element.descriptionLineHeight ?: 1f) * (element.descriptionFontSize
+                    ?: 14)).sp,
                 modifier = Modifier.fillMaxWidth()
             )
         }
@@ -321,8 +351,6 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
     val paddingRight = element.paddingRight?.dp ?: 0.dp
     val paddingTop = element.paddingTop?.dp ?: 0.dp
     val paddingBottom = element.paddingBottom?.dp ?: 0.dp
-
-    val context = LocalContext.current
 
     val buttonColor = try {
         Color(android.graphics.Color.parseColor(element.ctaBoxColor ?: "#000000"))
@@ -343,7 +371,13 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(color = Color(android.graphics.Color.parseColor(element.ctaBackgroundColor ?: "#FFFFFF")))
+            .background(
+                color = Color(
+                    android.graphics.Color.parseColor(
+                        element.ctaBackgroundColor ?: "#FFFFFF"
+                    )
+                )
+            )
             .padding(
                 start = paddingLeft,
                 end = paddingRight,
@@ -367,15 +401,43 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
                     else Modifier.width(buttonWidth)
                 )
         ) {
-            val decoration = element.ctaFontDecoration
+            val decoration = element.ctaFontDecoration.orEmpty()
 
-            val ctaFontWeight = if (decoration == "bold") FontWeight.Bold else FontWeight.Normal
-            val ctaFontStyle = if (decoration == "italic") FontStyle.Italic else FontStyle.Normal
-            val ctaTextDecoration = if (decoration == "underline") TextDecoration.Underline else null
+            val ctaFontWeight = if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
+            val ctaFontStyle = if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
+            val ctaTextDecoration =
+                if (decoration.contains("underline")) TextDecoration.Underline else null
+
+            val fontName = element.ctaFontFamily ?: "Poppins"
+
+            Log.i("fontFamily", fontName)
+
+            val fontFamily = try {
+                val provider = GoogleFont.Provider(
+                    providerAuthority = "com.google.android.gms.fonts",
+                    providerPackage = "com.google.android.gms",
+                    certificates = R.array.com_google_android_gms_fonts_certs
+                )
+                val googleFont = GoogleFont(fontName)
+                FontFamily(
+                    Font(
+                        googleFont = googleFont,
+                        fontProvider = provider,
+                        weight = FontWeight.Normal,
+                        style = FontStyle.Normal
+                    )
+                ).also {
+                    Log.i("fontFamily", "FontFamily created successfully")
+                }
+            } catch (e: Exception) {
+                Log.e("fontFamily", "Failed to load font: $fontName", e)
+                FontFamily.Default
+            }
 
             Text(
                 text = element.ctaText ?: "Click",
                 color = textColor,
+                fontFamily = fontFamily,
                 fontSize = (element.ctaFontSize?.toFloatOrNull() ?: 14f).sp,
                 fontWeight = ctaFontWeight,
                 fontStyle = ctaFontStyle,

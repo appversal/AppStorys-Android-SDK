@@ -51,11 +51,14 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.5")
     implementation ("com.squareup.retrofit2:converter-scalars:2.9.0")
     implementation("com.google.accompanist:accompanist-coil:0.15.0")
-
+    implementation("androidx.compose.ui:ui-text-google-fonts")
     implementation ("com.airbnb.android:lottie-compose:6.0.0")
-
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
+    implementation("com.github.hannesa2:paho.mqtt.android:3.6.4")
+
     implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.gif)

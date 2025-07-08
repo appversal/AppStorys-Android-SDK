@@ -1,15 +1,59 @@
 package com.appversal.appstorys.api
 
+import android.content.Context
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 
-internal class ApiRepository(private val apiService: ApiService) {
+internal class ApiRepository(
+    context: Context,
+    private val apiService: ApiService,
+    private val mqttApiService: ApiService,
+    private val getScreen: () -> String,
+) {
+
+    private var mqttClient: MqttWebSocketClient? = null
+    private var mqttConfig: MqttConfig? = null
+    private var campaignResponseChannel = Channel<CampaignResponse?>(Channel.UNLIMITED)
+
+    init {
+        mqttClient = MqttWebSocketClient(context)
+
+        CoroutineScope(Dispatchers.IO).launch {
+            mqttClient?.messageFlow?.collect { message ->
+                try {
+                    val gson = com.google.gson.GsonBuilder()
+                        .registerTypeAdapter(
+                            CampaignResponse::class.java,
+                            CampaignResponseDeserializer()
+                        )
+                        .create()
+                    val campaignResponse = gson.fromJson(message, CampaignResponse::class.java)
+                    if (getScreen().equals(
+                            campaignResponse.campaigns?.firstOrNull()?.screen,
+                            true
+                        )
+                    ) {
+                        campaignResponseChannel.send(campaignResponse)
+                    }
+                } catch (e: Exception) {
+                    Log.e("ApiRepository", "Error parsing MQTT message: ${e.message}")
+                    campaignResponseChannel.send(null)
+                }
+            }
+        }
+    }
+
     suspend fun getAccessToken(app_id: String, account_id: String): String? {
         return withContext(Dispatchers.IO) {
             when (val result = safeApiCall {
@@ -25,41 +69,106 @@ internal class ApiRepository(private val apiService: ApiService) {
             }
         }
     }
-    suspend fun getCampaigns(accessToken: String, screenName: String, positions: List<String>?): List<String>? {
+
+    suspend fun initializeMqttConnection(
+        accessToken: String,
+        screenName: String,
+        userId: String,
+        attributes: Map<String, Any>?
+    ): Boolean {
         return withContext(Dispatchers.IO) {
-            when (val result = safeApiCall {
-                apiService.trackScreen(
-                    token = "Bearer $accessToken",
-                    request = TrackScreenRequest(screen_name = screenName, positions)
-                ).campaigns
-            }) {
-                is ApiResult.Success -> result.data
-                is ApiResult.Error -> {
-                    Log.e("ApiRepository", "Error getting campaigns: ${result.message}")
-                    emptyList()
+            try {
+                val requestBody = TrackUserMqttRequest(
+                    screenName = screenName,
+                    user_id = userId,
+                    attributes = attributes ?: emptyMap()
+                )
+                when (val result = safeApiCall {
+                    mqttApiService.getMqttConnectionDetails(
+                        token = "Bearer $accessToken",
+                        request = requestBody
+                    )
+                }) {
+                    is ApiResult.Success -> {
+                        result.data.mqtt.let { config ->
+                            mqttConfig = config
+                            mqttClient?.connectWithConfig(config) ?: false
+                        }
+                    }
+
+                    is ApiResult.Error -> {
+                        Log.e("ApiRepository", "Error getting MQTT config: ${result.message}")
+                        false
+                    }
                 }
+            } catch (e: Exception) {
+                Log.e("ApiRepository", "Error initializing MQTT connection: ${e.message}")
+                false
             }
         }
     }
 
-    suspend fun getCampaignData(
+    @OptIn(ExperimentalCoroutinesApi::class)
+    suspend fun triggerScreenData(
         accessToken: String,
+        screenName: String,
         userId: String,
-        campaignList: List<String>,
-        attributes: List<Map<String, Any>>?
-    ): CampaignResponse? {
+        attributes: Map<String, Any>?,
+        timeoutMs: Long = 20000
+    ): Pair<CampaignResponse?, MqttConnectionResponse?> {
         return withContext(Dispatchers.IO) {
-            when (val result = safeApiCall {
-                apiService.trackUser(
-                    token = "Bearer $accessToken",
-                    request = TrackUserRequest(user_id = userId, campaign_list = campaignList, attributes = attributes)
-                )
-            }) {
-                is ApiResult.Success -> result.data
-                is ApiResult.Error -> {
-                    Log.e("ApiRepository", "Error getting campaign data: ${result.message}")
-                    null
+            try {
+                var mqttResponse: MqttConnectionResponse? = null
+
+                while (!campaignResponseChannel.isEmpty) {
+                    campaignResponseChannel.tryReceive()
                 }
+
+                if (!mqttClient!!.isConnected()) {
+                    val reconnected =
+                        initializeMqttConnection(accessToken, screenName, userId, attributes)
+                    if (!reconnected) {
+                        Log.e("ApiRepository", "Failed to reconnect MQTT")
+                        return@withContext Pair(null, null)
+                    }
+                } else {
+
+                    val requestBody = TrackUserMqttRequest(
+                        screenName = screenName,
+                        user_id = userId,
+                        attributes = attributes ?: emptyMap()
+                    )
+
+                    when (val result = safeApiCall {
+                        mqttApiService.getMqttConnectionDetails(
+                            token = "Bearer $accessToken",
+                            request = requestBody
+                        )
+                    }) {
+                        is ApiResult.Success -> {
+                            mqttResponse = result.data
+                        }
+
+                        is ApiResult.Error -> {
+                            Log.e(
+                                "ApiRepository",
+                                "Error sending track-user request: ${result.message}"
+                            )
+                            return@withContext Pair(null, null)
+                        }
+                    }
+                }
+
+                val campaignResponse = withTimeoutOrNull(timeoutMs) {
+                    campaignResponseChannel.receive()
+                }
+                return@withContext Pair(campaignResponse, mqttResponse)
+            } catch (e: Exception) {
+                Log.e(
+                    "ApiRepository",
+                    "Error getting campaign data for screen $screenName: ${e.message}"
+                )
+                Pair(null, null)
             }
         }
     }
@@ -165,11 +274,13 @@ internal class ApiRepository(private val apiService: ApiService) {
                 val userIdPart = user_id.toRequestBody(mediaType)
                 val childrenPart = childrenJson.toRequestBody(jsonMediaType)
 
-                // Image part
                 val requestFile = screenshotFile.asRequestBody("image/png".toMediaTypeOrNull())
-                val screenshotPart = MultipartBody.Part.createFormData("screenshot", screenshotFile.name, requestFile)
+                val screenshotPart = MultipartBody.Part.createFormData(
+                    "screenshot",
+                    screenshotFile.name,
+                    requestFile
+                )
 
-                // API call
                 val result = safeApiCall {
                     apiService.identifyTooltips(
                         token = "Bearer $accessToken",
@@ -191,5 +302,8 @@ internal class ApiRepository(private val apiService: ApiService) {
         }
     }
 
-
+    fun disconnect() {
+        mqttClient?.disconnect()
+        campaignResponseChannel.close()
+    }
 }

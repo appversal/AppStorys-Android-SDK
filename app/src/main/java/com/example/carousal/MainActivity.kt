@@ -5,6 +5,7 @@ package com.example.carousal
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -12,22 +13,29 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -37,6 +45,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,10 +53,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.appversal.appstorys.ui.OverlayContainer
 import com.appversal.appstorys.utils.appstorys
 import com.example.carousal.ui.theme.CarousalTheme
+import kotlinx.coroutines.launch
 
 
 class MainActivity : ComponentActivity() {
@@ -72,9 +84,23 @@ fun MyApp() {
     val screenName by app.screenNameNavigation.collectAsState()
     var currentScreen by remember { mutableStateOf("HomeScreen") }
 
+    var selectedTab by remember { mutableStateOf(0) } // Track selected tab index
+
     LaunchedEffect(screenName) {
-        if (screenName.isNotEmpty() && currentScreen != screenName) {
-            currentScreen = screenName
+        if (screenName.isNotEmpty()) {
+            when (screenName) {
+                "PayScreen" -> {
+                    selectedTab = 1 // Set to PayScreen tab
+                    currentScreen = "HomeScreen" // Keep normal navigation
+                }
+                "HomeScreen" -> {
+                    selectedTab = 0
+                    currentScreen = "HomeScreen"
+                }
+                else -> {
+                    currentScreen = screenName // For other screens
+                }
+            }
             app.resetNavigation()
         }
     }
@@ -84,8 +110,6 @@ fun MyApp() {
     )
 
     var edgeToEdgePadding by remember { mutableStateOf(PaddingValues()) }
-
-    var selectedTab by remember { mutableStateOf(0) } // Track selected tab index
 
     Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Scaffold(
@@ -121,14 +145,14 @@ fun MyApp() {
             }
         ) { innerPadding ->
             edgeToEdgePadding = innerPadding
-            if (currentScreen == "PayScreen") {
-                PayScreen(innerPadding)
-            } else {
+//            if (currentScreen == "PayScreen") {
+//                PayScreen(innerPadding)
+//            } else {
                 when (selectedTab) {
                     0 -> HomeScreen(innerPadding)
                     1 -> PayScreen(innerPadding)
                 }
-            }
+//            }
         }
     }
 }
@@ -139,8 +163,6 @@ fun HomeScreen(padding: PaddingValues) {
     val campaignManager = App.appStorys
 
     val screenName  = "Home Screen"
-
-    var showBottomSheet by remember { mutableStateOf(false) }
 
     campaignManager.getScreenCampaigns(
         screenName,
@@ -175,13 +197,20 @@ fun HomeScreen(padding: PaddingValues) {
                 Box(modifier = Modifier.height(20.dp))
 
                 campaignManager.Widget(
-                    modifier = Modifier.appstorys("tooltip_home")
+                    modifier = Modifier.appstorys("tooltip_home"),
+//                    position = null
                 )
 
                 campaignManager.Widget(
                     modifier = Modifier.fillMaxWidth().appstorys("tooltip_home_prem_test"),
                     placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
                     position = "widget_one",
+                )
+
+                campaignManager.Widget(
+                    modifier = Modifier.fillMaxWidth().appstorys("tooltip_home_prem_test"),
+                    placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
+                    position = "widget_two",
                 )
 
                 Box(
@@ -192,7 +221,6 @@ fun HomeScreen(padding: PaddingValues) {
                 ) {
                     Button(
                         onClick = {
-                            showBottomSheet = true
                             campaignManager.trackEvents(
                                 event = "Button clicked"
                             )
@@ -202,6 +230,67 @@ fun HomeScreen(padding: PaddingValues) {
                         Text("Open Bottom Sheet")
                     }
                 }
+
+                Button(
+                    onClick = {
+                        campaignManager.trackEvents(
+                            event = "Login"
+                        )
+                    },
+                    modifier = Modifier
+                ) {
+                    Text("Login Event")
+                }
+
+                Button(
+                    onClick = {
+                        campaignManager.trackEvents(
+                            event = "Added to cart"
+                        )
+                    },
+                    modifier = Modifier
+                ) {
+                    Text("Added to cart Event")
+                }
+
+                Button(
+                    onClick = {
+                        campaignManager.trackEvents(
+                            event = "Purchased"
+                        )
+                    },
+                    modifier = Modifier
+                ) {
+                    Text("Purchased Event")
+                }
+
+                Button(
+                    onClick = {
+                        campaignManager.trackEvents(
+                            event = "Logout"
+                        )
+                    },
+                    modifier = Modifier
+                ) {
+                    Text("Logout Event")
+                }
+
+                Button(
+                    onClick = {
+                        campaignManager.trackEvents(
+                            event = "AppStorys Success"
+                        )
+                    },
+                    modifier = Modifier
+                ) {
+                    Text("AppStorys Success Event")
+                }
+
+                Text(campaignManager.getBannerHeight())
+
+                campaignManager.Stories()
+
+                campaignManager.Reels()
 
                 Image(
                     painter = painterResource(id = R.drawable.home_two),
@@ -214,12 +303,6 @@ fun HomeScreen(padding: PaddingValues) {
             }
         }
 
-        if (showBottomSheet) {
-            campaignManager.BottomSheet(
-                onDismissRequest = { showBottomSheet = false },
-            )
-        }
-
         campaignManager.overlayElements(
             topPadding = 70.dp,
             bottomPadding = 70.dp,
@@ -227,16 +310,12 @@ fun HomeScreen(padding: PaddingValues) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PayScreen(padding: PaddingValues) {
+    val pagerState = rememberPagerState(pageCount = { 3 })
+    val coroutineScope = rememberCoroutineScope()
 
-    val context = LocalContext.current
-    val campaignManager = App.appStorys
-
-    campaignManager.getScreenCampaigns(
-        "More Screen",
-        listOf()
-    )
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -244,53 +323,260 @@ fun PayScreen(padding: PaddingValues) {
             .background(Color(0xFFf1f2f4)),
         contentAlignment = Alignment.TopCenter
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
-            Column(
+            // Top navigation buttons
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Row {
-                    Image(
-                        painter = painterResource(id = R.drawable.more_one),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.weight(1f).appstorys("cashbook"),
-                        contentScale = ContentScale.Fit
+                NavigationButton(
+                    text = "Cashbook",
+                    isSelected = pagerState.currentPage == 0,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(0)
+                        }
+                    }
+                )
+
+                NavigationButton(
+                    text = "Bills",
+                    isSelected = pagerState.currentPage == 1,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(1)
+                        }
+                    }
+                )
+
+                NavigationButton(
+                    text = "Items",
+                    isSelected = pagerState.currentPage == 2,
+                    onClick = {
+                        coroutineScope.launch {
+                            pagerState.animateScrollToPage(2)
+                        }
+                    }
+                )
+            }
+
+            // Horizontal pager for screens
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize()
+            ) { page ->
+                when (page) {
+                    0 -> PayScreenPage(
+                        topImages = listOf(
+                            Triple(R.drawable.more_one, "cashbook", "Cashbook"),
+                            Triple(R.drawable.more_two, "bills", "Bills"),
+                            Triple(R.drawable.more_three, "items", "Items")
+                        ),
+                        bottomImage = R.drawable.more_bottom,
+                        buttonText = "Cashbook Tab",
+//                        campaignManager = campaignManager,
+                        screenType = "cashbook"
                     )
 
-                    Image(
-                        painter = painterResource(id = R.drawable.more_two),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.weight(1f).appstorys("bills"),
-                        contentScale = ContentScale.Fit
+                    1 -> PayScreenPage(
+                        topImages = listOf(
+                            Triple(R.drawable.more_one, "cashbook", "Cashbook"),
+                            Triple(R.drawable.more_three, "items", "Items"),
+                            Triple(R.drawable.more_two, "bills", "Bills")
+                        ),
+                        bottomImage = R.drawable.more_bottom,
+                        buttonText = "Bills Tab",
+//                        campaignManager = campaignManager,
+                        screenType = "bills"
                     )
 
-                    Image(
-                        painter = painterResource(id = R.drawable.more_three),
-                        contentDescription = "App Logo",
-                        modifier = Modifier.weight(1f).appstorys("items"),
-                        contentScale = ContentScale.Fit
+                    2 -> PayScreenPage(
+                        topImages = listOf(
+                            Triple(R.drawable.more_three, "items", "Items"),
+                            Triple(R.drawable.more_one, "cashbook", "Cashbook"),
+                            Triple(R.drawable.more_two, "bills", "Bills")
+                        ),
+                        bottomImage = R.drawable.more_bottom,
+                        buttonText = "Items Tab",
+                        screenType = "items"
                     )
                 }
-                Image(
-                    painter = painterResource(id = R.drawable.more_bottom),
-                    contentDescription = "App Logo",
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    contentScale = ContentScale.Fit
-                )
             }
         }
     }
+}
 
-    campaignManager.overlayElements(
-        topPadding = 70.dp,
-        bottomPadding = 70.dp,
+@Composable
+fun NavigationButton(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+            contentColor = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
+        ),
+        modifier = Modifier
+            .padding(horizontal = 4.dp),
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = if (isSelected) 8.dp else 2.dp
+        )
+    ) {
+        Text(
+            text = text,
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+        )
+    }
+}
+
+@Composable
+fun PayScreenPage(
+    topImages: List<Triple<Int, String, String>>, // resourceId, appstorys tag, contentDescription
+    bottomImage: Int,
+    buttonText: String,
+    screenType: String
+) {
+    val campaignManager = App.appStorys
+    campaignManager.getScreenCampaigns(
+        buttonText,
+        listOf()
     )
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Top row with three images
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                topImages.forEach { (imageRes, tag, description) ->
+                    Image(
+                        painter = painterResource(id = imageRes),
+                        contentDescription = description,
+                        modifier = Modifier
+                            .weight(1f)
+                            .appstorys(tag),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Bottom image
+            Image(
+                painter = painterResource(id = bottomImage),
+                contentDescription = "Bottom Image",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.Fit
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Action button
+            Button(
+                onClick = {
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+            ) {
+                Text(buttonText)
+            }
+        }
+        campaignManager.overlayElements(
+            topPadding = 70.dp,
+            bottomPadding = 70.dp,
+        )
+    }
 
 }
+
+//@Composable
+//fun PayScreen(padding: PaddingValues) {
+//
+//    val campaignManager = App.appStorys
+//
+//    campaignManager.getScreenCampaigns(
+//        "More Screen",
+//        listOf()
+//    )
+//    Box(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .padding(top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding())
+//            .background(Color(0xFFf1f2f4)),
+//        contentAlignment = Alignment.TopCenter
+//    ) {
+//        Box(
+//            modifier = Modifier
+//                .fillMaxWidth()
+//        ) {
+//            Column(
+//                modifier = Modifier
+//                    .fillMaxWidth()
+//            ) {
+//                Row {
+//                    Image(
+//                        painter = painterResource(id = R.drawable.more_one),
+//                        contentDescription = "App Logo",
+//                        modifier = Modifier.weight(1f).appstorys("cashbook"),
+//                        contentScale = ContentScale.Fit
+//                    )
+//
+//                    Image(
+//                        painter = painterResource(id = R.drawable.more_two),
+//                        contentDescription = "App Logo",
+//                        modifier = Modifier.weight(1f).appstorys("bills"),
+//                        contentScale = ContentScale.Fit
+//                    )
+//
+//                    Image(
+//                        painter = painterResource(id = R.drawable.more_three),
+//                        contentDescription = "App Logo",
+//                        modifier = Modifier.weight(1f).appstorys("items"),
+//                        contentScale = ContentScale.Fit
+//                    )
+//                }
+//                Image(
+//                    painter = painterResource(id = R.drawable.more_bottom),
+//                    contentDescription = "App Logo",
+//                    modifier = Modifier
+//                        .fillMaxWidth(),
+//                    contentScale = ContentScale.Fit
+//                )
+//
+//                Button(
+//                    onClick = {
+//                        campaignManager.trackEvents(
+//                            event = "clicked"
+//                        )
+//                    },
+//                    modifier = Modifier
+//                ) {
+//                    Text("Clicked Event")
+//                }
+//            }
+//        }
+//    }
+//    campaignManager.overlayElements(
+//        topPadding = 70.dp,
+//        bottomPadding = 70.dp,
+//    )
+//}
 
 @Composable
 fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {

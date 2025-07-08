@@ -22,18 +22,21 @@ import android.graphics.Rect
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.DisplayMetrics
 import android.view.PixelCopy
+import android.view.WindowManager
+import android.view.WindowMetrics
+import androidx.compose.ui.platform.LocalContext
 import com.appversal.appstorys.api.ApiRepository
 import com.appversal.appstorys.api.RetrofitClient.apiService
 import java.io.File
 import java.io.FileOutputStream
 import androidx.core.graphics.createBitmap
+import com.appversal.appstorys.api.RetrofitClient.mqttApiService
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
 val AppstorysViewTagKey = SemanticsPropertyKey<String>("AppstorysViewTagKey")
-
-private val repository = ApiRepository(apiService)
 
 var SemanticsPropertyReceiver.appstorysViewTagProperty by AppstorysViewTagKey
 
@@ -67,13 +70,21 @@ internal object ViewTreeAnalyzer {
      * @param screenName A name for the screen being analyzed.
      * @return A JsonObject representing the view tree.
      */
-    suspend fun analyzeViewRoot(root: View, screenName: String, user_id: String, accessToken: String, activity: Activity): JsonObject {
+    suspend fun analyzeViewRoot(
+        root: View,
+        screenName: String,
+        user_id: String,
+        accessToken: String,
+        activity: Activity,
+        context: Context
+    ): JsonObject {
         val resultJson = JsonObject().apply {
             addProperty("name", screenName)
             val children = JsonArray()
             analyzeViewElement(
                 root,
-                onElementAnalyzed = { children.add(it) }
+                onElementAnalyzed = { children.add(it) },
+                activity = activity
             )
             add("children", children)
         }
@@ -89,6 +100,8 @@ internal object ViewTreeAnalyzer {
             view = root,
             activity = activity
         )
+
+        val repository = ApiRepository(context, apiService, mqttApiService) { screenName }
 
         if (screenshot != null) {
             repository.tooltipIdentify(
@@ -173,6 +186,21 @@ internal object ViewTreeAnalyzer {
         }
     }
 
+    fun getScreenSize(context: Context): Pair<Int, Int> {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val windowMetrics: WindowMetrics =
+                context.getSystemService(WindowManager::class.java).currentWindowMetrics
+            val bounds = windowMetrics.bounds
+            Pair(bounds.width(), bounds.height())
+        } else {
+            val displayMetrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.getMetrics(
+                displayMetrics
+            )
+            Pair(displayMetrics.widthPixels, displayMetrics.heightPixels)
+        }
+    }
 
     /**
      * Recursively analyzes a single View element and its children.
@@ -181,7 +209,11 @@ internal object ViewTreeAnalyzer {
      * @param view The current View to analyze.
      * @param onElementAnalyzed Callback to receive the JsonObject for the analyzed element.
      */
-    private fun analyzeViewElement(view: View, onElementAnalyzed: (JsonObject) -> Unit) {
+    private fun analyzeViewElement(
+        view: View,
+        onElementAnalyzed: (JsonObject) -> Unit,
+        activity: Activity
+    ) {
         // Skip views with no ID
         val viewId = try {
             if (view.id != View.NO_ID) {
@@ -200,6 +232,8 @@ internal object ViewTreeAnalyzer {
             val xInWindow = locationInWindow[0]
             val yInWindow = locationInWindow[1]
 
+            val (screenWidth, screenHeight) = getScreenSize(activity)
+
             val elementJson = JsonObject().apply {
                 addProperty("id", viewId)
                 add(
@@ -209,6 +243,8 @@ internal object ViewTreeAnalyzer {
                         addProperty("y", yInWindow)
                         addProperty("width", view.width)
                         addProperty("height", view.height)
+                        addProperty("screenWidth", screenWidth)
+                        addProperty("screenHeight", screenHeight)
                     }
                 )
             }
@@ -219,7 +255,7 @@ internal object ViewTreeAnalyzer {
         // Recursively analyze children for ViewGroups
         if (view is ViewGroup) {
             for (i in 0 until view.childCount) {
-                analyzeViewElement(view.getChildAt(i), onElementAnalyzed)
+                analyzeViewElement(view.getChildAt(i), onElementAnalyzed, activity = activity)
             }
         }
 

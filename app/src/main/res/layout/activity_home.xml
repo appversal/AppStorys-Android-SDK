@@ -46,10 +46,10 @@
                     android:contentDescription="App Logo" />
 
             <Button
-                    android:id="@+id/open_bottom_sheet"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Open Bottom Sheet" />
+                android:id="@+id/open_bottom_sheet"
+                android:layout_width="187dp"
+                android:layout_height="59dp"
+                android:text="Open Bottom Sheet" />
 
 
             <Button
@@ -58,31 +58,5 @@
                     android:layout_height="wrap_content"
                     android:text="Open More Screen" />
         </LinearLayout>
-
-<!--    <com.appversal.appstorys.ui.xml.TestUserButtonView-->
-<!--            android:id="@+id/test_user_button"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_gravity="bottom|end"-->
-<!--            android:layout_margin="16dp"-->
-<!--            app:screenName="Home Screen" />-->
-
-<!--    <com.appversal.appstorys.ui.xml.PipView-->
-<!--            android:id="@+id/pip_home_screen"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content"-->
-<!--            android:layout_gravity="top|end"-->
-<!--            app:bottomPadding="70dp"-->
-<!--            app:topPadding="70dp" />-->
-
-<!--    <com.appversal.appstorys.ui.xml.BottomSheetView-->
-<!--            android:id="@+id/bottom_sheet_view"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content" />-->
-
-<!--    <com.appversal.appstorys.ui.xml.ModalView-->
-<!--            android:id="@+id/modal_view"-->
-<!--            android:layout_width="wrap_content"-->
-<!--            android:layout_height="wrap_content" />-->
 
 </com.appversal.appstorys.ui.xml.OverlayLayoutView>

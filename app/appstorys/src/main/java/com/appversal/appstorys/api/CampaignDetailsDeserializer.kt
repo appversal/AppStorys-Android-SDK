@@ -13,9 +13,13 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
     ): CampaignResponse {
         val jsonObject = json.asJsonObject
 
-        val userId = jsonObject.get("user_id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: ""
+        val userId =
+            jsonObject.get("user_id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
+                ?: ""
         val campaignsJsonArray = jsonObject.getAsJsonArray("campaigns")?.takeIf { !it.isJsonNull }
-        val isScreenCaptureEnabled = jsonObject.get("is_screen_capture_enabled")?.takeIf { !it.isJsonNull }?.asBoolean ?: false
+        val isScreenCaptureEnabled =
+            jsonObject.get("screen_capture_enabled")?.takeIf { !it.isJsonNull }?.asBoolean
+                ?: false
 
         val campaigns = campaignsJsonArray?.map { campaignElement ->
             val campaignObject = campaignElement.asJsonObject
@@ -32,23 +36,30 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
                 "PIP" -> context.deserialize(detailsJson, PipDetails::class.java)
                 "BTS" -> context.deserialize(detailsJson, BottomSheetDetails::class.java)
                 "MOD" -> context.deserialize(detailsJson, ModalDetails::class.java)
-                "STR" -> context.deserialize(detailsJson, object : TypeToken<List<StoryGroup>>() {}.type)
+                "STR" -> context.deserialize(
+                    detailsJson,
+                    object : TypeToken<List<StoryGroup>>() {}.type
+                )
+
                 else -> null
             }
 
-            val position = campaignObject.get("position")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
+            val position = campaignObject.get("position")
+                ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
 
             Campaign(
-                id = campaignObject.get("id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: "",
+                id = campaignObject.get("id")
+                    ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: "",
                 campaignType = campaignType,
                 details = details,
-                position = position
+                position = position,
+                screen = campaignObject.get("screen")
+                    ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: "",
             )
         }
         return CampaignResponse(
-            user_id = userId,
-            campaigns =  campaigns ?: emptyList(),
-            is_screen_capture_enabled = isScreenCaptureEnabled,
-            )
+            userId = userId,
+            campaigns = campaigns ?: emptyList()
+        )
     }
 }
