@@ -5,6 +5,7 @@ import com.appversal.appstorys.AppStorysAPI
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 class App : Application() {
 
@@ -14,11 +15,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        val attributes: List<Map<String, Any>> = listOf(
-            mapOf("name" to "Alice", "age" to 25),
-            mapOf("name" to "Bob", "age" to 30),
-            mapOf("name" to "Charlie", "age" to 22)
-        )
+        val attributes: Map<String, Any> = mapOf("name" to "Alice", "age" to 25)
 
         //1163a1a2-61a8-486c-b263-7252f9a502c2
         //5bb1378d-9f32-4da8-aed1-1ee44d086db7
@@ -26,14 +23,16 @@ class App : Application() {
         //afadf960-3975-4ba2-933b-fac71ccc2002
         //13555479-077f-445e-87f0-e6eae2e215c5
 
+        val userId = UUID.randomUUID().toString()
+
         val appStorysApi = AppStorysAPI.getInstance()
 
         // Initialize CampaignManager with userId and appId
         appStorysApi.initialize(
             context = this,
-            appId = "5a2ecc86-346a-4895-b14c-f662cc12071b",
-            accountId = "70ddda52-2106-453b-919a-d63d1287bdf7",
-            userId = "com.vaibhavkalpe.android.khatabook",
+            appId = "9e1b21a2-350a-4592-918c-2a19a73f249a",
+            accountId = "4350bf8e-0c9a-46bd-b953-abb65ab21d11",
+            userId = "nameisprem",
             attributes = attributes,
             navigateToScreen = { screen ->
                 println("Navigating to $screen")

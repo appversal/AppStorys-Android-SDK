@@ -7,6 +7,59 @@ import com.google.gson.annotations.SerializedName
     val account_id: String?
 )
 
+@Keep data class ValidateAccountResponse(
+    val access_token: String?
+)
+
+@Keep
+data class MqttConnectionResponse(
+    val mqtt: MqttConfig,
+    val userID: String,
+    val screen_capture_enabled: Boolean?,
+)
+
+@Keep
+data class MqttConfig(
+    val broker: String,
+    val clientID: String,
+    val topic: String
+)
+
+@Keep
+data class TrackUserMqttRequest(
+    val screenName: String,
+    val user_id: String,
+    val attributes: Map<String, Any>
+)
+
+@Keep data class TrackScreenRequest(
+    val screen_name: String?,
+    val position_list: List<String>?,
+)
+
+@Keep data class TrackScreenResponse(
+    val campaigns: List<String>?
+)
+
+@Keep data class TrackUserRequest(
+    val user_id: String?,
+    val campaign_list: List<String>?,
+    val attributes: List<Map<String, Any>>?
+)
+
+@Keep data class CampaignResponse(
+    val userId: String?,
+    val campaigns: List<Campaign>?
+)
+
+@Keep data class Campaign(
+    val id: String?,
+    @SerializedName("campaign_type") val campaignType: String?,
+    val details: Any?,
+    val position: String?,
+    val screen: String?,
+)
+
 @Keep data class TrackAction(
     val campaign_id: String?,
     val user_id: String?,
@@ -39,38 +92,6 @@ import com.google.gson.annotations.SerializedName
     val event_type: String?,
     val reel_id: String?,
     val campaign_id: String?,
-)
-
-@Keep data class ValidateAccountResponse(
-    val access_token: String?
-)
-
-@Keep data class TrackScreenRequest(
-    val screen_name: String?,
-    val position_list: List<String>?,
-)
-
-@Keep data class TrackScreenResponse(
-    val campaigns: List<String>?
-)
-
-@Keep data class TrackUserRequest(
-    val user_id: String?,
-    val campaign_list: List<String>?,
-    val attributes: List<Map<String, Any>>?
-)
-
-@Keep data class CampaignResponse(
-    val user_id: String?,
-    val is_screen_capture_enabled: Boolean?,
-    val campaigns: List<Campaign>?
-)
-
-@Keep data class Campaign(
-    val id: String?,
-    @SerializedName("campaign_type") val campaignType: String?,
-    val details: Any?,
-    val position: String?
 )
 
 @Keep data class StoryGroup(
@@ -170,7 +191,8 @@ import com.google.gson.annotations.SerializedName
     val link: String?,
     val position: String?,
     val campaign: String?,
-    val styling: FloaterStyling?
+    val styling: FloaterStyling?,
+    val lottie_data: String?,
 )
 
 @Keep data class FloaterStyling(
@@ -215,14 +237,15 @@ import com.google.gson.annotations.SerializedName
     val csatHighStarColor: String?,
     val csatUnselectedStarColor: String?,
     val csatBackgroundColor: String?,
+    val csatOptionBoxColour: String?,
     val csatOptionTextColour: String?,
     val csatOptionStrokeColor: String?,
     val csatCtaBackgroundColor: String?,
     val csatAdditionalTextColor: String?,
     val csatDescriptionTextColor: String?,
     val csatSelectedOptionTextColor: String?,
+    val csatSelectedOptionStrokeColor: String?,
     val csatSelectedOptionBackgroundColor: String?,
-
 )
 
 @Keep data class CsatFeedbackPostRequest(
@@ -326,7 +349,20 @@ import com.google.gson.annotations.SerializedName
 )
 
 @Keep data class PipStyling(
-    val isMovable: Boolean?
+    val ctaWidth: String?,
+    val fontSize: String?,
+    val ctaHeight: String?,
+    val isMovable: Boolean?,
+    val marginTop: String?,
+    val fontFamily: String?,
+    val marginLeft: String?,
+    val marginRight: String?,
+    val cornerRadius: String?,
+    val ctaFullWidth: Boolean?,
+    val marginBottom: String?,
+    val fontDecoration: List<String>?,
+    val ctaButtonTextColor: String?,
+    val ctaButtonBackgroundColor: String?
 )
 
 @Keep data class BottomSheetDetails(
@@ -374,7 +410,7 @@ import com.google.gson.annotations.SerializedName
     val ctaTextColour: String? = null,
     val ctaFontSize: String? = null,
     val ctaFontFamily: String? = null,
-    val ctaFontDecoration: String? = null,
+    val ctaFontDecoration: List<String>? = emptyList(),
     val ctaBoxColor: String? = null,
     val ctaBackgroundColor: String? = null,
     val ctaFullWidth: Boolean? = null,
@@ -389,7 +425,7 @@ import com.google.gson.annotations.SerializedName
 @Keep data class FontStyle(
     val fontFamily: String?,
     val colour: String?,
-    val decoration: String?
+    val decoration: List<String>?
 )
 
 @Keep data class ModalDetails(

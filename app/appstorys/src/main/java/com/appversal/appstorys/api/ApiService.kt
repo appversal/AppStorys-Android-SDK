@@ -17,6 +17,12 @@ internal interface ApiService {
         @Body request: ValidateAccountRequest
     ): ValidateAccountResponse
 
+    @POST("track-user")
+    suspend fun getMqttConnectionDetails(
+        @Header("Authorization") token: String,
+        @Body request: TrackUserMqttRequest
+    ): MqttConnectionResponse
+
     @POST("api/v1/users/track-screen/")
     suspend fun trackScreen(
         @Header("Authorization") token: String,
@@ -27,7 +33,6 @@ internal interface ApiService {
     suspend fun trackUser(
         @Header("Authorization") token: String,
         @Body request: TrackUserRequest,
-
     ): CampaignResponse
 
     @POST("api/v1/users/track-action/")

@@ -63,10 +63,12 @@ internal fun CsatDialog(
             "csatSelectedOptionBackgroundColor" to csatDetails.styling?.csatSelectedOptionBackgroundColor.toColor(Color(0xFFE3F2FD)),
             "csatOptionStrokeColor" to csatDetails.styling?.csatOptionStrokeColor.toColor(Color(0xFFCCCCCC)),
             "csatSelectedOptionTextColor" to csatDetails.styling?.csatSelectedOptionTextColor.toColor(Color(0xFF007AFF)),
+            "csatOptionBoxColour" to csatDetails.styling?.csatOptionBoxColour.toColor(Color(0xFF007AFF)),
             "csatOptionTextColor" to csatDetails.styling?.csatOptionTextColour.toColor(Color.Black),
             "csatLowStarColor" to csatDetails.styling?.csatLowStarColor.toColor(Color.Black),
             "csatHighStarColor" to csatDetails.styling?.csatHighStarColor.toColor(Color.Black),
             "csatUnselectedStarColor" to csatDetails.styling?.csatUnselectedStarColor.toColor(Color.Black),
+            "csatSelectedOptionStrokeColor" to csatDetails.styling?.csatSelectedOptionStrokeColor.toColor(Color.Black),
             "csatAdditionalTextColor" to csatDetails.styling?.csatAdditionalTextColor.toColor(Color.Black)
         )
     }
@@ -274,12 +276,13 @@ private fun FeedbackContent(
                     .padding(vertical = 4.dp)
                     .border(
                         width = 1.dp,
-                        color = styling["csatOptionStrokeColor"]!!,
+                        color =  if (isSelected) styling["csatSelectedOptionStrokeColor"]!! else
+                            styling["csatOptionStrokeColor"]!!,
                         shape = RoundedCornerShape(24.dp)
                     )
                     .clickable { onOptionSelected(option) },
                 color = if (isSelected) styling["csatSelectedOptionBackgroundColor"]!!
-                else styling["csatBackgroundColor"]!!,
+                else styling["csatOptionBoxColour"]!!,
                 shape = RoundedCornerShape(24.dp)
             ) {
                 Text(
