@@ -16,6 +16,10 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
         val userId =
             jsonObject.get("user_id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
                 ?: ""
+
+        val messageId =
+            jsonObject.get("message_id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
+                ?: ""
         val campaignsJsonArray = jsonObject.getAsJsonArray("campaigns")?.takeIf { !it.isJsonNull }
         val isScreenCaptureEnabled =
             jsonObject.get("screen_capture_enabled")?.takeIf { !it.isJsonNull }?.asBoolean
@@ -35,6 +39,7 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
                 "TTP" -> context.deserialize(detailsJson, TooltipsDetails::class.java)
                 "PIP" -> context.deserialize(detailsJson, PipDetails::class.java)
                 "BTS" -> context.deserialize(detailsJson, BottomSheetDetails::class.java)
+                "SUR" -> context.deserialize(detailsJson, SurveyDetails::class.java)
                 "MOD" -> context.deserialize(detailsJson, ModalDetails::class.java)
                 "STR" -> context.deserialize(
                     detailsJson,
@@ -59,7 +64,8 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
         }
         return CampaignResponse(
             userId = userId,
-            campaigns = campaigns ?: emptyList()
+            campaigns = campaigns ?: emptyList(),
+            messageId = messageId
         )
     }
 }

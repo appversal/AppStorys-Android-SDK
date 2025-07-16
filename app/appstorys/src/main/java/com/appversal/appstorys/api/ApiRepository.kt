@@ -26,6 +26,13 @@ internal class ApiRepository(
     private var mqttConfig: MqttConfig? = null
     private var campaignResponseChannel = Channel<CampaignResponse?>(Channel.UNLIMITED)
 
+    private val sharedPreferences = context.getSharedPreferences("appstorys_sdk_prefs", Context.MODE_PRIVATE)
+    private var lastProcessedMessageId: String?
+        get() = sharedPreferences.getString("last_message_id", null)
+        set(value) {
+            sharedPreferences.edit().putString("last_message_id", value).apply()
+        }
+
     init {
         mqttClient = MqttWebSocketClient(context)
 
@@ -39,12 +46,25 @@ internal class ApiRepository(
                         )
                         .create()
                     val campaignResponse = gson.fromJson(message, CampaignResponse::class.java)
-                    if (getScreen().equals(
-                            campaignResponse.campaigns?.firstOrNull()?.screen,
-                            true
-                        )
+
+                    if (campaignResponse.messageId == lastProcessedMessageId) {
+                        Log.d("ApiRepository", "Duplicate MQTT message skipped: ${campaignResponse.messageId}")
+                        return@collect
+                    }
+                    lastProcessedMessageId = campaignResponse.messageId
+
+                    val campaign = campaignResponse.campaigns?.firstOrNull()
+                    val campaignId = campaign?.id
+                    val campaignScreen = campaign?.screen
+
+                    if (
+                        campaign != null &&
+                        getScreen().equals(campaignScreen, ignoreCase = true)
                     ) {
                         campaignResponseChannel.send(campaignResponse)
+                        Log.d("ApiRepository", "New campaign processed: ${campaignId}")
+                    } else {
+                        Log.d("ApiRepository", "Campaign skipped: $campaignId")
                     }
                 } catch (e: Exception) {
                     Log.e("ApiRepository", "Error parsing MQTT message: ${e.message}")
@@ -196,6 +216,20 @@ internal class ApiRepository(
                 )
             }) {
                 is ApiResult.Error -> println("Error capturing CSAT response: ${result.message}")
+                else -> Unit
+            }
+        }
+    }
+
+    suspend fun captureSurveyResponse(accessToken: String, actions: SurveyFeedbackPostRequest) {
+        withContext(Dispatchers.IO) {
+            when (val result = safeApiCall {
+                apiService.sendSurveyResponse(
+                    token = "Bearer $accessToken",
+                    request = actions
+                )
+            }) {
+                is ApiResult.Error -> println("Error capturing Survey response: ${result.message}")
                 else -> Unit
             }
         }

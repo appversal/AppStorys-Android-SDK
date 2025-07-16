@@ -133,7 +133,7 @@ object OverlayContainer {
 
                 campaignManager.TestUserButton()
 
-                // Add Survey here
+                campaignManager.Survey()
 
                 val visibleTooltips by remember {
                     derivedStateOf {

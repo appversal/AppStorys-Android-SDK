@@ -47,6 +47,12 @@ internal interface ApiService {
         @Body request: CsatFeedbackPostRequest
     )
 
+    @POST("api/v1/campaigns/capture-survey-response/")
+    suspend fun sendSurveyResponse(
+        @Header("Authorization") token: String,
+        @Body request: SurveyFeedbackPostRequest
+    )
+
     @POST("api/v1/campaigns/reel-like/")
     suspend fun sendReelLikeStatus(
         @Header("Authorization") token: String,

@@ -51,6 +51,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -60,6 +61,9 @@ import com.appversal.appstorys.ui.OverlayContainer
 import com.appversal.appstorys.utils.appstorys
 import com.example.carousal.ui.theme.CarousalTheme
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.text.AnnotatedString
+import android.widget.Toast
 
 
 class MainActivity : ComponentActivity() {
@@ -104,10 +108,10 @@ fun MyApp() {
             app.resetNavigation()
         }
     }
-    campaignManager.getScreenCampaigns(
-        "Home Screen",
-        listOf()
-    )
+//    campaignManager.getScreenCampaigns(
+//        "Home Screen",
+//        listOf()
+//    )
 
     var edgeToEdgePadding by remember { mutableStateOf(PaddingValues()) }
 
@@ -158,16 +162,33 @@ fun MyApp() {
 }
 
 @Composable
+fun CopyUserIdText() {
+    val campaignManager = App.appStorys
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
+    val userId = campaignManager.getUserId()
+
+    Text(
+        text = userId,
+        modifier = androidx.compose.ui.Modifier.clickable {
+            clipboardManager.setText(AnnotatedString(userId))
+            Toast.makeText(context, "User ID copied to clipboard", Toast.LENGTH_SHORT).show()
+        }
+    )
+}
+
+@Composable
 fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
-    val screenName  = "Home Screen"
-
-    campaignManager.getScreenCampaigns(
-        screenName,
-        listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty"),
-    )
+    LaunchedEffect(Unit) {
+        val screenName  = "Home Screen"
+        campaignManager.getScreenCampaigns(
+            screenName,
+            listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty"),
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -194,7 +215,8 @@ fun HomeScreen(padding: PaddingValues) {
 //                        .clickable { showBottomSheet = true },
                     contentScale = ContentScale.Fit
                 )
-                Box(modifier = Modifier.height(20.dp))
+
+                CopyUserIdText()
 
                 campaignManager.Widget(
                     modifier = Modifier.appstorys("tooltip_home"),
@@ -236,6 +258,10 @@ fun HomeScreen(padding: PaddingValues) {
                         campaignManager.trackEvents(
                             event = "Login"
                         )
+//                        campaignManager.trackEvents(
+//                            event = "Logout",
+//                            // optional metadata = mapOf()
+//                        )
                     },
                     modifier = Modifier
                 ) {
@@ -267,7 +293,8 @@ fun HomeScreen(padding: PaddingValues) {
                 Button(
                     onClick = {
                         campaignManager.trackEvents(
-                            event = "Logout"
+                            event = "Logout",
+                            // optional metadata = mapOf()
                         )
                     },
                     modifier = Modifier
@@ -442,10 +469,12 @@ fun PayScreenPage(
     screenType: String
 ) {
     val campaignManager = App.appStorys
-    campaignManager.getScreenCampaigns(
-        buttonText,
-        listOf()
-    )
+    LaunchedEffect(buttonText) {
+        campaignManager.getScreenCampaigns(
+            buttonText,
+            listOf()
+        )
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
