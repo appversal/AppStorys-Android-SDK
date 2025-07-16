@@ -69,6 +69,8 @@ import com.appversal.appstorys.api.ReelStatusRequest
 import com.appversal.appstorys.api.ReelsDetails
 import com.appversal.appstorys.api.RetrofitClient
 import com.appversal.appstorys.api.StoryGroup
+import com.appversal.appstorys.api.SurveyDetails
+import com.appversal.appstorys.api.SurveyFeedbackPostRequest
 import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackAction
@@ -90,6 +92,7 @@ import com.appversal.appstorys.ui.PipVideo
 import com.appversal.appstorys.ui.PopupModal
 import com.appversal.appstorys.ui.ReelsRow
 import com.appversal.appstorys.ui.StoryAppMain
+import com.appversal.appstorys.ui.SurveyBottomSheet
 import com.appversal.appstorys.ui.TooltipContent
 import com.appversal.appstorys.ui.TooltipPopup
 import com.appversal.appstorys.ui.TooltipPopupPosition
@@ -192,6 +195,9 @@ interface AppStorysAPI {
     fun BottomSheet()
 
     @Composable
+    fun Survey()
+
+    @Composable
     fun Modals()
 
     @Composable
@@ -202,6 +208,9 @@ interface AppStorysAPI {
 
     @Composable
     fun getBannerHeight(): Dp
+
+    @Composable
+    fun getUserId(): String
 
     companion object {
         @JvmStatic
@@ -1014,6 +1023,11 @@ object AppStorys : AppStorysAPI {
         return bannerDetails?.height?.dp ?: defaultHeight
     }
 
+    @Composable
+    override fun getUserId(): String {
+        return userId
+    }
+
     @RequiresApi(Build.VERSION_CODES.N)
     @Composable
     override fun PinnedBanner(
@@ -1506,6 +1520,53 @@ object AppStorys : AppStorysAPI {
                             clickEvent(link = ctaLink, campaignId = campaignId)
                             trackEvents(campaignId, "clicked")
                         }
+                    }
+                },
+            )
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.N)
+    @Composable
+    override fun Survey() {
+        var showSurvey by remember { mutableStateOf(true) }
+
+        val campaignsData = campaigns.collectAsStateWithLifecycle()
+
+        val campaign =
+            campaignsData.value.firstOrNull { it.campaignType == "SUR" && it.details is SurveyDetails }
+
+        val surveyDetails = when (val details = campaign?.details) {
+            is SurveyDetails -> details
+            else -> null
+        }
+
+        if (surveyDetails != null && showSurvey) {
+
+            LaunchedEffect(Unit) {
+                campaign?.id?.let {
+                    trackCampaignActions(it, "IMP")
+                    trackEvents(it, "viewed")
+                }
+            }
+
+            SurveyBottomSheet(
+                onDismissRequest = {
+                    showSurvey = false
+                },
+                surveyDetails = surveyDetails,
+                onSubmitFeedback = { feedback ->
+                    coroutineScope.launch {
+                        repository.captureSurveyResponse(
+                            accessToken,
+                            SurveyFeedbackPostRequest(
+                                user_id = userId,
+                                survey = surveyDetails.id,
+                                responseOptions = feedback.responseOptions,
+                                comment = feedback.comment
+                            )
+                        )
+                        trackEvents(surveyDetails.campaign, "clicked")
                     }
                 },
             )

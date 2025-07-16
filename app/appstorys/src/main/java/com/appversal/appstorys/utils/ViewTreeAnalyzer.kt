@@ -35,6 +35,7 @@ import androidx.core.graphics.createBitmap
 import com.appversal.appstorys.api.RetrofitClient.mqttApiService
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
+import java.security.MessageDigest
 
 val AppstorysViewTagKey = SemanticsPropertyKey<String>("AppstorysViewTagKey")
 
@@ -286,7 +287,8 @@ internal object ViewTreeAnalyzer {
                 analyzeSemanticsNode(
                     semanticsOwner.rootSemanticsNode,
                     view.context,
-                    onElementAnalyzed
+                    onElementAnalyzed,
+                    mutableListOf<Int>()
                 )
             } else {
                 Log.w(
@@ -308,6 +310,60 @@ internal object ViewTreeAnalyzer {
     }
 
     /**
+     * Generates a consistent ID for a SemanticsNode based on its properties and position in the tree.
+     *
+     * @param semanticsNode The SemanticsNode to generate an ID for.
+     * @param path The path from root to this node (list of child indices).
+     * @return A consistent string ID for this node.
+     */
+//    private fun generateConsistentId(semanticsNode: SemanticsNode, path: List<Int>): String {
+//        // Collect identifying properties
+//        val properties = mutableListOf<String>()
+//
+//        // Add path information (most reliable for consistency)
+//        properties.add("path:${path.joinToString("_")}")
+//
+//        // Add semantic properties that are likely to be stable
+//        semanticsNode.config.getOrNull(SemanticsProperties.Text)?.let { textList ->
+//            if (textList.isNotEmpty()) {
+//                properties.add("text:${textList.first().text}")
+//            }
+//        }
+//
+//        semanticsNode.config.getOrNull(SemanticsProperties.ContentDescription)?.let { contentDescList ->
+//            if (contentDescList.isNotEmpty()) {
+//                properties.add("desc:${contentDescList.first()}")
+//            }
+//        }
+//
+//        semanticsNode.config.getOrNull(SemanticsProperties.TestTag)?.let { testTag ->
+//            properties.add("tag:$testTag")
+//        }
+//
+//        // Add role information if available
+//        semanticsNode.config.getOrNull(SemanticsProperties.Role)?.let { role ->
+//            properties.add("role:$role")
+//        }
+//
+//        // Add size and position as fallback (less reliable but helps with uniqueness)
+//        val bounds = "${semanticsNode.size.width}x${semanticsNode.size.height}"
+//        val position = "${semanticsNode.positionInWindow.x.roundToInt()},${semanticsNode.positionInWindow.y.roundToInt()}"
+//        properties.add("bounds:$bounds")
+//        properties.add("pos:$position")
+//
+//        // Combine all properties
+//        val combinedProperties = properties.joinToString("|")
+//
+//        // Generate a hash for a shorter, consistent ID
+//        val hash = MessageDigest.getInstance("MD5")
+//            .digest(combinedProperties.toByteArray())
+//            .joinToString("") { "%02x".format(it) }
+//            .take(8) // Take first 8 characters for readability
+//
+//        return "compose_auto_$hash"
+//    }
+
+    /**
      * Recursively analyzes a SemanticsNode and its children.
      * Reports coordinates relative to the application window.
      *
@@ -318,10 +374,13 @@ internal object ViewTreeAnalyzer {
     private fun analyzeSemanticsNode(
         semanticsNode: SemanticsNode,
         context: Context,
-        onElementAnalyzed: (JsonObject) -> Unit
+        onElementAnalyzed: (JsonObject) -> Unit,
+        path: MutableList<Int>
     ) {
+        val explicitId = semanticsNode.config.getOrNull(AppstorysViewTagKey)
         // Attempt to extract a valid ID from the Semantics config
-        val nodeId = semanticsNode.config.getOrNull(AppstorysViewTagKey)
+        val nodeId = explicitId
+//            ?: generateConsistentId(semanticsNode, path)
 
         // Skip nodes that do not have a valid ID
         if (nodeId != null) {
@@ -346,8 +405,10 @@ internal object ViewTreeAnalyzer {
         }
 
         // Recursively analyze children nodes
-        semanticsNode.children.forEach { child ->
-            analyzeSemanticsNode(child, context, onElementAnalyzed)
+        semanticsNode.children.forEachIndexed { index, child ->
+            val childPath = path.toMutableList()
+            childPath.add(index)
+            analyzeSemanticsNode(child, context, onElementAnalyzed, childPath)
         }
     }
 

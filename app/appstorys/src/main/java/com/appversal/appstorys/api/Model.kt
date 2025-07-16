@@ -49,6 +49,7 @@ data class TrackUserMqttRequest(
 
 @Keep data class CampaignResponse(
     val userId: String?,
+    @SerializedName("message_id") val messageId: String?,
     val campaigns: List<Campaign>?
 )
 
@@ -420,6 +421,40 @@ data class TrackUserMqttRequest(
     val paddingRight: Int? = null,
     val paddingTop: Int? = null,
     val paddingBottom: Int? = null
+)
+
+@Keep
+data class SurveyDetails(
+    val id: String?,
+    val name: String?,
+    val styling: SurveyStyling?,
+    val surveyQuestion: String?,
+    val surveyOptions: Map<String, String>?,
+    val campaign: String?,
+    val hasOthers: Boolean?
+)
+
+@Keep
+data class SurveyStyling(
+    val optionColor: String?,
+    val displayDelay: String?,
+    val backgroundColor: String?,
+    val optionTextColor: String?,
+    val othersTextColor: String?,
+    val surveyTextColor: String?,
+    val ctaTextIconColor: String?,
+    val ctaBackgroundColor: String?,
+    val selectedOptionColor: String?,
+    val surveyQuestionColor: String?,
+    val othersBackgroundColor: String?,
+    val selectedOptionTextColor: String?
+)
+
+@Keep data class SurveyFeedbackPostRequest(
+    val user_id: String?,
+    val survey: String?,
+    val responseOptions: List<String>? = null,
+    val comment: String? = ""
 )
 
 @Keep data class FontStyle(
