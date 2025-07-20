@@ -345,10 +345,11 @@ object AppStorys : AppStorysAPI {
                     attributes = mergedAttributes
                 )
 
-                campaignResponse?.let { response ->
-                    isScreenCaptureEnabled = mqttResponse?.screen_capture_enabled ?: false
-                    response.campaigns?.let { _campaigns.emit(it) }
+                mqttResponse?.let { response ->
+                    isScreenCaptureEnabled = response.screen_capture_enabled ?: false
                 }
+
+                campaignResponse?.campaigns?.let { _campaigns.emit(it) }
             }
         } catch (exception: Exception) {
             Log.e("AppStorys", exception.message ?: "Error Fetch Data")

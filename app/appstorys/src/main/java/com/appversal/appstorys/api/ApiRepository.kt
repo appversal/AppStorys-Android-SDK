@@ -151,7 +151,8 @@ internal class ApiRepository(
                         Log.e("ApiRepository", "Failed to reconnect MQTT")
                         return@withContext Pair(null, null)
                     }
-                } else {
+
+                }
 
                     val requestBody = TrackUserMqttRequest(
                         screenName = screenName,
@@ -166,6 +167,7 @@ internal class ApiRepository(
                         )
                     }) {
                         is ApiResult.Success -> {
+                            Log.i("ApiRepository", "Parsed MQTT response: ${result.data}")
                             mqttResponse = result.data
                         }
 
@@ -177,7 +179,6 @@ internal class ApiRepository(
                             return@withContext Pair(null, null)
                         }
                     }
-                }
 
                 val campaignResponse = withTimeoutOrNull(timeoutMs) {
                     campaignResponseChannel.receive()
