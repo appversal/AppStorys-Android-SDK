@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="bottomPadding" format="dimension" />
+    <attr name="placeholder" format="reference" />
+
+    <declare-styleable name="BottomSheetView">
+        <attr name="open" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="CsatView">
+        <attr name="bottomPadding" />
+    </declare-styleable>
+    <declare-styleable name="FloaterView">
+        <attr name="bottomPadding" />
+    </declare-styleable>
+    <declare-styleable name="PinnedBannerView">
+        <attr name="bottomPadding" />
+        <attr name="placeholder" />
+    </declare-styleable>
+    <declare-styleable name="PipView">
+        <attr name="topPadding" format="dimension" />
+        <attr name="bottomPadding" />
+    </declare-styleable>
+    <declare-styleable name="TestUserButtonView">
+        <attr name="screenName" format="string" />
+    </declare-styleable>
+    <declare-styleable name="TooltipWrapperView">
+        <attr name="targetKey" format="string" />
+        <attr name="isNavigationBarItem" format="boolean" />
+    </declare-styleable>
+    <declare-styleable name="WidgetView">
+        <attr name="placeholder" />
+        <attr name="position" format="string" />
+    </declare-styleable>
+</resources>

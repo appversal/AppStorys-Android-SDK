@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.appversal.appstorys.ui.xml.OverlayLayoutView xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
+
+    <TextView
+            android:id="@+id/text_view_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hello!"
+            android:layout_gravity="top|start"
+            android:layout_marginTop="10dp"
+            android:layout_marginStart="10dp" />
+
+    <Button
+            android:id="@+id/cashbook"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Click Me"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="80dp" />
+
+    <ImageView
+            android:id="@+id/image_view_1"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@android:drawable/star_big_on"
+            android:contentDescription="Star"
+            android:layout_gravity="top|end"
+            android:layout_marginTop="20dp"
+            android:layout_marginEnd="20dp" />
+
+    <EditText
+            android:id="@+id/edit_text_1"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:hint="Type here"
+            android:layout_marginStart="30dp" />
+
+    <ProgressBar
+            android:id="@+id/tooltip_home"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center" />
+
+    <CheckBox
+            android:id="@+id/checkbox_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Option A"
+            android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="30dp" />
+
+    <RadioButton
+            android:id="@+id/radio_button_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Choice 1"
+            android:layout_gravity="bottom|start"
+            android:layout_marginBottom="50dp"
+            android:layout_marginStart="10dp" />
+
+    <Switch
+            android:id="@+id/switch_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Toggle"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="30dp" />
+
+    <RatingBar
+            android:id="@+id/rating_bar_1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:numStars="5"
+            android:stepSize="0.5"
+            android:layout_gravity="bottom|end"
+            android:layout_marginBottom="50dp"
+            android:layout_marginEnd="10dp"
+            style="?android:attr/ratingBarStyleSmall" />
+
+    <TextView
+            android:id="@+id/text_view_2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Some text"
+            android:layout_gravity="top|center_horizontal"
+            android:layout_marginTop="150dp" />
+
+</com.appversal.appstorys.ui.xml.OverlayLayoutView>
