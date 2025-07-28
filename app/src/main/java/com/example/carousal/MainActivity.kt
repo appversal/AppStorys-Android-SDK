@@ -3,6 +3,7 @@
 package com.example.carousal
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -189,9 +190,11 @@ fun HomeScreen(padding: PaddingValues) {
 
     LaunchedEffect(Unit) {
         val screenName  = "Home Screen"
+        val positions = listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty")
+        Log.i("Positions", "About to call getScreenCampaigns with: $positions")
         campaignManager.getScreenCampaigns(
             screenName,
-            listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty"),
+            positions,
         )
     }
 

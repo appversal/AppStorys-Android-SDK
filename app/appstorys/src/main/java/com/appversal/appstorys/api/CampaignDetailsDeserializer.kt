@@ -52,6 +52,9 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
             val position = campaignObject.get("position")
                 ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
 
+            val triggerEvent = campaignObject.get("trigger_event")
+                ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
+
             Campaign(
                 id = campaignObject.get("id")
                     ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: "",
@@ -60,6 +63,7 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
                 position = position,
                 screen = campaignObject.get("screen")
                     ?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes() ?: "",
+                triggerEvent = triggerEvent
             )
         }
         return CampaignResponse(

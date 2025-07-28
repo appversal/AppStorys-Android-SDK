@@ -7,6 +7,11 @@ import com.google.gson.annotations.SerializedName
     val account_id: String?
 )
 
+@Keep data class IdentifyPositionsRequest(
+    val screen_name: String?,
+    val position_list: List<String>?
+)
+
 @Keep data class ValidateAccountResponse(
     val access_token: String?
 )
@@ -59,6 +64,7 @@ data class TrackUserMqttRequest(
     val details: Any?,
     val position: String?,
     val screen: String?,
+    @SerializedName("trigger_event") val triggerEvent: String?,
 )
 
 @Keep data class TrackAction(

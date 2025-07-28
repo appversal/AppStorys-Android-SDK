@@ -17,11 +17,11 @@ internal object RetrofitClient {
 
     private val client by lazy {
         OkHttpClient.Builder()
-//            .addInterceptor(
-//                HttpLoggingInterceptor().apply {
-//                    level = HttpLoggingInterceptor.Level.BODY
-//                }
-//            )
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            )
             .build()
     }
 

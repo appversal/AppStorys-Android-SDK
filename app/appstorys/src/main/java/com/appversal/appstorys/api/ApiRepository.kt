@@ -90,6 +90,26 @@ internal class ApiRepository(
         }
     }
 
+    suspend fun sendWidgetPositions(accessToken: String,screenName: String, positionList: List<String>) {
+        return withContext(Dispatchers.IO) {
+            when (val result = safeApiCall {
+                apiService.identifyPositions(
+                    token = "Bearer $accessToken",
+                    IdentifyPositionsRequest(screen_name = screenName, position_list = positionList)
+                )
+            }) {
+                is ApiResult.Success -> {
+                    Log.i("ApiRepository", "Widgets Positions sent successfully.: ${result.data}")
+                    null
+                }
+                is ApiResult.Error -> {
+                    Log.e("ApiRepository", "Error getting access token: ${result.message}")
+                    null
+                }
+            }
+        }
+    }
+
     suspend fun initializeMqttConnection(
         accessToken: String,
         screenName: String,

@@ -32,6 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -279,6 +281,8 @@ object AppStorys : AppStorysAPI {
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val campaignsMutex = Mutex()
 
+    val trackedEventNames = mutableStateListOf<String>()
+
     @RequiresApi(Build.VERSION_CODES.N)
     private fun initiateData() {
         if (sdkState == AppStorysSdkState.Initialized || sdkState == AppStorysSdkState.Initializing) {
@@ -311,6 +315,13 @@ object AppStorys : AppStorysAPI {
         screenName: String,
         positionList: List<String>
     ) {
+        coroutineScope.launch {
+            repository.sendWidgetPositions(
+                accessToken = accessToken,
+                screenName = screenName,
+                positionList = positionList
+            )
+        }
         if (campaignsMutex.isLocked) {
             Log.w("AppStorys", "getScreenCampaigns is already running, skipping new request")
             return
@@ -399,6 +410,10 @@ object AppStorys : AppStorysAPI {
     ) {
         coroutineScope.launch {
             if (accessToken.isNotEmpty()) {
+                if (event != "viewed" && event != "clicked"){
+                    trackedEventNames.add(event)
+                }
+                Log.i("Tracked", "$trackedEventNames")
                 try {
                     val deviceInfo = getDeviceInfo(context)
                     val mergedMetadata = (metadata ?: emptyMap()) + deviceInfo
@@ -465,7 +480,10 @@ object AppStorys : AppStorysAPI {
                 else -> null
             }
 
-            if (csatDetails != null) {
+            val shouldShowCSAT = campaign?.triggerEvent.isNullOrEmpty() ||
+                    trackedEventNames.contains(campaign.triggerEvent)
+
+            if (csatDetails != null && shouldShowCSAT) {
                 val style = csatDetails.styling
                 var isVisibleState by remember { mutableStateOf(false) }
                 val updatedDelay by rememberUpdatedState(
@@ -482,7 +500,9 @@ object AppStorys : AppStorysAPI {
                 }
 
                 Box(
-                    modifier = Modifier.fillMaxSize().padding(bottom = bottomPadding),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(bottom = bottomPadding),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
@@ -538,7 +558,10 @@ object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (floaterDetails != null && !floaterDetails.image.isNullOrEmpty()) {
+        val shouldShowFloater = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (floaterDetails != null && !floaterDetails.image.isNullOrEmpty() && shouldShowFloater) {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
                     trackCampaignActions(it, "IMP")
@@ -546,7 +569,9 @@ object AppStorys : AppStorysAPI {
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomPadding)) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = bottomPadding)) {
                 val alignmentModifier = when (floaterDetails.position) {
                     "right" -> Modifier.align(Alignment.BottomEnd)
                     "left" -> Modifier.align(Alignment.BottomStart)
@@ -586,7 +611,6 @@ object AppStorys : AppStorysAPI {
         bottomPadding: Dp,
         topPadding: Dp,
     ) {
-        var showPip by remember { mutableStateOf(true) }
         val campaignsData = campaigns.collectAsStateWithLifecycle()
 
         val campaign =
@@ -597,53 +621,63 @@ object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty()) {
-            LaunchedEffect(Unit) {
-                campaign?.id?.let {
-                    trackCampaignActions(it, "IMP")
-                    trackEvents(it, "viewed")
-                }
-            }
+        val shouldShowPip = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
 
-            Box(modifier = modifier?.fillMaxWidth() ?: Modifier.fillMaxWidth()) {
-                if (showPip) {
-                    PipVideo(
-                        videoUri = pipDetails.small_video,
-                        fullScreenVideoUri = if (!pipDetails.large_video.isNullOrEmpty()) {
-                            pipDetails.large_video
-                        } else {
-                            null
-                        },
-                        onClose = {
-                            showPip = false
-                        },
-                        height = pipDetails.height?.dp ?: 180.dp,
-                        width = pipDetails.width?.dp ?: 120.dp,
-                        button_text = pipDetails.button_text.toString(),
-                        link = pipDetails.link.toString(),
-                        position = pipDetails.position.toString(),
-                        bottomPadding = bottomPadding,
-                        topPadding = topPadding,
-                        isMovable = pipDetails.styling?.isMovable!!,
-                        pipStyling = pipDetails.styling,
-                        onButtonClick = {
-                            campaign?.id?.let { campaignId ->
-                                trackCampaignActions(campaignId, "CLK")
-                                trackEvents(campaignId, "clicked")
-                            }
-                            if (!isValidUrl(pipDetails.link)) {
-                                navigateToScreen(pipDetails.link.toString())
+        if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty() && shouldShowPip) {
+            key (
+                campaign?.id, campaign?.triggerEvent, trackedEventNames.size
+            ) {
+
+                var showPip by remember { mutableStateOf(true) }
+                LaunchedEffect(Unit) {
+                    campaign?.id?.let {
+                        trackCampaignActions(it, "IMP")
+                        trackEvents(it, "viewed")
+                    }
+                }
+
+                Box(modifier = modifier?.fillMaxWidth() ?: Modifier.fillMaxWidth()) {
+                    if (showPip) {
+                        PipVideo(
+                            videoUri = pipDetails.small_video,
+                            fullScreenVideoUri = if (!pipDetails.large_video.isNullOrEmpty()) {
+                                pipDetails.large_video
                             } else {
-                                openUrl(pipDetails.link.toString())
+                                null
+                            },
+                            onClose = {
+                                showPip = false
+                                trackedEventNames.remove(campaign?.triggerEvent)
+                            },
+                            height = pipDetails.height?.dp ?: 180.dp,
+                            width = pipDetails.width?.dp ?: 120.dp,
+                            button_text = pipDetails.button_text.toString(),
+                            link = pipDetails.link.toString(),
+                            position = pipDetails.position.toString(),
+                            bottomPadding = bottomPadding,
+                            topPadding = topPadding,
+                            isMovable = pipDetails.styling?.isMovable!!,
+                            pipStyling = pipDetails.styling,
+                            onButtonClick = {
+                                campaign?.id?.let { campaignId ->
+                                    trackCampaignActions(campaignId, "CLK")
+                                    trackEvents(campaignId, "clicked")
+                                }
+                                if (!isValidUrl(pipDetails.link)) {
+                                    navigateToScreen(pipDetails.link.toString())
+                                } else {
+                                    openUrl(pipDetails.link.toString())
+                                }
+                            },
+                            onExpandClick = {
+                                campaign?.id?.let { campaignId ->
+                                    trackCampaignActions(campaignId, "IMP")
+                                    trackEvents(campaignId, "viewed")
+                                }
                             }
-                        },
-                        onExpandClick = {
-                            campaign?.id?.let { campaignId ->
-                                trackCampaignActions(campaignId, "IMP")
-                                trackEvents(campaignId, "viewed")
-                            }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -658,6 +692,9 @@ object AppStorys : AppStorysAPI {
                 val campaign =
                     campaignList.firstOrNull { it.campaignType == "TTP" && it.details is TooltipsDetails }
                 val tooltipsDetails = campaign?.details as? TooltipsDetails
+
+                val shouldShowTooltip = campaign?.triggerEvent.isNullOrEmpty() ||
+                        trackedEventNames.contains(campaign.triggerEvent)
                 if (tooltipsDetails != null) {
                     for (tooltip in tooltipsDetails.tooltips?.sortedBy { it.order }
                         ?: emptyList()) {
@@ -685,7 +722,10 @@ object AppStorys : AppStorysAPI {
         val campaign = campaignsData.value.firstOrNull { it.campaignType == "STR" }
         val storiesDetails = (campaign?.details as? List<*>)?.filterIsInstance<StoryGroup>()
 
-        if (!storiesDetails.isNullOrEmpty()) {
+        val shouldShowStories = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (!storiesDetails.isNullOrEmpty() && shouldShowStories) {
             StoryAppMain(
                 apiStoryGroups = storiesDetails,
                 sendEvent = {
@@ -718,7 +758,10 @@ object AppStorys : AppStorysAPI {
         val selectedReelIndex by selectedReelIndex.collectAsStateWithLifecycle()
         val visibility by reelFullScreenVisible.collectAsStateWithLifecycle()
 
-        if (reelsDetails?.reels != null && reelsDetails.reels.isNotEmpty()) {
+        val shouldShowReels = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (reelsDetails?.reels != null && reelsDetails.reels.isNotEmpty() && shouldShowReels) {
             Box(modifier = Modifier.fillMaxSize()) {
 
                 ReelsRow(
@@ -917,8 +960,11 @@ object AppStorys : AppStorysAPI {
         val campaign = campaignsData.value.firstOrNull {
             it.campaignType == "BAN" && it.details is BannerDetails
         }
+
+        val shouldShowBanner = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
         val bannerDetails = campaign?.details as? BannerDetails
-        if (bannerDetails != null && !disabledCampaigns.value.contains(campaign.id)) {
+        if (bannerDetails != null && !disabledCampaigns.value.contains(campaign.id) && shouldShowBanner) {
             val style = bannerDetails.styling
             val bannerUrl = bannerDetails.image
 
@@ -943,7 +989,9 @@ object AppStorys : AppStorysAPI {
                 }
             }
 
-            Box(modifier = Modifier.fillMaxSize().padding(bottom = bottomPadding)) {
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = bottomPadding)) {
                 com.appversal.appstorys.ui.PinnedBanner(
                     modifier = (modifier ?: Modifier)
                         .align(Alignment.BottomCenter)
@@ -1003,7 +1051,10 @@ object AppStorys : AppStorysAPI {
                 }
         val widgetDetails = campaign?.details as? WidgetDetails
 
-        if (widgetDetails != null) {
+        val shouldShowWidget = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (widgetDetails != null && shouldShowWidget) {
 
             if (widgetDetails.type == "full") {
 
@@ -1378,7 +1429,10 @@ object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (bottomSheetDetails != null && showBottomSheet) {
+        val shouldShowBottomSheet = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (bottomSheetDetails != null && showBottomSheet && shouldShowBottomSheet) {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1419,7 +1473,10 @@ object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (surveyDetails != null && showSurvey) {
+        val shouldShowSurvey = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (surveyDetails != null && showSurvey && shouldShowSurvey) {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1466,7 +1523,10 @@ object AppStorys : AppStorysAPI {
             else -> null
         }
 
-        if (modalDetails != null && showPopupModal) {
+        val shouldShowModals = campaign?.triggerEvent.isNullOrEmpty() ||
+                trackedEventNames.contains(campaign.triggerEvent)
+
+        if (modalDetails != null && showPopupModal && shouldShowModals) {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1543,7 +1603,8 @@ object AppStorys : AppStorysAPI {
                     onClick = {
                         shouldAnalyze = true
                     },
-                    modifier = modifier.padding(bottom = 86.dp, end = 16.dp)
+                    modifier = modifier
+                        .padding(bottom = 86.dp, end = 16.dp)
                         .align(Alignment.BottomEnd),
                     containerColor = Color.White
                 ) {
@@ -1563,6 +1624,7 @@ object AppStorys : AppStorysAPI {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     internal fun handleTooltipAction(tooltip: Tooltip, isClick: Boolean = false) {
         coroutineScope.launch {
             val campaign = campaigns.value.firstOrNull { campaign ->

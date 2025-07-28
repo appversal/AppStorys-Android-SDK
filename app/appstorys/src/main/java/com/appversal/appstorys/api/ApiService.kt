@@ -1,5 +1,6 @@
 package com.appversal.appstorys.api
 
+import androidx.annotation.Nullable
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.HttpException
@@ -16,6 +17,12 @@ internal interface ApiService {
     suspend fun validateAccount(
         @Body request: ValidateAccountRequest
     ): ValidateAccountResponse
+
+    @POST("api/v1/appinfo/identify-positions/")
+    suspend fun identifyPositions(
+        @Header("Authorization") token: String,
+        @Body request: IdentifyPositionsRequest
+    ): Nullable
 
     @POST("track-user")
     suspend fun getMqttConnectionDetails(
