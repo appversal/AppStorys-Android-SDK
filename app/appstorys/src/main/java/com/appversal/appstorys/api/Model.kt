@@ -32,9 +32,10 @@ data class MqttConfig(
 
 @Keep
 data class TrackUserMqttRequest(
-    val screenName: String,
     val user_id: String,
-    val attributes: Map<String, Any>
+    val attributes: Map<String, Any>,
+    val screenName: String? = null,
+    val silentUpdate: Boolean? = null,
 )
 
 @Keep data class TrackScreenRequest(

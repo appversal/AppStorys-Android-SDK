@@ -1,62 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.appversal.appstorys.ui.xml.OverlayLayoutView xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#f1f2f4"
+    app:pipBottomPadding="70dp"
+    app:topPadding="70dp">
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#f1f2f4">
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
 
-        <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:gravity="center_horizontal">
+        <ImageView
+            android:id="@+id/home_one_image"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="App Logo"
+            android:scaleType="fitXY"
+            android:src="@drawable/home_one" />
 
-            <ImageView
-                    android:id="@+id/home_one_image"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/home_one"
-                    android:contentDescription="App Logo" />
+        <!--            <Space-->
+        <!--                    android:layout_width="match_parent"-->
+        <!--                    android:layout_height="20dp" />-->
 
-<!--            <Space-->
-<!--                    android:layout_width="match_parent"-->
-<!--                    android:layout_height="20dp" />-->
+        <com.appversal.appstorys.ui.xml.WidgetView
+            android:id="@+id/tooltip_home"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-            <com.appversal.appstorys.ui.xml.WidgetView
-                    android:id="@+id/tooltip_home"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
+        <com.appversal.appstorys.ui.xml.WidgetView
+            android:id="@+id/tooltip_home_prem_test"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:placeholder="@drawable/ic_launcher_foreground"
+            app:position="widget_one" />
 
-            <com.appversal.appstorys.ui.xml.WidgetView
-                    android:id="@+id/tooltip_home_prem_test"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:placeholder="@drawable/ic_launcher_foreground"
-                    app:position="widget_one" />
+        <ImageView
+            android:id="@+id/app_logo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:adjustViewBounds="true"
+            android:contentDescription="App Logo"
+            android:scaleType="fitXY"
+            android:src="@drawable/home_two" />
 
-            <ImageView
-                    android:id="@+id/app_logo"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:scaleType="fitXY"
-                    android:src="@drawable/home_two"
-                    android:contentDescription="App Logo" />
-
-            <Button
-                android:id="@+id/open_bottom_sheet"
-                android:layout_width="187dp"
-                android:layout_height="59dp"
-                android:text="Open Bottom Sheet" />
+        <Button
+            android:id="@+id/open_bottom_sheet"
+            android:layout_width="187dp"
+            android:layout_height="59dp"
+            android:text="Open Bottom Sheet" />
 
 
-            <Button
-                    android:id="@+id/open_more_screen"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Open More Screen" />
-        </LinearLayout>
+        <Button
+            android:id="@+id/open_more_screen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Open More Screen" />
+    </LinearLayout>
+
+    <com.google.android.material.bottomnavigation.BottomNavigationView
+        android:id="@+id/bottom_navigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:background="?android:attr/windowBackground"
+        app:menu="@menu/bottom_nav_menu" />
 
 </com.appversal.appstorys.ui.xml.OverlayLayoutView>

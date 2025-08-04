@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <attr name="topPadding" format="dimension" />
     <attr name="bottomPadding" format="dimension" />
     <attr name="placeholder" format="reference" />
 
@@ -12,12 +13,21 @@
     <declare-styleable name="FloaterView">
         <attr name="bottomPadding" />
     </declare-styleable>
+    <declare-styleable name="OverlayLayoutView">
+        <attr name="topPadding" />
+        <attr name="bottomPadding" />
+        <attr name="bannerBottomPadding" format="dimension" />
+        <attr name="floaterBottomPadding" format="dimension" />
+        <attr name="pipTopPadding" format="dimension" />
+        <attr name="pipBottomPadding" format="dimension" />
+        <attr name="csatBottomPadding" format="dimension" />
+    </declare-styleable>
     <declare-styleable name="PinnedBannerView">
         <attr name="bottomPadding" />
         <attr name="placeholder" />
     </declare-styleable>
     <declare-styleable name="PipView">
-        <attr name="topPadding" format="dimension" />
+        <attr name="topPadding" />
         <attr name="bottomPadding" />
     </declare-styleable>
     <declare-styleable name="TestUserButtonView">

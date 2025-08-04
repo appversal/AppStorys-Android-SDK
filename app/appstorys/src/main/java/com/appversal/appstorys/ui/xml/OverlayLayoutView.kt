@@ -28,41 +28,45 @@ import com.appversal.appstorys.ui.OverlayContainer
  * @param attrs The attributes of the XML tag that is inflating the view.
  * @param defStyleAttr An attribute in the current theme that contains a reference to a style resource.
  */
-@Keep class OverlayLayoutView @JvmOverloads constructor(
+@Keep
+class OverlayLayoutView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
-
-    private var overlayComposeView: ComposeView
+    private var topPadding = 0
+    private var bottomPadding = 0
+    private var bannerBottomPadding = 0
+    private var floaterBottomPadding = 0
+    private var pipTopPadding = 0
+    private var pipBottomPadding = 0
+    private var csatBottomPadding = 0
 
     init {
-        // Initialize ComposeView but delay adding it until onFinishInflate()
-        overlayComposeView = ComposeView(context).apply {
-            setContent {
-                LaunchedEffect(Unit) {
-                    tooltipTargetView.collect { target ->
-                        handleTargetView(target?.target)
+        attrs?.let(::loadPaddings)
+        addView(
+            ComposeView(context).apply {
+                elevation = 1000f
+
+                setContent {
+                    LaunchedEffect(Unit) {
+                        tooltipTargetView.collect { target ->
+                            handleTargetView(target?.target)
+                        }
                     }
+
+                    OverlayContainer.Content(
+                        topPadding = topPadding.toDp(),
+                        bottomPadding = bottomPadding.toDp(),
+                        bannerBottomPadding = bannerBottomPadding.toDp(),
+                        floaterBottomPadding = floaterBottomPadding.toDp(),
+                        pipTopPadding = pipTopPadding.toDp(),
+                        pipBottomPadding = pipBottomPadding.toDp(),
+                        csatBottomPadding = csatBottomPadding.toDp()
+                    )
                 }
-
-                // Composable overlay content
-                OverlayContainer.Content(
-                    topPadding = 0.dp,
-                    bottomPadding = 0.dp
-                )
             }
-        }
-    }
-
-    override fun onFinishInflate() {
-        super.onFinishInflate()
-
-        // Add ComposeView after all XML children to ensure it's on top
-        addView(overlayComposeView)
-
-        // Optional: force it to front in case of future dynamic view additions
-        overlayComposeView.bringToFront()
+        )
     }
 
     /**
@@ -106,6 +110,39 @@ import com.appversal.appstorys.ui.OverlayContainer
         // Listen for layout changes to update the constraints dynamically.
         view.onLayoutChanges {
             OverlayContainer.addViewConstraint(target, view)
+        }
+    }
+
+    private fun loadPaddings(attrs: AttributeSet) {
+        context.withStyledAttributes(attrs, R.styleable.OverlayLayoutView) {
+            topPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_topPadding,
+                topPadding
+            )
+            bottomPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_bottomPadding,
+                bottomPadding
+            )
+            bannerBottomPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_bannerBottomPadding,
+                bannerBottomPadding
+            )
+            floaterBottomPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_floaterBottomPadding,
+                floaterBottomPadding
+            )
+            pipTopPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_pipTopPadding,
+                pipTopPadding
+            )
+            pipBottomPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_pipBottomPadding,
+                pipBottomPadding
+            )
+            csatBottomPadding = getDimensionPixelSize(
+                R.styleable.OverlayLayoutView_csatBottomPadding,
+                csatBottomPadding
+            )
         }
     }
 }

@@ -54,6 +54,8 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.coil.compose)
 
+    implementation ("com.google.android.material:material:1.11.0")
+
 
     implementation(project(":app:appstorys"))
     implementation(libs.androidx.navigation.compose)

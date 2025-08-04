@@ -31,5 +31,8 @@ class TestActivity : ComponentActivity() {
             "Home Screen",
             emptyList()
         )
+        lifecycleScope.launch {
+            App.appStorys.setUserProperties(mapOf("hello" to "world"))
+        }
     }
 }

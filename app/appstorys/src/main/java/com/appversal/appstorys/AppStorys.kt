@@ -54,6 +54,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appversal.appstorys.api.ApiRepository
+import com.appversal.appstorys.api.ApiResult
 import com.appversal.appstorys.api.BannerDetails
 import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.CSATDetails
@@ -74,8 +75,10 @@ import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackAction
 import com.appversal.appstorys.api.TrackActionStories
 import com.appversal.appstorys.api.TrackActionTooltips
+import com.appversal.appstorys.api.TrackUserMqttRequest
 import com.appversal.appstorys.api.WidgetDetails
 import com.appversal.appstorys.api.WidgetImage
+import com.appversal.appstorys.api.safeApiCall
 import com.appversal.appstorys.ui.AutoSlidingCarousel
 import com.appversal.appstorys.ui.BottomSheetComponent
 import com.appversal.appstorys.ui.CarousalImage
@@ -133,6 +136,8 @@ interface AppStorysAPI {
         event: String,
         metadata: Map<String, Any>? = null
     )
+
+    suspend fun setUserProperties(attributes: Map<String, Any>): Result<Unit>
 
     @Composable
     fun overlayElements(
@@ -328,10 +333,7 @@ object AppStorys : AppStorysAPI {
         }
         coroutineScope.launch {
             campaignsMutex.lock()
-            while (sdkState == AppStorysSdkState.Initializing) {
-                delay(100)
-            }
-            if (sdkState != AppStorysSdkState.Initialized || accessToken.isBlank()) {
+            if (!checkIfInitialized()) {
                 return@launch
             }
             try {
@@ -369,40 +371,6 @@ object AppStorys : AppStorysAPI {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    fun getDeviceInfo(context: Context): Map<String, Any> {
-        val packageManager = context.packageManager
-        val packageName = context.packageName
-        val packageInfo = packageManager.getPackageInfo(packageName, 0)
-        val appInfo = packageManager.getApplicationInfo(packageName, 0)
-        val installTime = packageInfo.firstInstallTime
-        val updateTime = packageInfo.lastUpdateTime
-
-        val metrics = context.resources.displayMetrics
-        val configuration = context.resources.configuration
-
-        return mapOf(
-            "manufacturer" to Build.MANUFACTURER,
-            "model" to Build.MODEL,
-            "os_version" to Build.VERSION.RELEASE,
-            "api_level" to Build.VERSION.SDK_INT,
-            "language" to configuration.locales[0].language,
-            "locale" to configuration.locales[0].toString(),
-            "timezone" to java.util.TimeZone.getDefault().id,
-            "screen_width_px" to metrics.widthPixels,
-            "screen_height_px" to metrics.heightPixels,
-            "screen_density" to metrics.densityDpi,
-            "orientation" to if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) "portrait" else "landscape",
-            "app_version" to packageInfo.versionName,
-            "package_name" to packageName,
-            "install_time" to installTime,
-            "update_time" to updateTime,
-            "device_type" to "mobile",
-            "platform" to "android"
-        )
-    }
-
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun trackEvents(
         campaign_id: String?,
         event: String,
@@ -410,7 +378,7 @@ object AppStorys : AppStorysAPI {
     ) {
         coroutineScope.launch {
             if (accessToken.isNotEmpty()) {
-                if (event != "viewed" && event != "clicked"){
+                if (event != "viewed" && event != "clicked") {
                     trackedEventNames.add(event)
                 }
                 Log.i("Tracked", "$trackedEventNames")
@@ -438,6 +406,34 @@ object AppStorys : AppStorysAPI {
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
+            }
+        }
+    }
+
+    override suspend fun setUserProperties(attributes: Map<String, Any>): Result<Unit> {
+        if (userId.isBlank() || !checkIfInitialized()) {
+            Log.e("AppStorys", "Credentials not available")
+            return Result.failure(Exception("Credentials not available"))
+        }
+        val result = safeApiCall {
+            mqttService.getMqttConnectionDetails(
+                token = "Bearer $accessToken",
+                request = TrackUserMqttRequest(
+                    user_id = userId,
+                    attributes = attributes,
+                    silentUpdate = true
+                )
+            )
+        }
+        return when (result) {
+            is ApiResult.Success -> {
+                Log.i("AppStorys", "User properties updated successfully")
+                Result.success(Unit)
+            }
+
+            is ApiResult.Error -> {
+                Log.e("AppStorys", "Error updating user properties: ${result.message}")
+                Result.failure(Exception(result.message))
             }
         }
     }
@@ -569,9 +565,11 @@ object AppStorys : AppStorysAPI {
                 }
             }
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = bottomPadding)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = bottomPadding)
+            ) {
                 val alignmentModifier = when (floaterDetails.position) {
                     "right" -> Modifier.align(Alignment.BottomEnd)
                     "left" -> Modifier.align(Alignment.BottomStart)
@@ -625,7 +623,7 @@ object AppStorys : AppStorysAPI {
                 trackedEventNames.contains(campaign.triggerEvent)
 
         if (pipDetails != null && !pipDetails.small_video.isNullOrEmpty() && shouldShowPip) {
-            key (
+            key(
                 campaign?.id, campaign?.triggerEvent, trackedEventNames.size
             ) {
 
@@ -989,9 +987,11 @@ object AppStorys : AppStorysAPI {
                 }
             }
 
-            Box(modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = bottomPadding)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(bottom = bottomPadding)
+            ) {
                 com.appversal.appstorys.ui.PinnedBanner(
                     modifier = (modifier ?: Modifier)
                         .align(Alignment.BottomCenter)
@@ -1753,6 +1753,50 @@ object AppStorys : AppStorysAPI {
         }
     }
 
+    private fun getDeviceInfo(context: Context): Map<String, Any> {
+        val packageManager = context.packageManager
+        val packageName = context.packageName
+        val packageInfo = packageManager.getPackageInfo(packageName, 0)
+        val appInfo = packageManager.getApplicationInfo(packageName, 0)
+        val installTime = packageInfo.firstInstallTime
+        val updateTime = packageInfo.lastUpdateTime
+
+        val metrics = context.resources.displayMetrics
+        val configuration = context.resources.configuration
+
+        return mapOf(
+            "manufacturer" to Build.MANUFACTURER,
+            "model" to Build.MODEL,
+            "os_version" to Build.VERSION.RELEASE,
+            "api_level" to Build.VERSION.SDK_INT,
+            "language" to when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> configuration.locales[0].language
+                else -> configuration.locale.language
+            },
+            "locale" to when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.N -> configuration.locales[0].toString()
+                else -> configuration.locale.toString()
+            },
+            "timezone" to java.util.TimeZone.getDefault().id,
+            "screen_width_px" to metrics.widthPixels,
+            "screen_height_px" to metrics.heightPixels,
+            "screen_density" to metrics.densityDpi,
+            "orientation" to if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) "portrait" else "landscape",
+            "app_version" to packageInfo.versionName,
+            "package_name" to packageName,
+            "install_time" to installTime,
+            "update_time" to updateTime,
+            "device_type" to "mobile",
+            "platform" to "android"
+        )
+    }
+
+    private suspend fun checkIfInitialized(): Boolean {
+        while (sdkState == AppStorysSdkState.Initializing) {
+            delay(100)
+        }
+        return !(sdkState != AppStorysSdkState.Initialized || accessToken.isBlank())
+    }
 
     private fun isValidUrl(url: String?): Boolean {
         return !url.isNullOrEmpty() && Patterns.WEB_URL.matcher(url).matches()

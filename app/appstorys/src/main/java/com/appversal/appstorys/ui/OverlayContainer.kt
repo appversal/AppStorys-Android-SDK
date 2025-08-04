@@ -1,12 +1,12 @@
 package com.appversal.appstorys.ui
 
 import android.graphics.Rect
-import android.os.Build
 import android.util.Log
 import android.view.View
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -88,10 +88,17 @@ object OverlayContainer {
      *
      * @param modifier The `Modifier` to be applied to the overlay container.
      */
-    @RequiresApi(Build.VERSION_CODES.N)
     @Composable
-    fun Content(modifier: Modifier = Modifier, topPadding: Dp, bottomPadding: Dp) {
-
+    fun Content(
+        modifier: Modifier = Modifier,
+        topPadding: Dp,
+        bottomPadding: Dp,
+        bannerBottomPadding: Dp = 0.dp,
+        floaterBottomPadding: Dp = 0.dp,
+        pipTopPadding: Dp = 0.dp,
+        pipBottomPadding: Dp = 0.dp,
+        csatBottomPadding: Dp = 0.dp,
+    ) {
         val campaignManager = AppStorysAPI.getInstance()
 
         // Collects the target view for tooltips and updates the tooltip list.
@@ -105,23 +112,26 @@ object OverlayContainer {
         }
 
         Box(
-            modifier = modifier.fillMaxSize(),
+            modifier = modifier
+                .fillMaxSize()
+                .navigationBarsPadding()
+                .statusBarsPadding(),
             content = {
                 campaignManager.PinnedBanner(
-                    bottomPadding = bottomPadding
+                    bottomPadding = bottomPadding + bannerBottomPadding,
                 )
 
                 campaignManager.Floater(
-                    bottomPadding = bottomPadding
+                    bottomPadding = bottomPadding + floaterBottomPadding,
                 )
 
                 campaignManager.Pip(
-                    bottomPadding = bottomPadding,
-                    topPadding = topPadding,
+                    topPadding = topPadding + pipTopPadding,
+                    bottomPadding = bottomPadding + pipBottomPadding,
                 )
 
                 campaignManager.CSAT(
-                    bottomPadding = bottomPadding
+                    bottomPadding = bottomPadding + csatBottomPadding,
                 )
 
                 campaignManager.BottomSheet()

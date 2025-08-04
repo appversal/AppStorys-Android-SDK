@@ -14,6 +14,8 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
+import androidx.core.content.edit
+import com.google.gson.GsonBuilder
 
 internal class ApiRepository(
     context: Context,
@@ -26,11 +28,12 @@ internal class ApiRepository(
     private var mqttConfig: MqttConfig? = null
     private var campaignResponseChannel = Channel<CampaignResponse?>(Channel.UNLIMITED)
 
-    private val sharedPreferences = context.getSharedPreferences("appstorys_sdk_prefs", Context.MODE_PRIVATE)
+    private val sharedPreferences =
+        context.getSharedPreferences("appstorys_sdk_prefs", Context.MODE_PRIVATE)
     private var lastProcessedMessageId: String?
         get() = sharedPreferences.getString("last_message_id", null)
         set(value) {
-            sharedPreferences.edit().putString("last_message_id", value).apply()
+            sharedPreferences.edit { putString("last_message_id", value) }
         }
 
     init {
@@ -39,7 +42,7 @@ internal class ApiRepository(
         CoroutineScope(Dispatchers.IO).launch {
             mqttClient?.messageFlow?.collect { message ->
                 try {
-                    val gson = com.google.gson.GsonBuilder()
+                    val gson = GsonBuilder()
                         .registerTypeAdapter(
                             CampaignResponse::class.java,
                             CampaignResponseDeserializer()
@@ -48,7 +51,10 @@ internal class ApiRepository(
                     val campaignResponse = gson.fromJson(message, CampaignResponse::class.java)
 
                     if (campaignResponse.messageId == lastProcessedMessageId) {
-                        Log.d("ApiRepository", "Duplicate MQTT message skipped: ${campaignResponse.messageId}")
+                        Log.d(
+                            "ApiRepository",
+                            "Duplicate MQTT message skipped: ${campaignResponse.messageId}"
+                        )
                         return@collect
                     }
                     lastProcessedMessageId = campaignResponse.messageId
@@ -62,7 +68,7 @@ internal class ApiRepository(
                         getScreen().equals(campaignScreen, ignoreCase = true)
                     ) {
                         campaignResponseChannel.send(campaignResponse)
-                        Log.d("ApiRepository", "New campaign processed: ${campaignId}")
+                        Log.d("ApiRepository", "New campaign processed: $campaignId")
                     } else {
                         Log.d("ApiRepository", "Campaign skipped: $campaignId")
                     }
@@ -90,7 +96,11 @@ internal class ApiRepository(
         }
     }
 
-    suspend fun sendWidgetPositions(accessToken: String,screenName: String, positionList: List<String>) {
+    suspend fun sendWidgetPositions(
+        accessToken: String,
+        screenName: String,
+        positionList: List<String>
+    ) {
         return withContext(Dispatchers.IO) {
             when (val result = safeApiCall {
                 apiService.identifyPositions(
@@ -102,6 +112,7 @@ internal class ApiRepository(
                     Log.i("ApiRepository", "Widgets Positions sent successfully.: ${result.data}")
                     null
                 }
+
                 is ApiResult.Error -> {
                     Log.e("ApiRepository", "Error getting access token: ${result.message}")
                     null
@@ -118,15 +129,14 @@ internal class ApiRepository(
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val requestBody = TrackUserMqttRequest(
-                    screenName = screenName,
-                    user_id = userId,
-                    attributes = attributes ?: emptyMap()
-                )
                 when (val result = safeApiCall {
                     mqttApiService.getMqttConnectionDetails(
                         token = "Bearer $accessToken",
-                        request = requestBody
+                        request = TrackUserMqttRequest(
+                            screenName = screenName,
+                            user_id = userId,
+                            attributes = attributes ?: emptyMap()
+                        )
                     )
                 }) {
                     is ApiResult.Success -> {
@@ -158,7 +168,7 @@ internal class ApiRepository(
     ): Pair<CampaignResponse?, MqttConnectionResponse?> {
         return withContext(Dispatchers.IO) {
             try {
-                var mqttResponse: MqttConnectionResponse? = null
+                var mqttResponse: MqttConnectionResponse?
 
                 while (!campaignResponseChannel.isEmpty) {
                     campaignResponseChannel.tryReceive()
@@ -174,31 +184,29 @@ internal class ApiRepository(
 
                 }
 
-                    val requestBody = TrackUserMqttRequest(
-                        screenName = screenName,
-                        user_id = userId,
-                        attributes = attributes ?: emptyMap()
-                    )
-
-                    when (val result = safeApiCall {
-                        mqttApiService.getMqttConnectionDetails(
-                            token = "Bearer $accessToken",
-                            request = requestBody
+                when (val result = safeApiCall {
+                    mqttApiService.getMqttConnectionDetails(
+                        token = "Bearer $accessToken",
+                        request = TrackUserMqttRequest(
+                            screenName = screenName,
+                            user_id = userId,
+                            attributes = attributes ?: emptyMap()
                         )
-                    }) {
-                        is ApiResult.Success -> {
-                            Log.i("ApiRepository", "Parsed MQTT response: ${result.data}")
-                            mqttResponse = result.data
-                        }
-
-                        is ApiResult.Error -> {
-                            Log.e(
-                                "ApiRepository",
-                                "Error sending track-user request: ${result.message}"
-                            )
-                            return@withContext Pair(null, null)
-                        }
+                    )
+                }) {
+                    is ApiResult.Success -> {
+                        Log.i("ApiRepository", "Parsed MQTT response: ${result.data}")
+                        mqttResponse = result.data
                     }
+
+                    is ApiResult.Error -> {
+                        Log.e(
+                            "ApiRepository",
+                            "Error sending track-user request: ${result.message}"
+                        )
+                        return@withContext Pair(null, null)
+                    }
+                }
 
                 val campaignResponse = withTimeoutOrNull(timeoutMs) {
                     campaignResponseChannel.receive()
@@ -347,9 +355,8 @@ internal class ApiRepository(
                 }
 
                 when (result) {
-                    is ApiResult.Success -> println("Tooltip identified: ${result}")
+                    is ApiResult.Success -> println("Tooltip identified: $result")
                     is ApiResult.Error -> println("Tooltip Server error: ${result.code} ${result.message}")
-                    else -> println("Unknown result")
                 }
             } catch (e: Exception) {
                 println("Exception in tooltipIdentify: ${e.message}")

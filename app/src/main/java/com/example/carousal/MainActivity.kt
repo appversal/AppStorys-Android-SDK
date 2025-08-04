@@ -65,6 +65,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.AnnotatedString
 import android.widget.Toast
+import kotlinx.coroutines.coroutineScope
 
 
 class MainActivity : ComponentActivity() {
@@ -203,6 +204,7 @@ fun HomeScreen(padding: PaddingValues) {
             .fillMaxSize()
             .background(Color(0xFFf1f2f4))
     ) {
+        val coroutineScope = rememberCoroutineScope()
         // Scrollable Column using LazyColumn
         LazyColumn(
             modifier = Modifier
@@ -251,9 +253,12 @@ fun HomeScreen(padding: PaddingValues) {
                 ) {
                     Button(
                         onClick = {
-                            campaignManager.trackEvents(
-                                event = "Button clicked"
-                            )
+//                            campaignManager.trackEvents(
+//                                event = "Button clicked"
+//                            )
+                            coroutineScope.launch {
+                                campaignManager.setUserProperties(mapOf("test" to "prem"))
+                            }
                         },
                         modifier = Modifier.appstorys("open_bottom_sheet")
                     ) {
