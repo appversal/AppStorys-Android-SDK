@@ -137,7 +137,7 @@ interface AppStorysAPI {
         metadata: Map<String, Any>? = null
     )
 
-    suspend fun setUserProperties(attributes: Map<String, Any>): Result<Unit>
+    fun setUserProperties(attributes: Map<String, Any>)
 
     @Composable
     fun overlayElements(
@@ -410,30 +410,30 @@ object AppStorys : AppStorysAPI {
         }
     }
 
-    override suspend fun setUserProperties(attributes: Map<String, Any>): Result<Unit> {
-        if (userId.isBlank() || !checkIfInitialized()) {
-            Log.e("AppStorys", "Credentials not available")
-            return Result.failure(Exception("Credentials not available"))
-        }
-        val result = safeApiCall {
-            mqttService.getMqttConnectionDetails(
-                token = "Bearer $accessToken",
-                request = TrackUserMqttRequest(
-                    user_id = userId,
-                    attributes = attributes,
-                    silentUpdate = true
-                )
-            )
-        }
-        return when (result) {
-            is ApiResult.Success -> {
-                Log.i("AppStorys", "User properties updated successfully")
-                Result.success(Unit)
+    override fun setUserProperties(attributes: Map<String, Any>) {
+        coroutineScope.launch {
+            if (userId.isBlank() || !checkIfInitialized()) {
+                Log.e("AppStorys", "Credentials not available")
+                return@launch
             }
+            val result = safeApiCall {
+                mqttService.getMqttConnectionDetails(
+                    token = "Bearer $accessToken",
+                    request = TrackUserMqttRequest(
+                        user_id = userId,
+                        attributes = attributes,
+                        silentUpdate = true
+                    )
+                )
+            }
+            when (result) {
+                is ApiResult.Success -> {
+                    Log.i("AppStorys", "User properties updated successfully")
+                }
 
-            is ApiResult.Error -> {
-                Log.e("AppStorys", "Error updating user properties: ${result.message}")
-                Result.failure(Exception(result.message))
+                is ApiResult.Error -> {
+                    Log.e("AppStorys", "Error updating user properties: ${result.message}")
+                }
             }
         }
     }
