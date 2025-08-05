@@ -256,9 +256,7 @@ fun HomeScreen(padding: PaddingValues) {
 //                            campaignManager.trackEvents(
 //                                event = "Button clicked"
 //                            )
-                            coroutineScope.launch {
                                 campaignManager.setUserProperties(mapOf("test" to "prem"))
-                            }
                         },
                         modifier = Modifier.appstorys("open_bottom_sheet")
                     ) {
