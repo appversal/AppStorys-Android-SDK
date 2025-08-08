@@ -402,6 +402,8 @@ object AppStorys : AppStorysAPI {
                         )
                         .addHeader("Authorization", "Bearer $accessToken")
                         .build()
+
+                    Log.i("TrackEvent", "TrackEvent $requestBody")
                     val response = client.newCall(request).execute()
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -488,7 +490,6 @@ object AppStorys : AppStorysAPI {
 
                 LaunchedEffect(Unit) {
                     campaign?.id?.let {
-                        trackCampaignActions(it, "IMP")
                         trackEvents(it, "viewed")
                     }
                     delay(updatedDelay?.times(1000) ?: 0)
@@ -560,7 +561,6 @@ object AppStorys : AppStorysAPI {
         if (floaterDetails != null && !floaterDetails.image.isNullOrEmpty() && shouldShowFloater) {
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
-                    trackCampaignActions(it, "IMP")
                     trackEvents(it, "viewed")
                 }
             }
@@ -630,7 +630,6 @@ object AppStorys : AppStorysAPI {
                 var showPip by remember { mutableStateOf(true) }
                 LaunchedEffect(Unit) {
                     campaign?.id?.let {
-                        trackCampaignActions(it, "IMP")
                         trackEvents(it, "viewed")
                     }
                 }
@@ -659,7 +658,6 @@ object AppStorys : AppStorysAPI {
                             pipStyling = pipDetails.styling,
                             onButtonClick = {
                                 campaign?.id?.let { campaignId ->
-                                    trackCampaignActions(campaignId, "CLK")
                                     trackEvents(campaignId, "clicked")
                                 }
                                 if (!isValidUrl(pipDetails.link)) {
@@ -670,7 +668,6 @@ object AppStorys : AppStorysAPI {
                             },
                             onExpandClick = {
                                 campaign?.id?.let { campaignId ->
-                                    trackCampaignActions(campaignId, "IMP")
                                     trackEvents(campaignId, "viewed")
                                 }
                             }
@@ -982,7 +979,6 @@ object AppStorys : AppStorysAPI {
 
             LaunchedEffect(Unit) {
                 campaign.id?.let {
-                    trackCampaignActions(it, "IMP")
                     trackEvents(it, "viewed")
                 }
             }
@@ -1129,11 +1125,6 @@ object AppStorys : AppStorysAPI {
                 if (isVisible) {
                     campaign?.id?.let {
                         val currentWidgetId = widgetDetails.widgetImages[pagerState.currentPage].id
-                        trackCampaignActions(
-                            it,
-                            "IMP",
-                            widgetDetails.widgetImages[pagerState.currentPage].id
-                        )
 
                         if (currentWidgetId != null && !impressions.value.contains(currentWidgetId)) {
                             val impressions = ArrayList(impressions.value)
@@ -1263,11 +1254,6 @@ object AppStorys : AppStorysAPI {
             LaunchedEffect(pagerState.currentPage, isVisible) {
                 if (isVisible) {
                     campaign?.id?.let {
-                        trackCampaignActions(
-                            it,
-                            "IMP",
-                            widgetImagesPairs[pagerState.currentPage].first.id
-                        )
 
                         if (widgetImagesPairs[pagerState.currentPage].first.id != null && !impressions.value.contains(
                                 widgetImagesPairs[pagerState.currentPage].first.id
@@ -1292,12 +1278,6 @@ object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!)
                             )
                         }
-
-                        trackCampaignActions(
-                            it,
-                            "IMP",
-                            widgetImagesPairs[pagerState.currentPage].second.id
-                        )
 
                         if (widgetImagesPairs[pagerState.currentPage].second.id != null && !impressions.value.contains(
                                 widgetImagesPairs[pagerState.currentPage].second.id
@@ -1436,7 +1416,6 @@ object AppStorys : AppStorysAPI {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
-                    trackCampaignActions(it, "IMP")
                     trackEvents(it, "viewed")
                 }
             }
@@ -1480,7 +1459,6 @@ object AppStorys : AppStorysAPI {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
-                    trackCampaignActions(it, "IMP")
                     trackEvents(it, "viewed")
                 }
             }
@@ -1530,7 +1508,6 @@ object AppStorys : AppStorysAPI {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
-                    trackCampaignActions(it, "IMP")
                     trackEvents(it, "viewed")
                 }
             }
@@ -1543,7 +1520,6 @@ object AppStorys : AppStorysAPI {
                 modalDetails = modalDetails,
                 onModalClick = {
                     campaign?.id?.let { campaignId ->
-                        trackCampaignActions(campaignId, "CLK")
                         trackEvents(campaignId, "clicked")
                     }
                     val link = modalDetails.modals?.getOrNull(0)?.link
@@ -1680,7 +1656,6 @@ object AppStorys : AppStorysAPI {
                 } else {
                     openUrl(link)
                 }
-                trackCampaignActions(campaignId, "CLK", widgetImageId)
             }
         } else if (link is Map<*, *>) {
             val json = JSONObject(link)
@@ -1700,7 +1675,6 @@ object AppStorys : AppStorysAPI {
                 navigateToScreen(value)
             }
 
-            trackCampaignActions(campaignId, "CLK", widgetImageId)
         } catch (e: Exception) {
             Log.e("DeepLinkException", e.message.toString())
         }
@@ -1717,40 +1691,6 @@ object AppStorys : AppStorysAPI {
             }
 
         return widgetImagePairs
-    }
-
-    private fun trackCampaignActions(
-        campId: String,
-        eventType: String,
-        widgetImageId: String? = null
-    ) {
-        coroutineScope.launch {
-            if (eventType != "CLK") {
-                if (widgetImageId != null && !impressions.value.contains(widgetImageId)) {
-                    val impressions = ArrayList(impressions.value)
-                    impressions.add(widgetImageId)
-                    _impressions.emit(impressions)
-                    repository.trackActions(
-                        accessToken,
-                        TrackAction(campId, userId, eventType, widgetImageId)
-                    )
-
-                } else if (!impressions.value.contains(campId)) {
-                    val impressions = ArrayList(impressions.value)
-                    impressions.add(campId)
-                    _impressions.emit(impressions)
-                    repository.trackActions(
-                        accessToken,
-                        TrackAction(campId, userId, eventType, null)
-                    )
-                }
-            } else {
-                repository.trackActions(
-                    accessToken,
-                    TrackAction(campId, userId, eventType, widgetImageId)
-                )
-            }
-        }
     }
 
     private fun getDeviceInfo(context: Context): Map<String, Any> {

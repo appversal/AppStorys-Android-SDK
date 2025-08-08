@@ -33,8 +33,8 @@ class App : Application() {
             context = this,
             appId = "9e1b21a2-350a-4592-918c-2a19a73f249a",
             accountId = "4350bf8e-0c9a-46bd-b953-abb65ab21d11",
-//            userId = userId,
-            userId = "nameisprem",
+            userId = userId,
+//            userId = "nameisprem",
             attributes = attributes,
             navigateToScreen = { screen ->
                 println("Navigating to $screen")

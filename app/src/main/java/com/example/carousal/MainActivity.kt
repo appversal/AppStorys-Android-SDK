@@ -65,6 +65,9 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.text.AnnotatedString
 import android.widget.Toast
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import kotlinx.coroutines.coroutineScope
 
 
@@ -189,6 +192,14 @@ fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
+    // State variables for input fields
+    var input1 by remember { mutableStateOf("") }
+    var input2 by remember { mutableStateOf("") }
+
+    var eventInput1 by remember { mutableStateOf("") }
+    var eventInput2 by remember { mutableStateOf("") }
+    var eventInput3 by remember { mutableStateOf("") }
+
     LaunchedEffect(Unit) {
         val screenName  = "Home Screen"
         val positions = listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty")
@@ -253,10 +264,9 @@ fun HomeScreen(padding: PaddingValues) {
                 ) {
                     Button(
                         onClick = {
-//                            campaignManager.trackEvents(
-//                                event = "Button clicked"
-//                            )
-                                campaignManager.setUserProperties(mapOf("test" to "prem"))
+                            campaignManager.trackEvents(
+                                event = "Open Bottom Sheet Event"
+                            )
                         },
                         modifier = Modifier.appstorys("open_bottom_sheet")
                     ) {
@@ -264,20 +274,64 @@ fun HomeScreen(padding: PaddingValues) {
                     }
                 }
 
-                Button(
-                    onClick = {
-                        campaignManager.trackEvents(
-                            event = "Login"
-                        )
-//                        campaignManager.trackEvents(
-//                            event = "Logout",
-//                            // optional metadata = mapOf()
-//                        )
-                    },
+                Row(
                     modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("Login Event")
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        OutlinedTextField(
+                            value = eventInput1,
+                            onValueChange = { eventInput1 = it },
+                            label = { Text("Event Input 1") },
+                            placeholder = { Text("Enter value for name") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black,
+                                focusedLabelColor = Color.Black,
+                                unfocusedLabelColor = Color.Gray
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        OutlinedTextField(
+                            value = eventInput2,
+                            onValueChange = { eventInput2 = it },
+                            label = { Text("Event Input 2") },
+                            placeholder = { Text("Enter value for age") },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = Color.Black,
+                                unfocusedTextColor = Color.Black,
+                                focusedLabelColor = Color.Black,
+                                unfocusedLabelColor = Color.Gray
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Button(
+                        onClick = {
+                            campaignManager.trackEvents(
+                                event = "Login",
+                                metadata = mapOf(
+                                    "name" to eventInput1,
+                                    "age" to eventInput2
+                                )
+                            )
+                        },
+                        modifier = Modifier
+                    ) {
+                        Text("Login Event")
+                    }
                 }
+
 
                 Button(
                     onClick = {
@@ -305,7 +359,6 @@ fun HomeScreen(padding: PaddingValues) {
                     onClick = {
                         campaignManager.trackEvents(
                             event = "Logout",
-                            // optional metadata = mapOf()
                         )
                     },
                     modifier = Modifier
@@ -322,6 +375,80 @@ fun HomeScreen(padding: PaddingValues) {
                     modifier = Modifier
                 ) {
                     Text("AppStorys Success Event")
+                }
+
+                Spacer(
+                    Modifier.height(30.dp)
+                )
+
+                // First user property input and button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = input1,
+                        onValueChange = { input1 = it },
+                        label = { Text("Input 1") },
+                        placeholder = { Text("Enter value for key_one") },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Gray
+                        )
+                    )
+
+                    Button(
+                        onClick = {
+                            campaignManager.setUserProperties(
+                                mapOf("key_one" to input1)
+                            )
+                            Toast.makeText(context, "User property set: key_one = $input1", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                    ) {
+                        Text("Set Property 1")
+                    }
+                }
+
+                // Second user property input and button
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedTextField(
+                        value = input2,
+                        onValueChange = { input2 = it },
+                        label = { Text("Input 2") },
+                        placeholder = { Text("Enter value for key_two") },
+                        modifier = Modifier.weight(1f),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.Black,
+                            unfocusedTextColor = Color.Black,
+                            focusedLabelColor = Color.Black,
+                            unfocusedLabelColor = Color.Gray
+                        )
+                    )
+
+                    Button(
+                        onClick = {
+                            campaignManager.setUserProperties(
+                                mapOf("key_two" to input2)
+                            )
+                            Toast.makeText(context, "User property set: key_two = $input2", Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier
+                    ) {
+                        Text("Set Property 2")
+                    }
                 }
 
                 campaignManager.Stories()
