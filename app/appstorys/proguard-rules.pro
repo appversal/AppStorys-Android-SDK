@@ -1,59 +1,87 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
+# =======================================================
+# ProGuard Rules for AppStorys SDK
+# =======================================================
 #
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# These rules are for building and shrinking the SDK itself.
+# They control the obfuscation and code-stripping process
+# for internal implementation details.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# -------------------------------------------------------
+# Core rules for building the SDK.
+# -------------------------------------------------------
+# Keep attributes for debugging purposes.
+# The `SourceFile` attribute is useful for debugging stack traces.
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# -------------------------------------------------------
+# Obfuscation rules for your internal implementation.
+# -------------------------------------------------------
+# Allow the obfuscator to rename and optimize the internal
+# implementation classes of your SDK.
+-keep,allowobfuscation,allowoptimization class com.appversal.appstorys.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-# Keep all public classes and methods in your package
-#-keep class com.appversal.appstorys.AppStorys { *; }
-
-# Remove all logging (hides debug info)
-#-assumenosideeffects class android.util.Log { *; }
-
-# Obfuscate everything else
-#-dontwarn com.appversal.appstorys
-
-#-dontwarn java.lang.invoke.StringConcatFactory
+# -------------------------------------------------------
+# Miscellaneous rules for code-stripping.
+# -------------------------------------------------------
+# Assume side effects for Android Log to remove logging calls
+# from the release build of your SDK.
+-assumenosideeffects class android.util.Log { *; }
 
 
-# Keep the public API
+
+
+
+# =======================================================
+# Consumer ProGuard Rules for AppStorys SDK
+# =======================================================
+#
+# These rules are for the app that consumes this SDK.
+# They ensure that all public APIs and third-party dependencies
+# used by this SDK are not removed or obfuscated.
+
+# -------------------------------------------------------
+# Keep the public API of the SDK.
+# This prevents the app from removing classes and methods
+# that developers need to call directly.
+# -------------------------------------------------------
 -keep class com.appversal.appstorys.AppStorysAPI { *; }
 -keep class com.appversal.appstorys.AppStorysAPI$* { *; }
 
+# Keep utility classes that are meant to be public.
+# Remove this if the utils package is not part of the public API.
+-keep class com.appversal.appstorys.utils.** { *; }
 
+# -------------------------------------------------------
+# Keep third-party libraries used by the SDK.
+# This ensures that the app doesn't remove necessary parts
+# of the MQTT library.
+# -------------------------------------------------------
+-keep class org.eclipse.paho.client.mqttv3.** {*;}
+-keep class org.eclipse.paho.client.mqttv3.*$* { *; }
+-keep class org.eclipse.paho.client.mqttv3.logging.JSR47Logger { *; }
+
+# -------------------------------------------------------
+# Keep rules for Android platform features used by the SDK,
+# like Compose and Kotlin reflection/serialization.
+# These are crucial to prevent crashes in the consuming app.
+# -------------------------------------------------------
 # Keep composable functions annotations
 -keep class androidx.compose.runtime.* { *; }
 -keepclassmembers class * {
     @androidx.compose.runtime.Composable *;
 }
 
-# Do NOT obfuscate utils package
--keep class com.appversal.appstorys.utils.** { *; }
-
-# Obfuscate all internal implementation
--keep,allowobfuscation,allowoptimization class com.appversal.appstorys.** { *; }
--keepattributes Signature,Exceptions,*Annotation*,InnerClasses,PermittedSubclasses,EnclosingMethod
-
-# For Kotlin specific features
+# Keep Kotlin-specific features that R8 might otherwise remove.
 -keepclassmembers class **$WhenMappings {
     <fields>;
 }
 -keepclassmembers class kotlin.Metadata {
     public <methods>;
 }
+-keepattributes Signature,Exceptions,*Annotation*,InnerClasses,PermittedSubclasses,EnclosingMethod
+
+# -------------------------------------------------------
+# Recommended rules to avoid warnings when consuming the SDK.
+# -------------------------------------------------------
+-dontwarn java.lang.invoke.StringConcatFactory
