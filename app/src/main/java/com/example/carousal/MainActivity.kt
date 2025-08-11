@@ -68,7 +68,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import kotlinx.coroutines.coroutineScope
 
 
 class MainActivity : ComponentActivity() {
@@ -92,6 +91,7 @@ fun MyApp() {
     val app = LocalContext.current.applicationContext as App
     val screenName by app.screenNameNavigation.collectAsState()
     var currentScreen by remember { mutableStateOf("HomeScreen") }
+
 
     var selectedTab by remember { mutableStateOf(0) } // Track selected tab index
 
@@ -192,6 +192,7 @@ fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
+
     // State variables for input fields
     var input1 by remember { mutableStateOf("") }
     var input2 by remember { mutableStateOf("") }
@@ -203,7 +204,6 @@ fun HomeScreen(padding: PaddingValues) {
     LaunchedEffect(Unit) {
         val screenName  = "Home Screen"
         val positions = listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty")
-        Log.i("Positions", "About to call getScreenCampaigns with: $positions")
         campaignManager.getScreenCampaigns(
             screenName,
             positions,

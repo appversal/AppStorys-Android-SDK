@@ -52,6 +52,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.appversal.appstorys.api.ApiRepository
 import com.appversal.appstorys.api.ApiResult
@@ -278,15 +281,16 @@ object AppStorys : AppStorysAPI {
 
     private var isScreenCaptureEnabled by mutableStateOf(false)
 
-    private var showCsat = false
-    private var showModal = true
+    private var showCsat by mutableStateOf(false)
+    private var showModal by mutableStateOf(true)
 
+    private var showBottomSheet by mutableStateOf(true)
     internal var sdkState = AppStorysSdkState.Uninitialized
         private set
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val campaignsMutex = Mutex()
 
-    val trackedEventNames = mutableStateListOf<String>()
+    var trackedEventNames = mutableStateListOf<String>()
 
     @RequiresApi(Build.VERSION_CODES.N)
     private fun initiateData() {
@@ -294,6 +298,29 @@ object AppStorys : AppStorysAPI {
             return
         }
         sdkState = AppStorysSdkState.Initializing
+        ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onResume(owner: LifecycleOwner) {
+                    super.onResume(owner)
+                    Log.e("AppStorys", "On Resume")
+                    if (sdkState == AppStorysSdkState.Paused && currentScreen.isNotBlank()) {
+                        sdkState = AppStorysSdkState.Initialized
+                        getScreenCampaigns(currentScreen, emptyList())
+                    }
+                }
+                override fun onStop(owner: LifecycleOwner) {
+                    Log.e("AppStorys", "On Stop")
+                    sdkState = AppStorysSdkState.Paused
+                    _campaigns.update { emptyList() }
+                    showModal = true
+                    showCsat = false
+                    showBottomSheet = true
+                    trackedEventNames.clear()
+                    _tooltipViewed.value = emptyList()
+                    repository.disconnect()
+                }
+            }
+        )
         coroutineScope.launch {
             fetchData()
             showCaseInformation()
@@ -334,8 +361,10 @@ object AppStorys : AppStorysAPI {
         coroutineScope.launch {
             campaignsMutex.lock()
             if (!checkIfInitialized()) {
+                Log.e("AppStorys", "not initialized")
                 return@launch
             }
+            Log.e("AppStorys", "initialized")
             try {
                 if (currentScreen != screenName) {
                     _disabledCampaigns.emit(emptyList())
@@ -356,6 +385,8 @@ object AppStorys : AppStorysAPI {
                     userId = userId,
                     attributes = mergedAttributes
                 )
+
+                Log.e("AppStorys", "got response")
 
                 mqttResponse?.let { response ->
                     isScreenCaptureEnabled = response.screen_capture_enabled ?: false
@@ -1397,7 +1428,6 @@ object AppStorys : AppStorysAPI {
     @RequiresApi(Build.VERSION_CODES.N)
     @Composable
     override fun BottomSheet() {
-        var showBottomSheet by remember { mutableStateOf(true) }
 
         val campaignsData = campaigns.collectAsStateWithLifecycle()
 
@@ -1491,8 +1521,6 @@ object AppStorys : AppStorysAPI {
     override fun Modals() {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
 
-        var showPopupModal by remember { mutableStateOf(showModal) }
-
         val campaign =
             campaignsData.value.firstOrNull { it.campaignType == "MOD" && it.details is ModalDetails }
 
@@ -1504,7 +1532,7 @@ object AppStorys : AppStorysAPI {
         val shouldShowModals = campaign?.triggerEvent.isNullOrEmpty() ||
                 trackedEventNames.contains(campaign.triggerEvent)
 
-        if (modalDetails != null && showPopupModal && shouldShowModals) {
+        if (modalDetails != null && showModal && shouldShowModals) {
 
             LaunchedEffect(Unit) {
                 campaign?.id?.let {
@@ -1514,7 +1542,6 @@ object AppStorys : AppStorysAPI {
 
             PopupModal(
                 onCloseClick = {
-                    showPopupModal = false
                     showModal = false
                 },
                 modalDetails = modalDetails,
@@ -1529,7 +1556,6 @@ object AppStorys : AppStorysAPI {
                         link?.let { openUrl(it) }
                     }
 
-                    showPopupModal = false
                     showModal = false
                 },
             )

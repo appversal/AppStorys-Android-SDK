@@ -23,7 +23,6 @@ internal class ApiRepository(
     private val mqttApiService: ApiService,
     private val getScreen: () -> String,
 ) {
-
     private var mqttClient: MqttWebSocketClient? = null
     private var mqttConfig: MqttConfig? = null
     private var campaignResponseChannel = Channel<CampaignResponse?>(Channel.UNLIMITED)
@@ -171,10 +170,12 @@ internal class ApiRepository(
                 var mqttResponse: MqttConnectionResponse?
 
                 while (!campaignResponseChannel.isEmpty) {
+                    Log.e("AppStorys", "waiting")
                     campaignResponseChannel.tryReceive()
                 }
 
                 if (!mqttClient!!.isConnected()) {
+                    Log.e("AppStorys", "not connected")
                     val reconnected =
                         initializeMqttConnection(accessToken, screenName, userId, attributes)
                     if (!reconnected) {
@@ -183,7 +184,7 @@ internal class ApiRepository(
                     }
 
                 }
-
+                Log.e("AppStorys", "connected")
                 when (val result = safeApiCall {
                     mqttApiService.getMqttConnectionDetails(
                         token = "Bearer $accessToken",
@@ -366,6 +367,6 @@ internal class ApiRepository(
 
     fun disconnect() {
         mqttClient?.disconnect()
-        campaignResponseChannel.close()
+//        campaignResponseChannel.close()
     }
 }

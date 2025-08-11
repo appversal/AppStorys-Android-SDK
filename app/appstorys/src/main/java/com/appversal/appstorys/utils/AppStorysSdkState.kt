@@ -4,5 +4,6 @@ enum class AppStorysSdkState {
     Uninitialized,
     Initializing,
     Initialized,
+    Paused,
     Error
 }

@@ -1,4 +1,5 @@
 package com.appversal.appstorys.api
+
 import android.content.Context
 import android.util.Log
 import info.mqtt.android.service.MqttAndroidClient
@@ -86,7 +87,9 @@ internal class MqttWebSocketClient(private val context: Context) {
                             if (continuation.isActive) {
                                 Log.e("MqttClient", "Failed to connect to MQTT broker", exception)
                                 isConnectionInProgress = false
-                                continuation.resumeWithException(exception ?: Exception("MQTT connection failed"))
+                                continuation.resumeWithException(
+                                    exception ?: Exception("MQTT connection failed")
+                                )
                             }
                         } catch (e: Exception) {
                             Log.e("MqttClient", "Error in onFailure callback", e)
@@ -144,13 +147,14 @@ internal class MqttWebSocketClient(private val context: Context) {
                     }
                 })
             }
+//            messageChannel.close()
             mqttClient?.disconnect()
             mqttClient?.close()
-            mqttClient = null
-            userTopic = null
-            messageChannel.close()
         } catch (e: Exception) {
             Log.e("MqttClient", "Error during disconnect", e)
+        } finally {
+            mqttClient = null
+            userTopic = null
         }
     }
 

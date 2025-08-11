@@ -59,6 +59,8 @@ dependencies {
     implementation("org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5")
     implementation("com.github.hannesa2:paho.mqtt.android:3.6.4")
 
+    implementation ("androidx.lifecycle:lifecycle-process:2.8.7")
+
     implementation(libs.gson)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.gif)
