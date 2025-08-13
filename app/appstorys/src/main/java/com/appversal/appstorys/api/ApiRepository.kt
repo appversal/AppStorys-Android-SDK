@@ -2,6 +2,9 @@ package com.appversal.appstorys.api
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
+import com.appversal.appstorys.api.RetrofitClient.webSocketApiService
+import com.google.gson.GsonBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,14 +17,10 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
-import androidx.core.content.edit
-import com.appversal.appstorys.api.RetrofitClient.webSocketApiService
-import com.google.gson.GsonBuilder
 
 internal class ApiRepository(
     context: Context,
     private val apiService: ApiService,
-    private val mqttApiService: ApiService,
     private val getScreen: () -> String,
 ) {
     private var webSocketClient: WebSocketClient? = null
@@ -37,10 +36,10 @@ internal class ApiRepository(
         }
 
     init {
-        webSocketClient = WebSocketClient(context)
+        webSocketClient = WebSocketClient()
 
         CoroutineScope(Dispatchers.IO).launch {
-            webSocketClient?.messageFlow?.collect { message ->
+            webSocketClient?.message?.collect { message ->
                 try {
                     val gson = GsonBuilder()
                         .registerTypeAdapter(
@@ -142,7 +141,7 @@ internal class ApiRepository(
                     is ApiResult.Success -> {
                         result.data.ws.let { config ->
                             webSocketConfig = config
-                            webSocketClient?.connectWithConfig(config) ?: false
+                            webSocketClient?.connect(config) ?: false
                         }
                     }
 

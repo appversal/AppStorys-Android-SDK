@@ -20,10 +20,7 @@ internal class CampaignResponseDeserializer : JsonDeserializer<CampaignResponse>
         val messageId =
             jsonObject.get("message_id")?.takeIf { !it.isJsonNull }?.asString?.removeDoubleQuotes()
                 ?: ""
-        val campaignsJsonArray = jsonObject.getAsJsonArray("campaigns")?.takeIf { !it.isJsonNull }
-        val isScreenCaptureEnabled =
-            jsonObject.get("screen_capture_enabled")?.takeIf { !it.isJsonNull }?.asBoolean
-                ?: false
+        val campaignsJsonArray = jsonObject.get("campaigns")?.takeIf { !it.isJsonNull }?.asJsonArray
 
         val campaigns = campaignsJsonArray?.map { campaignElement ->
             val campaignObject = campaignElement.asJsonObject

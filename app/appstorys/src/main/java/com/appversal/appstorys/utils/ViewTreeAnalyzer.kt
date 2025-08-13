@@ -2,20 +2,6 @@ package com.appversal.appstorys.utils
 
 import android.app.Activity
 import android.content.Context
-import android.util.Log
-import android.view.View
-import android.view.ViewGroup
-import androidx.compose.ui.semantics.SemanticsNode
-import androidx.compose.ui.semantics.SemanticsOwner
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.semantics.SemanticsPropertyKey
-import androidx.compose.ui.semantics.SemanticsPropertyReceiver
-import androidx.compose.ui.semantics.getOrNull
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import java.lang.reflect.Field
-import kotlin.math.roundToInt
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Rect
@@ -23,19 +9,27 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.PixelCopy
+import android.view.View
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.WindowMetrics
-import androidx.compose.ui.platform.LocalContext
-import com.appversal.appstorys.api.ApiRepository
-import com.appversal.appstorys.api.RetrofitClient.apiService
+import androidx.compose.ui.semantics.SemanticsNode
+import androidx.compose.ui.semantics.SemanticsOwner
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
+import androidx.compose.ui.semantics.getOrNull
+import com.appversal.appstorys.AppStorys.repository
+import com.google.gson.GsonBuilder
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.io.File
 import java.io.FileOutputStream
-import androidx.core.graphics.createBitmap
-import com.appversal.appstorys.api.RetrofitClient.webSocketApiService
-import kotlinx.coroutines.suspendCancellableCoroutine
+import java.lang.reflect.Field
 import kotlin.coroutines.resumeWithException
-import java.security.MessageDigest
+import kotlin.math.roundToInt
 
 val AppstorysViewTagKey = SemanticsPropertyKey<String>("AppstorysViewTagKey")
 
@@ -101,8 +95,6 @@ internal object ViewTreeAnalyzer {
             view = root,
             activity = activity
         )
-
-        val repository = ApiRepository(context, apiService, webSocketApiService) { screenName }
 
         if (screenshot != null) {
             repository.tooltipIdentify(

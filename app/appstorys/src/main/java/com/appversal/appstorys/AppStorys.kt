@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Drawable
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.util.Patterns
@@ -52,6 +51,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -75,9 +75,9 @@ import com.appversal.appstorys.api.SurveyDetails
 import com.appversal.appstorys.api.SurveyFeedbackPostRequest
 import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.api.TooltipsDetails
-import com.appversal.appstorys.api.TrackAction
 import com.appversal.appstorys.api.TrackActionStories
 import com.appversal.appstorys.api.TrackActionTooltips
+import com.appversal.appstorys.api.TrackUserWebSocketRequest
 import com.appversal.appstorys.api.WidgetDetails
 import com.appversal.appstorys.api.WidgetImage
 import com.appversal.appstorys.api.safeApiCall
@@ -102,25 +102,20 @@ import com.appversal.appstorys.utils.ViewTreeAnalyzer
 import com.appversal.appstorys.utils.toMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import androidx.core.net.toUri
-import com.appversal.appstorys.api.TrackUserWebSocketRequest
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.ensureActive
 
 interface AppStorysAPI {
     fun initialize(
@@ -216,19 +211,63 @@ interface AppStorysAPI {
     }
 }
 
-object AppStorys : AppStorysAPI {
+internal object AppStorys : AppStorysAPI {
     private lateinit var context: Application
+
     private lateinit var appId: String
+
     private lateinit var accountId: String
+
     private lateinit var userId: String
+
     private var attributes: Map<String, Any>? = null
+
     private lateinit var navigateToScreen: (String) -> Unit
 
     private val apiService = RetrofitClient.apiService
-    private val webSocketService = RetrofitClient.webSocketApiService
-    private lateinit var repository: ApiRepository
 
-    @RequiresApi(Build.VERSION_CODES.N)
+    private val webSocketService = RetrofitClient.webSocketApiService
+
+    lateinit var repository: ApiRepository
+
+    private val campaigns = MutableStateFlow<List<Campaign>>(emptyList())
+
+    private val disabledCampaigns = MutableStateFlow<List<String>>(emptyList())
+
+    private val impressions = MutableStateFlow<List<String>>(emptyList())
+
+    private val viewsCoordinates = MutableStateFlow<Map<String, LayoutCoordinates>>(emptyMap())
+
+    val tooltipTargetView = MutableStateFlow<Tooltip?>(null)
+
+    private val tooltipViewed = MutableStateFlow<List<String>>(emptyList())
+
+    private val showcaseVisible = MutableStateFlow(false)
+    private val selectedReelIndex = MutableStateFlow(0)
+
+    private val reelFullScreenVisible = MutableStateFlow(false)
+
+    private var accessToken = ""
+
+    private var currentScreen = ""
+
+    private var isScreenCaptureEnabled by mutableStateOf(false)
+
+    private var showCsat by mutableStateOf(false)
+
+    private var showModal by mutableStateOf(true)
+
+    private var showBottomSheet by mutableStateOf(true)
+
+    internal var sdkState = AppStorysSdkState.Uninitialized
+        private set
+
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
+    private var campaignsJob: Job? = null
+
+    private var trackedEventNames = mutableStateListOf<String>()
+
     override fun initialize(
         context: Application,
         appId: String,
@@ -237,6 +276,11 @@ object AppStorys : AppStorysAPI {
         attributes: Map<String, Any>?,
         navigateToScreen: (String) -> Unit
     ) {
+        if (::context.isInitialized) {
+            Log.w("AppStorys", "SDK is already initialized")
+            return
+        }
+
         this.context = context
         this.appId = appId
         this.accountId = accountId
@@ -244,63 +288,16 @@ object AppStorys : AppStorysAPI {
         this.attributes = attributes
         this.navigateToScreen = navigateToScreen
 
-        this.repository = ApiRepository(context, apiService, webSocketService) {
+        this.repository = ApiRepository(context, apiService) {
             currentScreen
         }
 
-        initiateData()
-    }
-
-    private val _campaigns = MutableStateFlow<List<Campaign>>(emptyList())
-    private val campaigns: StateFlow<List<Campaign>> get() = _campaigns
-
-    private val _disabledCampaigns = MutableStateFlow<List<String>>(emptyList())
-    private val disabledCampaigns: StateFlow<List<String>> get() = _disabledCampaigns
-
-    private val _impressions = MutableStateFlow<List<String>>(emptyList())
-    private val impressions: StateFlow<List<String>> get() = _impressions
-
-    private val _viewsCoordinates = MutableStateFlow<Map<String, LayoutCoordinates>>(emptyMap())
-    internal val viewsCoordinates: StateFlow<Map<String, LayoutCoordinates>> =
-        _viewsCoordinates.asStateFlow()
-
-    private val _tooltipTargetView = MutableStateFlow<Tooltip?>(null)
-    internal val tooltipTargetView: StateFlow<Tooltip?> = _tooltipTargetView.asStateFlow()
-
-    private val _tooltipViewed = MutableStateFlow<List<String>>(emptyList())
-    private val tooltipViewed: StateFlow<List<String>> = _tooltipViewed.asStateFlow()
-
-    private val _showcaseVisible = MutableStateFlow(false)
-    internal val showcaseVisible: StateFlow<Boolean> = _showcaseVisible.asStateFlow()
-
-    private val _selectedReelIndex = MutableStateFlow(0)
-    private val selectedReelIndex: StateFlow<Int> = _selectedReelIndex.asStateFlow()
-
-    private val _reelFullScreenVisible = MutableStateFlow(false)
-    private val reelFullScreenVisible: StateFlow<Boolean> = _reelFullScreenVisible.asStateFlow()
-
-    private var accessToken = ""
-    private var currentScreen = ""
-
-    private var isScreenCaptureEnabled by mutableStateOf(false)
-
-    private var showCsat by mutableStateOf(false)
-    private var showModal by mutableStateOf(true)
-
-    private var showBottomSheet by mutableStateOf(true)
-    internal var sdkState = AppStorysSdkState.Uninitialized
-        private set
-    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var campaignsJob: Job? = null
-
-    var trackedEventNames = mutableStateListOf<String>()
-
-    @RequiresApi(Build.VERSION_CODES.N)
-    private fun initiateData() {
         if (sdkState == AppStorysSdkState.Initialized || sdkState == AppStorysSdkState.Initializing) {
             return
         }
+
         sdkState = AppStorysSdkState.Initializing
+
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onResume(owner: LifecycleOwner) {
@@ -313,8 +310,8 @@ object AppStorys : AppStorysAPI {
 
                 override fun onStop(owner: LifecycleOwner) {
                     sdkState = AppStorysSdkState.Paused
-                    _campaigns.update { emptyList() }
-                    _tooltipViewed.update { emptyList() }
+                    campaigns.update { emptyList() }
+                    tooltipViewed.update { emptyList() }
                     showModal = true
                     showCsat = false
                     showBottomSheet = true
@@ -326,30 +323,24 @@ object AppStorys : AppStorysAPI {
             }
         )
         coroutineScope.launch {
-            fetchData()
+            try {
+                val accessToken = repository.getAccessToken(appId, accountId)
+                if (!accessToken.isNullOrBlank()) {
+                    this@AppStorys.accessToken = accessToken
+                    sdkState = AppStorysSdkState.Initialized
+                    // only fetch the default screen campaigns if not already running
+                    if (campaignsJob?.isActive != true) {
+                        getScreenCampaigns("Home Screen", emptyList())
+                    }
+                }
+            } catch (exception: Exception) {
+                Log.e("AppStorys", exception.message ?: "Error Fetch Data")
+                sdkState = AppStorysSdkState.Error
+            }
             showCaseInformation()
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.N)
-    private suspend fun fetchData() {
-        try {
-            val accessToken = repository.getAccessToken(appId, accountId)
-            if (!accessToken.isNullOrBlank()) {
-                this.accessToken = accessToken
-                sdkState = AppStorysSdkState.Initialized
-                // only fetch the default screen campaigns if not already running
-                if (campaignsJob?.isActive != true) {
-                    getScreenCampaigns("Home Screen", emptyList())
-                }
-            }
-        } catch (exception: Exception) {
-            Log.e("AppStorys", exception.message ?: "Error Fetch Data")
-            sdkState = AppStorysSdkState.Error
-        }
-    }
-
-    @RequiresApi(Build.VERSION_CODES.N)
     override fun getScreenCampaigns(
         screenName: String,
         positionList: List<String>
@@ -362,9 +353,9 @@ object AppStorys : AppStorysAPI {
             ensureActive()
             try {
                 if (currentScreen != screenName) {
-                    _disabledCampaigns.emit(emptyList())
-                    _impressions.emit(emptyList())
-                    _campaigns.emit(emptyList())
+                    disabledCampaigns.emit(emptyList())
+                    impressions.emit(emptyList())
+                    campaigns.emit(emptyList())
                     currentScreen = screenName
 
                     delay(100)
@@ -397,8 +388,8 @@ object AppStorys : AppStorysAPI {
                     isScreenCaptureEnabled = response.screen_capture_enabled ?: false
                 }
 
-                campaignResponse?.campaigns?.let { _campaigns.emit(it) }
-                Log.e("AppStorys", "Campaign: ${_campaigns.value}")
+                campaignResponse?.campaigns?.let { campaigns.emit(it) }
+                Log.e("AppStorys", "Campaign: ${campaigns.value}")
             } catch (exception: Exception) {
                 Log.e("AppStorys", "Error getting campaigns for $screenName", exception)
             }
@@ -429,10 +420,8 @@ object AppStorys : AppStorysAPI {
                     val request = Request.Builder()
                         .url("https://tracking.appstorys.com/capture-event")
                         .post(
-                            RequestBody.create(
-                                "application/json".toMediaTypeOrNull(),
-                                requestBody.toString()
-                            )
+                            requestBody.toString()
+                                .toRequestBody("application/json".toMediaTypeOrNull())
                         )
                         .addHeader("Authorization", "Bearer $accessToken")
                         .build()
@@ -487,7 +476,7 @@ object AppStorys : AppStorysAPI {
 
     suspend fun analyzeViewRoot(
         root: View, screenName: String, activity: Activity
-    ) {
+    ) = runCatching {
         ViewTreeAnalyzer.analyzeViewRoot(
             root = root,
             screenName = screenName,
@@ -727,13 +716,13 @@ object AppStorys : AppStorysAPI {
                 if (tooltipsDetails != null) {
                     for (tooltip in tooltipsDetails.tooltips?.sortedBy { it.order }
                         ?: emptyList()) {
-                        if (tooltip.target != null && !_tooltipViewed.value.contains(tooltip.target)) {
-                            while (_tooltipTargetView.value != null) {
+                        if (tooltip.target != null && !tooltipViewed.value.contains(tooltip.target)) {
+                            while (tooltipTargetView.value != null) {
                                 delay(500L)
                             }
-                            _tooltipTargetView.emit(tooltip)
-                            _showcaseVisible.emit(true)
-                            _tooltipViewed.update {
+                            tooltipTargetView.emit(tooltip)
+                            showcaseVisible.emit(true)
+                            tooltipViewed.update {
                                 it + tooltip.target
                             }
                         }
@@ -798,8 +787,8 @@ object AppStorys : AppStorysAPI {
                     reels = reelsDetails.reels,
                     onReelClick = { index ->
                         coroutineScope.launch {
-                            _selectedReelIndex.emit(index)
-                            _reelFullScreenVisible.emit(true)
+                            this@AppStorys.selectedReelIndex.emit(index)
+                            reelFullScreenVisible.emit(true)
                         }
                     },
                     height = reelsDetails.styling?.thumbnailHeight?.toIntOrNull()?.dp ?: 180.dp,
@@ -814,8 +803,8 @@ object AppStorys : AppStorysAPI {
                         selectedReelIndex = selectedReelIndex
                     ) {
                         coroutineScope.launch {
-                            _selectedReelIndex.emit(0)
-                            _reelFullScreenVisible.emit(false)
+                            this@AppStorys.selectedReelIndex.emit(0)
+                            reelFullScreenVisible.emit(false)
                         }
                     }
                 }
@@ -855,8 +844,8 @@ object AppStorys : AppStorysAPI {
 
                 BackHandler {
                     coroutineScope.launch {
-                        _selectedReelIndex.emit(0)
-                        _reelFullScreenVisible.emit(false)
+                        this@AppStorys.selectedReelIndex.emit(0)
+                        reelFullScreenVisible.emit(false)
                     }
                 }
 
@@ -903,11 +892,11 @@ object AppStorys : AppStorysAPI {
                     },
                     sendEvents = {
                         if (it.second == "IMP") {
-                            if (!_impressions.value.contains(it.first.id)) {
+                            if (!impressions.value.contains(it.first.id)) {
                                 coroutineScope.launch {
                                     val impressions = ArrayList(impressions.value)
                                     impressions.add(it.first.id)
-                                    _impressions.emit(impressions)
+                                    this@AppStorys.impressions.emit(impressions)
                                     repository.trackReelActions(
                                         accessToken = accessToken,
                                         actions = ReelActionRequest(
@@ -946,8 +935,8 @@ object AppStorys : AppStorysAPI {
                     },
                     onBack = {
                         coroutineScope.launch {
-                            _selectedReelIndex.emit(0)
-                            _reelFullScreenVisible.emit(false)
+                            this@AppStorys.selectedReelIndex.emit(0)
+                            reelFullScreenVisible.emit(false)
                         }
                     }
                 )
@@ -1036,11 +1025,11 @@ object AppStorys : AppStorysAPI {
                     width = bannerDetails.width?.dp ?: screenWidth,
                     exitIcon = style?.enableCloseButton ?: false,
                     exitUnit = {
-                        val ids: ArrayList<String> = ArrayList(_disabledCampaigns.value)
+                        val ids: ArrayList<String> = ArrayList(disabledCampaigns.value)
                         campaign.id?.let {
                             ids.add(it)
                             coroutineScope.launch {
-                                _disabledCampaigns.emit(ids.toList())
+                                this@AppStorys.disabledCampaigns.emit(ids.toList())
                             }
                         }
                     },
@@ -1163,7 +1152,7 @@ object AppStorys : AppStorysAPI {
                         if (currentWidgetId != null && !impressions.value.contains(currentWidgetId)) {
                             val impressions = ArrayList(impressions.value)
                             impressions.add(currentWidgetId)
-                            _impressions.emit(impressions)
+                            this@AppStorys.impressions.emit(impressions)
                             trackEvents(
                                 it,
                                 "viewed",
@@ -1173,7 +1162,7 @@ object AppStorys : AppStorysAPI {
                         } else if (!impressions.value.contains(it)) {
                             val impressions = ArrayList(impressions.value)
                             impressions.add(it)
-                            _impressions.emit(impressions)
+                            this@AppStorys.impressions.emit(impressions)
                             trackEvents(
                                 it,
                                 "viewed",
@@ -1295,7 +1284,7 @@ object AppStorys : AppStorysAPI {
                         ) {
                             val impressions = ArrayList(impressions.value)
                             impressions.add(widgetImagesPairs[pagerState.currentPage].first.id)
-                            _impressions.emit(impressions)
+                            this@AppStorys.impressions.emit(impressions)
                             trackEvents(
                                 it,
                                 "viewed",
@@ -1305,7 +1294,7 @@ object AppStorys : AppStorysAPI {
                         } else if (!impressions.value.contains(it)) {
                             val impressions = ArrayList(impressions.value)
                             impressions.add(it)
-                            _impressions.emit(impressions)
+                            this@AppStorys.impressions.emit(impressions)
                             trackEvents(
                                 it,
                                 "viewed",
@@ -1319,7 +1308,7 @@ object AppStorys : AppStorysAPI {
                         ) {
                             val impressions = ArrayList(impressions.value)
                             impressions.add(widgetImagesPairs[pagerState.currentPage].second.id)
-                            _impressions.emit(impressions)
+                            this@AppStorys.impressions.emit(impressions)
                             trackEvents(
                                 it,
                                 "viewed",
@@ -1329,7 +1318,7 @@ object AppStorys : AppStorysAPI {
                         } else if (!impressions.value.contains(it)) {
                             val impressions = ArrayList(impressions.value)
                             impressions.add(it)
-                            _impressions.emit(impressions)
+                            this@AppStorys.impressions.emit(impressions)
                             trackEvents(
                                 it,
                                 "viewed",
@@ -1671,8 +1660,8 @@ object AppStorys : AppStorysAPI {
 
     internal fun dismissTooltip() {
         coroutineScope.launch {
-            _tooltipTargetView.emit(null)
-            _showcaseVisible.emit(false)
+            tooltipTargetView.emit(null)
+            showcaseVisible.emit(false)
         }
     }
 

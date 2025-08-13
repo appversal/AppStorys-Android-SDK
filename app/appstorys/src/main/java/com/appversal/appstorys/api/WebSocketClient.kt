@@ -1,80 +1,74 @@
 package com.appversal.appstorys.api
 
-import android.content.Context
 import android.util.Log
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import okhttp3.*
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import okio.ByteString
 
-internal class WebSocketClient(private val context: Context) {
+internal class WebSocketClient() {
     private var webSocket: WebSocket? = null
+
     private var client: OkHttpClient = OkHttpClient()
 
-    private val _messageFlow = MutableSharedFlow<String>(extraBufferCapacity = 100)
-    val messageFlow: SharedFlow<String> = _messageFlow.asSharedFlow()
+    private val _message = MutableSharedFlow<String>(extraBufferCapacity = 100)
+
+    val message: SharedFlow<String> = _message.asSharedFlow()
 
     private var isConnected = false
 
-    fun connectWithConfig(config: WebSocketConfig): Boolean {
-        try {
-            val request = Request.Builder()
-                .url(config.url)
-                .addHeader("Authorization", "Bearer ${config.token}")
-                .addHeader("Session-ID", config.sessionID)
-                .build()
+    fun connect(config: WebSocketConfig) = try {
+        val request = Request.Builder()
+            .url(config.url)
+            .addHeader("Authorization", "Bearer ${config.token}")
+            .addHeader("Session-ID", config.sessionID)
+            .build()
 
-            webSocket = client.newWebSocket(request, object : WebSocketListener() {
-                override fun onOpen(webSocket: WebSocket, response: Response) {
-                    Log.d("WebSocketClient", "WebSocket connection opened")
-                    isConnected = true
-                }
+        webSocket = client.newWebSocket(request, object : WebSocketListener() {
+            override fun onOpen(webSocket: WebSocket, response: Response) {
+                Log.d(TAG, "WebSocket connection opened")
+                isConnected = true
+            }
 
-                override fun onMessage(webSocket: WebSocket, text: String) {
-                    Log.d("WebSocketClient", "WebSocket message received: $text")
-                    _messageFlow.tryEmit(text)
-                }
+            override fun onMessage(webSocket: WebSocket, text: String) {
+                Log.d(TAG, "WebSocket message received: $text")
+                _message.tryEmit(text)
+            }
 
-                override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                    Log.d("WebSocketClient", "WebSocket binary message received")
-                    _messageFlow.tryEmit(bytes.utf8())
-                }
+            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                Log.d(TAG, "WebSocket binary message received")
+                _message.tryEmit(bytes.utf8())
+            }
 
-                override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                    Log.d("WebSocketClient", "WebSocket closing: $code $reason")
-                    isConnected = false
-                }
+            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WebSocket closing: $code $reason")
+                isConnected = false
+            }
 
-                override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    Log.d("WebSocketClient", "WebSocket closed: $code $reason")
-                    isConnected = false
-                }
+            override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                Log.d(TAG, "WebSocket closed: $code $reason")
+                isConnected = false
+            }
 
-                override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                    Log.e("WebSocketClient", "WebSocket error: ${t.message}", t)
-                    isConnected = false
-                }
-            })
+            override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                Log.e(TAG, "WebSocket error: ${t.message}", t)
+                isConnected = false
+            }
+        })
 
-            return true
-        } catch (e: Exception) {
-            Log.e("WebSocketClient", "Error connecting to WebSocket: ${e.message}", e)
-            return false
-        }
+        true
+    } catch (e: Exception) {
+        Log.e(TAG, "Error connecting to WebSocket: ${e.message}", e)
+        false
     }
 
     fun isConnected(): Boolean {
         return isConnected && webSocket != null
-    }
-
-    fun sendMessage(message: String): Boolean {
-        return try {
-            webSocket?.send(message) ?: false
-        } catch (e: Exception) {
-            Log.e("WebSocketClient", "Error sending message: ${e.message}", e)
-            false
-        }
     }
 
     fun disconnect() {
@@ -82,9 +76,13 @@ internal class WebSocketClient(private val context: Context) {
             webSocket?.close(1000, "Disconnecting")
             webSocket = null
             isConnected = false
-            Log.d("WebSocketClient", "WebSocket disconnected")
+            Log.d(TAG, "WebSocket disconnected")
         } catch (e: Exception) {
-            Log.e("WebSocketClient", "Error disconnecting WebSocket: ${e.message}", e)
+            Log.e(TAG, "Error disconnecting WebSocket: ${e.message}", e)
         }
+    }
+
+    companion object {
+        private val TAG = WebSocketClient::class.java.simpleName
     }
 }
