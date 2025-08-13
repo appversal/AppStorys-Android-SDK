@@ -78,7 +78,6 @@ import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackAction
 import com.appversal.appstorys.api.TrackActionStories
 import com.appversal.appstorys.api.TrackActionTooltips
-import com.appversal.appstorys.api.TrackUserMqttRequest
 import com.appversal.appstorys.api.WidgetDetails
 import com.appversal.appstorys.api.WidgetImage
 import com.appversal.appstorys.api.safeApiCall
@@ -118,6 +117,10 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import org.json.JSONObject
+import androidx.core.net.toUri
+import com.appversal.appstorys.api.TrackUserWebSocketRequest
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 
 interface AppStorysAPI {
     fun initialize(
@@ -222,7 +225,7 @@ object AppStorys : AppStorysAPI {
     private lateinit var navigateToScreen: (String) -> Unit
 
     private val apiService = RetrofitClient.apiService
-    private val mqttService = RetrofitClient.mqttApiService
+    private val webSocketService = RetrofitClient.webSocketApiService
     private lateinit var repository: ApiRepository
 
     @RequiresApi(Build.VERSION_CODES.N)
@@ -241,7 +244,7 @@ object AppStorys : AppStorysAPI {
         this.attributes = attributes
         this.navigateToScreen = navigateToScreen
 
-        this.repository = ApiRepository(context, apiService, mqttService) {
+        this.repository = ApiRepository(context, apiService, webSocketService) {
             currentScreen
         }
 
@@ -270,7 +273,7 @@ object AppStorys : AppStorysAPI {
     private val _showcaseVisible = MutableStateFlow(false)
     internal val showcaseVisible: StateFlow<Boolean> = _showcaseVisible.asStateFlow()
 
-    private val _selectedReelIndex = MutableStateFlow<Int>(0)
+    private val _selectedReelIndex = MutableStateFlow(0)
     private val selectedReelIndex: StateFlow<Int> = _selectedReelIndex.asStateFlow()
 
     private val _reelFullScreenVisible = MutableStateFlow(false)
@@ -288,7 +291,7 @@ object AppStorys : AppStorysAPI {
     internal var sdkState = AppStorysSdkState.Uninitialized
         private set
     private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val campaignsMutex = Mutex()
+    private var campaignsJob: Job? = null
 
     var trackedEventNames = mutableStateListOf<String>()
 
@@ -302,22 +305,23 @@ object AppStorys : AppStorysAPI {
             object : DefaultLifecycleObserver {
                 override fun onResume(owner: LifecycleOwner) {
                     super.onResume(owner)
-                    Log.e("AppStorys", "On Resume")
                     if (sdkState == AppStorysSdkState.Paused && currentScreen.isNotBlank()) {
                         sdkState = AppStorysSdkState.Initialized
                         getScreenCampaigns(currentScreen, emptyList())
                     }
                 }
+
                 override fun onStop(owner: LifecycleOwner) {
-                    Log.e("AppStorys", "On Stop")
                     sdkState = AppStorysSdkState.Paused
                     _campaigns.update { emptyList() }
+                    _tooltipViewed.update { emptyList() }
                     showModal = true
                     showCsat = false
                     showBottomSheet = true
                     trackedEventNames.clear()
-                    _tooltipViewed.value = emptyList()
                     repository.disconnect()
+                    campaignsJob?.cancel()
+                    campaignsJob = null
                 }
             }
         )
@@ -333,8 +337,11 @@ object AppStorys : AppStorysAPI {
             val accessToken = repository.getAccessToken(appId, accountId)
             if (!accessToken.isNullOrBlank()) {
                 this.accessToken = accessToken
-                getScreenCampaigns("Home Screen", emptyList())
                 sdkState = AppStorysSdkState.Initialized
+                // only fetch the default screen campaigns if not already running
+                if (campaignsJob?.isActive != true) {
+                    getScreenCampaigns("Home Screen", emptyList())
+                }
             }
         } catch (exception: Exception) {
             Log.e("AppStorys", exception.message ?: "Error Fetch Data")
@@ -347,24 +354,12 @@ object AppStorys : AppStorysAPI {
         screenName: String,
         positionList: List<String>
     ) {
-        coroutineScope.launch {
-            repository.sendWidgetPositions(
-                accessToken = accessToken,
-                screenName = screenName,
-                positionList = positionList
-            )
-        }
-        if (campaignsMutex.isLocked) {
-            Log.w("AppStorys", "getScreenCampaigns is already running, skipping new request")
-            return
-        }
-        coroutineScope.launch {
-            campaignsMutex.lock()
+        campaignsJob?.cancel()
+        campaignsJob = coroutineScope.launch {
             if (!checkIfInitialized()) {
-                Log.e("AppStorys", "not initialized")
                 return@launch
             }
-            Log.e("AppStorys", "initialized")
+            ensureActive()
             try {
                 if (currentScreen != screenName) {
                     _disabledCampaigns.emit(emptyList())
@@ -375,30 +370,38 @@ object AppStorys : AppStorysAPI {
                     delay(100)
                 }
 
+                ensureActive()
+
+                repository.sendWidgetPositions(
+                    accessToken = accessToken,
+                    screenName = screenName,
+                    positionList = positionList
+                )
+
                 val deviceInfo = getDeviceInfo(context)
 
                 val mergedAttributes = (attributes ?: emptyMap()) + deviceInfo
 
-                val (campaignResponse, mqttResponse) = repository.triggerScreenData(
+                ensureActive()
+
+                val (campaignResponse, webSocketResponse) = repository.triggerScreenData(
                     accessToken = accessToken,
                     screenName = currentScreen,
                     userId = userId,
                     attributes = mergedAttributes
                 )
 
-                Log.e("AppStorys", "got response")
+                ensureActive()
 
-                mqttResponse?.let { response ->
+                webSocketResponse?.let { response ->
                     isScreenCaptureEnabled = response.screen_capture_enabled ?: false
                 }
 
                 campaignResponse?.campaigns?.let { _campaigns.emit(it) }
                 Log.e("AppStorys", "Campaign: ${_campaigns.value}")
             } catch (exception: Exception) {
-                Log.e("AppStorys", exception.message ?: "Error Fetch Data")
+                Log.e("AppStorys", "Error getting campaigns for $screenName", exception)
             }
-        }.invokeOnCompletion {
-            campaignsMutex.unlock()
         }
     }
 
@@ -450,9 +453,9 @@ object AppStorys : AppStorysAPI {
                 return@launch
             }
             val result = safeApiCall {
-                mqttService.getMqttConnectionDetails(
+                webSocketService.getWebSocketConnectionDetails(
                     token = "Bearer $accessToken",
-                    request = TrackUserMqttRequest(
+                    request = TrackUserWebSocketRequest(
                         user_id = userId,
                         attributes = attributes,
                         silentUpdate = true
@@ -1770,7 +1773,7 @@ object AppStorys : AppStorysAPI {
 
     private fun openUrl(url: String) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+            val intent = Intent(Intent.ACTION_VIEW, url.toUri())
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
             context.startActivity(intent)
         } catch (_: Exception) {

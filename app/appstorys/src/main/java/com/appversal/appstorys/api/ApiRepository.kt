@@ -15,6 +15,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import androidx.core.content.edit
+import com.appversal.appstorys.api.RetrofitClient.webSocketApiService
 import com.google.gson.GsonBuilder
 
 internal class ApiRepository(
@@ -23,8 +24,8 @@ internal class ApiRepository(
     private val mqttApiService: ApiService,
     private val getScreen: () -> String,
 ) {
-    private var mqttClient: MqttWebSocketClient? = null
-    private var mqttConfig: MqttConfig? = null
+    private var webSocketClient: WebSocketClient? = null
+    private var webSocketConfig: WebSocketConfig? = null
     private var campaignResponseChannel = Channel<CampaignResponse?>(Channel.UNLIMITED)
 
     private val sharedPreferences =
@@ -36,10 +37,10 @@ internal class ApiRepository(
         }
 
     init {
-        mqttClient = MqttWebSocketClient(context)
+        webSocketClient = WebSocketClient(context)
 
         CoroutineScope(Dispatchers.IO).launch {
-            mqttClient?.messageFlow?.collect { message ->
+            webSocketClient?.messageFlow?.collect { message ->
                 try {
                     val gson = GsonBuilder()
                         .registerTypeAdapter(
@@ -52,7 +53,7 @@ internal class ApiRepository(
                     if (campaignResponse.messageId == lastProcessedMessageId) {
                         Log.d(
                             "ApiRepository",
-                            "Duplicate MQTT message skipped: ${campaignResponse.messageId}"
+                            "Duplicate WebSocket message skipped: ${campaignResponse.messageId}"
                         )
                         return@collect
                     }
@@ -72,7 +73,7 @@ internal class ApiRepository(
                         Log.d("ApiRepository", "Campaign skipped: $campaignId")
                     }
                 } catch (e: Exception) {
-                    Log.e("ApiRepository", "Error parsing MQTT message: ${e.message}")
+                    Log.e("ApiRepository", "Error parsing WebSocket message: ${e.message}")
                     campaignResponseChannel.send(null)
                 }
             }
@@ -120,7 +121,7 @@ internal class ApiRepository(
         }
     }
 
-    suspend fun initializeMqttConnection(
+    suspend fun initializeWebSocketConnection(
         accessToken: String,
         screenName: String,
         userId: String,
@@ -129,9 +130,9 @@ internal class ApiRepository(
         return withContext(Dispatchers.IO) {
             try {
                 when (val result = safeApiCall {
-                    mqttApiService.getMqttConnectionDetails(
+                    webSocketApiService.getWebSocketConnectionDetails(
                         token = "Bearer $accessToken",
-                        request = TrackUserMqttRequest(
+                        request = TrackUserWebSocketRequest(
                             screenName = screenName,
                             user_id = userId,
                             attributes = attributes ?: emptyMap()
@@ -139,19 +140,19 @@ internal class ApiRepository(
                     )
                 }) {
                     is ApiResult.Success -> {
-                        result.data.mqtt.let { config ->
-                            mqttConfig = config
-                            mqttClient?.connectWithConfig(config) ?: false
+                        result.data.ws.let { config ->
+                            webSocketConfig = config
+                            webSocketClient?.connectWithConfig(config) ?: false
                         }
                     }
 
                     is ApiResult.Error -> {
-                        Log.e("ApiRepository", "Error getting MQTT config: ${result.message}")
+                        Log.e("ApiRepository", "Error getting WebSocket config: ${result.message}")
                         false
                     }
                 }
             } catch (e: Exception) {
-                Log.e("ApiRepository", "Error initializing MQTT connection: ${e.message}")
+                Log.e("ApiRepository", "Error initializing WebSocket connection: ${e.message}")
                 false
             }
         }
@@ -164,62 +165,53 @@ internal class ApiRepository(
         userId: String,
         attributes: Map<String, Any>?,
         timeoutMs: Long = 20000
-    ): Pair<CampaignResponse?, MqttConnectionResponse?> {
+    ): Pair<CampaignResponse?, WebSocketConnectionResponse?> {
         return withContext(Dispatchers.IO) {
-            try {
-                var mqttResponse: MqttConnectionResponse?
 
-                while (!campaignResponseChannel.isEmpty) {
-                    Log.e("AppStorys", "waiting")
-                    campaignResponseChannel.tryReceive()
-                }
+            var webSocketResponse: WebSocketConnectionResponse?
 
-                if (!mqttClient!!.isConnected()) {
-                    Log.e("AppStorys", "not connected")
-                    val reconnected =
-                        initializeMqttConnection(accessToken, screenName, userId, attributes)
-                    if (!reconnected) {
-                        Log.e("ApiRepository", "Failed to reconnect MQTT")
-                        return@withContext Pair(null, null)
-                    }
-
-                }
-                Log.e("AppStorys", "connected")
-                when (val result = safeApiCall {
-                    mqttApiService.getMqttConnectionDetails(
-                        token = "Bearer $accessToken",
-                        request = TrackUserMqttRequest(
-                            screenName = screenName,
-                            user_id = userId,
-                            attributes = attributes ?: emptyMap()
-                        )
-                    )
-                }) {
-                    is ApiResult.Success -> {
-                        Log.i("ApiRepository", "Parsed MQTT response: ${result.data}")
-                        mqttResponse = result.data
-                    }
-
-                    is ApiResult.Error -> {
-                        Log.e(
-                            "ApiRepository",
-                            "Error sending track-user request: ${result.message}"
-                        )
-                        return@withContext Pair(null, null)
-                    }
-                }
-
-                val campaignResponse = withTimeoutOrNull(timeoutMs) {
-                    campaignResponseChannel.receive()
-                }
-                return@withContext Pair(campaignResponse, mqttResponse)
-            } catch (e: Exception) {
-                Log.e(
-                    "ApiRepository",
-                    "Error getting campaign data for screen $screenName: ${e.message}"
-                )
-                Pair(null, null)
+            while (!campaignResponseChannel.isEmpty) {
+                campaignResponseChannel.tryReceive()
             }
+
+            if (!webSocketClient!!.isConnected()) {
+                val reconnected =
+                    initializeWebSocketConnection(accessToken, screenName, userId, attributes)
+                if (!reconnected) {
+                    Log.e("ApiRepository", "Failed to reconnect WebSocket")
+                    return@withContext Pair(null, null)
+                }
+
+            }
+            when (val result = safeApiCall {
+                webSocketApiService.getWebSocketConnectionDetails(
+                    token = "Bearer $accessToken",
+                    request = TrackUserWebSocketRequest(
+                        screenName = screenName,
+                        user_id = userId,
+                        attributes = attributes ?: emptyMap()
+                    )
+                )
+            }) {
+                is ApiResult.Success -> {
+                    Log.i("ApiRepository", "Parsed WebSocket response: ${result.data}")
+                    webSocketResponse = result.data
+                }
+
+                is ApiResult.Error -> {
+                    Log.e(
+                        "ApiRepository",
+                        "Error sending track-user request: ${result.message}"
+                    )
+                    return@withContext Pair(null, null)
+                }
+            }
+
+            val campaignResponse = withTimeoutOrNull(timeoutMs) {
+                campaignResponseChannel.receive()
+            }
+
+            Pair(campaignResponse, webSocketResponse)
         }
     }
 
@@ -366,7 +358,7 @@ internal class ApiRepository(
     }
 
     fun disconnect() {
-        mqttClient?.disconnect()
+        webSocketClient?.disconnect()
 //        campaignResponseChannel.close()
     }
 }

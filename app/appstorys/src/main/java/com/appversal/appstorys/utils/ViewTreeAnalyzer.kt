@@ -32,7 +32,7 @@ import com.appversal.appstorys.api.RetrofitClient.apiService
 import java.io.File
 import java.io.FileOutputStream
 import androidx.core.graphics.createBitmap
-import com.appversal.appstorys.api.RetrofitClient.mqttApiService
+import com.appversal.appstorys.api.RetrofitClient.webSocketApiService
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 import java.security.MessageDigest
@@ -102,7 +102,7 @@ internal object ViewTreeAnalyzer {
             activity = activity
         )
 
-        val repository = ApiRepository(context, apiService, mqttApiService) { screenName }
+        val repository = ApiRepository(context, apiService, webSocketApiService) { screenName }
 
         if (screenshot != null) {
             repository.tooltipIdentify(

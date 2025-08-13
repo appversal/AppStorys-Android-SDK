@@ -9,7 +9,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 internal object RetrofitClient {
     private const val BASE_URL = "https://backend.appstorys.com/"
-    private const val MQTT_BASE_URL = "https://users.appstorys.com/"
+    private const val WEBSOCKET_BASE_URL = "https://users.appstorys.com/"
 
     private val gson: Gson = GsonBuilder()
         .registerTypeAdapter(CampaignResponse::class.java, CampaignResponseDeserializer())
@@ -34,9 +34,9 @@ internal object RetrofitClient {
             .create(ApiService::class.java)
     }
 
-    val mqttApiService: ApiService by lazy {
+    val webSocketApiService: ApiService by lazy {
         Retrofit.Builder()
-            .baseUrl(MQTT_BASE_URL)
+            .baseUrl(WEBSOCKET_BASE_URL)
             .addConverterFactory(GsonConverterFactory.create(gson))
             .client(client)
             .build()

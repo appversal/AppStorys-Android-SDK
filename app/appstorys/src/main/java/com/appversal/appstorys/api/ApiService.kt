@@ -25,10 +25,10 @@ internal interface ApiService {
     ): Nullable
 
     @POST("track-user")
-    suspend fun getMqttConnectionDetails(
+    suspend fun getWebSocketConnectionDetails(
         @Header("Authorization") token: String,
-        @Body request: TrackUserMqttRequest
-    ): MqttConnectionResponse
+        @Body request: TrackUserWebSocketRequest
+    ): WebSocketConnectionResponse
 
     @POST("api/v1/users/track-screen/")
     suspend fun trackScreen(

@@ -17,21 +17,22 @@ import com.google.gson.annotations.SerializedName
 )
 
 @Keep
-data class MqttConnectionResponse(
-    val mqtt: MqttConfig,
+data class WebSocketConnectionResponse(
+    val ws: WebSocketConfig,
     val userID: String,
     val screen_capture_enabled: Boolean?,
 )
 
 @Keep
-data class MqttConfig(
-    val broker: String,
-    val clientID: String,
-    val topic: String
+data class WebSocketConfig(
+    val expires: Int,
+    val sessionID: String,
+    val token: String,
+    val url: String,
 )
 
 @Keep
-data class TrackUserMqttRequest(
+data class TrackUserWebSocketRequest(
     val user_id: String,
     val attributes: Map<String, Any>,
     val screenName: String? = null,
