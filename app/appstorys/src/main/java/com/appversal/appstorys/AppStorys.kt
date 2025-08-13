@@ -328,7 +328,6 @@ internal object AppStorys : AppStorysAPI {
                 if (!accessToken.isNullOrBlank()) {
                     this@AppStorys.accessToken = accessToken
                     sdkState = AppStorysSdkState.Initialized
-                    // only fetch the default screen campaigns if not already running
                     if (campaignsJob?.isActive != true) {
                         getScreenCampaigns("Home Screen", emptyList())
                     }
@@ -406,7 +405,6 @@ internal object AppStorys : AppStorysAPI {
                 if (event != "viewed" && event != "clicked") {
                     trackedEventNames.add(event)
                 }
-                Log.i("Tracked", "$trackedEventNames")
                 try {
                     val deviceInfo = getDeviceInfo(context)
                     val mergedMetadata = (metadata ?: emptyMap()) + deviceInfo
@@ -426,7 +424,6 @@ internal object AppStorys : AppStorysAPI {
                         .addHeader("Authorization", "Bearer $accessToken")
                         .build()
 
-                    Log.i("TrackEvent", "TrackEvent $requestBody")
                     val response = client.newCall(request).execute()
                 } catch (e: Exception) {
                     e.printStackTrace()

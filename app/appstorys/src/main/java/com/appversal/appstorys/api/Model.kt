@@ -39,21 +39,6 @@ data class TrackUserWebSocketRequest(
     val silentUpdate: Boolean? = null,
 )
 
-@Keep data class TrackScreenRequest(
-    val screen_name: String?,
-    val position_list: List<String>?,
-)
-
-@Keep data class TrackScreenResponse(
-    val campaigns: List<String>?
-)
-
-@Keep data class TrackUserRequest(
-    val user_id: String?,
-    val campaign_list: List<String>?,
-    val attributes: List<Map<String, Any>>?
-)
-
 @Keep data class CampaignResponse(
     val userId: String?,
     @SerializedName("message_id") val messageId: String?,
@@ -67,13 +52,6 @@ data class TrackUserWebSocketRequest(
     val position: String?,
     val screen: String?,
     @SerializedName("trigger_event") val triggerEvent: String?,
-)
-
-@Keep data class TrackAction(
-    val campaign_id: String?,
-    val user_id: String?,
-    val event_type: String?,
-    val widget_image: String?
 )
 
 @Keep data class ReelStatusRequest(

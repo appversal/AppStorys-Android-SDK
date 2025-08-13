@@ -30,24 +30,6 @@ internal interface ApiService {
         @Body request: TrackUserWebSocketRequest
     ): WebSocketConnectionResponse
 
-    @POST("api/v1/users/track-screen/")
-    suspend fun trackScreen(
-        @Header("Authorization") token: String,
-        @Body request: TrackScreenRequest
-    ): TrackScreenResponse
-
-    @POST("api/v1/users/track-user/")
-    suspend fun trackUser(
-        @Header("Authorization") token: String,
-        @Body request: TrackUserRequest,
-    ): CampaignResponse
-
-    @POST("api/v1/users/track-action/")
-    suspend fun trackAction(
-        @Header("Authorization") token: String,
-        @Body request: TrackAction
-    )
-
     @POST("api/v1/campaigns/capture-csat-response/")
     suspend fun sendCSATResponse(
         @Header("Authorization") token: String,

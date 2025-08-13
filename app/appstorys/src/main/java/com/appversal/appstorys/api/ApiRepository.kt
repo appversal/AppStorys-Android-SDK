@@ -214,20 +214,6 @@ internal class ApiRepository(
         }
     }
 
-    suspend fun trackActions(accessToken: String, actions: TrackAction) {
-        withContext(Dispatchers.IO) {
-            when (val result = safeApiCall {
-                apiService.trackAction(
-                    token = "Bearer $accessToken",
-                    request = actions
-                )
-            }) {
-                is ApiResult.Error -> println("Error tracking actions: ${result.message}")
-                else -> Unit
-            }
-        }
-    }
-
     suspend fun captureCSATResponse(accessToken: String, actions: CsatFeedbackPostRequest) {
         withContext(Dispatchers.IO) {
             when (val result = safeApiCall {
@@ -358,6 +344,5 @@ internal class ApiRepository(
 
     fun disconnect() {
         webSocketClient?.disconnect()
-//        campaignResponseChannel.close()
     }
 }
