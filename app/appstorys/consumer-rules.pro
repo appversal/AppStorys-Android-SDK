@@ -19,15 +19,6 @@
 -keep class com.appversal.appstorys.utils.** { *; }
 
 # -------------------------------------------------------
-# Keep third-party libraries used by the SDK.
-# This ensures that the app doesn't remove necessary parts
-# of the MQTT library.
-# -------------------------------------------------------
--keep class org.eclipse.paho.client.mqttv3.** {*;}
--keep class org.eclipse.paho.client.mqttv3.*$* { *; }
--keep class org.eclipse.paho.client.mqttv3.logging.JSR47Logger { *; }
-
-# -------------------------------------------------------
 # Keep rules for Android platform features used by the SDK,
 # like Compose and Kotlin reflection/serialization.
 # These are crucial to prevent crashes in the consuming app.

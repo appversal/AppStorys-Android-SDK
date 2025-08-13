@@ -1,5 +1,6 @@
 package com.appversal.appstorys.ui
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,28 +28,30 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.googlefonts.Font
+import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.toColorInt
+import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import com.appversal.appstorys.R
 import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.BottomSheetElement
-import kotlinx.coroutines.launch
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.googlefonts.Font
-import androidx.compose.ui.text.googlefonts.GoogleFont
-import androidx.compose.ui.text.style.TextAlign
-import androidx.media3.common.util.Log
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,140 +61,134 @@ internal fun BottomSheetComponent(
     onDismissRequest: () -> Unit,
     bottomSheetDetails: BottomSheetDetails,
 ) {
-    val coroutineScope = rememberCoroutineScope()
+    val elements = bottomSheetDetails.elements?.sortedBy { it.order } ?: emptyList()
+    val imageElement = elements.firstOrNull { it.type == "image" }
+    val bodyElements = elements.filter { it.type == "body" }
+    val ctaElements = elements.filter { it.type == "cta" }
+
+    var imageActive by remember(imageElement) { mutableStateOf(imageElement != null) }
+
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
     )
 
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            sheetState.expand()
+    LaunchedEffect(imageActive) {
+        if (imageActive) {
+            sheetState.show()
+        } else {
+            sheetState.hide()
         }
     }
 
-    val backgroundColor = Color.Transparent
-
     val cornerRadius = bottomSheetDetails.cornerRadius?.toFloatOrNull()?.dp ?: 16.dp
+
+    val onImageState = remember {
+        { state: AsyncImagePainter.State ->
+            imageActive = state is AsyncImagePainter.State.Success
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
         shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
-        containerColor = backgroundColor,
-        dragHandle = {},
-        sheetState = sheetState
-    ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            val sortedElements = bottomSheetDetails.elements?.sortedBy { it.order } ?: emptyList()
+        containerColor = Color.Transparent,
+        dragHandle = null,
+        sheetState = sheetState,
+        content = {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                content = {
 
-            val imageElement = sortedElements.firstOrNull { it.type == "image" }
-            val bodyElements = sortedElements.filter { it.type == "body" }
-            val ctaElements = sortedElements.filter { it.type == "cta" }
+                    val hasOverlayButton = imageElement?.overlayButton == true
 
-            if (imageElement?.overlayButton == true) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    ImageElement(imageElement, onClick = onClick)
+                    if (hasOverlayButton) {
+                        ImageElement(imageElement, onClick = onClick, onState = onImageState)
+                    }
 
                     Column(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
+                            .then(
+                                when (hasOverlayButton) {
+                                    true -> Modifier.align(Alignment.BottomCenter)
+                                    else -> Modifier
+                                }
+                            )
                             .fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        bodyElements.forEach { BodyElement(it) }
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        content = {
+                            if (!hasOverlayButton && imageElement != null) {
+                                ImageElement(imageElement, onClick, onImageState)
+                            }
 
-                        val leftCTA = ctaElements.firstOrNull { it.position == "left" }
-                        val rightCTA = ctaElements.firstOrNull { it.position == "right" }
-                        val centerCTAs =
-                            ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
+                            bodyElements.forEach { BodyElement(it) }
 
-                        if (leftCTA != null || rightCTA != null) {
-                            Row(modifier = Modifier.fillMaxWidth()) {
-                                if (leftCTA != null) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        CTAElement(leftCTA) { onClick(leftCTA.ctaLink) }
+                            val leftCTA = ctaElements.firstOrNull { it.position == "left" }
+                            val rightCTA = ctaElements.firstOrNull { it.position == "right" }
+                            val centerCTAs =
+                                ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
+
+                            if (leftCTA != null || rightCTA != null) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    content = {
+                                        Box(
+                                            modifier = Modifier.weight(1f),
+                                            content = {
+                                                if (leftCTA != null) {
+                                                    CTAElement(leftCTA) { onClick(leftCTA.ctaLink) }
+                                                }
+                                            }
+                                        )
+                                        Box(
+                                            modifier = Modifier.weight(1f),
+                                            content = {
+                                                if (rightCTA != null) {
+                                                    CTAElement(rightCTA) { onClick(rightCTA.ctaLink) }
+                                                }
+                                            }
+                                        )
                                     }
-                                } else Spacer(modifier = Modifier.weight(1f))
+                                )
+                            }
 
-                                if (rightCTA != null) {
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        CTAElement(rightCTA) { onClick(rightCTA.ctaLink) }
-                                    }
-                                } else Spacer(modifier = Modifier.weight(1f))
+                            centerCTAs.forEach { cta ->
+                                CTAElement(cta) { onClick(cta.ctaLink) }
                             }
                         }
-
-                        centerCTAs.forEach { cta ->
-                            CTAElement(cta) { onClick(cta.ctaLink) }
-                        }
-                    }
-                }
-            } else {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    imageElement?.let {
-                        ImageElement(it, onClick = onClick)
-                    }
-
-                    bodyElements.forEach { BodyElement(it) }
-
-                    val leftCTA = ctaElements.firstOrNull { it.position == "left" }
-                    val rightCTA = ctaElements.firstOrNull { it.position == "right" }
-                    val centerCTAs =
-                        ctaElements.filter { it.position == "center" || it.position.isNullOrEmpty() }
-
-                    if (leftCTA != null || rightCTA != null) {
-                        Row(modifier = Modifier.fillMaxWidth()) {
-                            if (leftCTA != null) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    CTAElement(leftCTA) { onClick(leftCTA.ctaLink) }
-                                }
-                            } else Spacer(modifier = Modifier.weight(1f))
-
-                            if (rightCTA != null) {
-                                Box(modifier = Modifier.weight(1f)) {
-                                    CTAElement(rightCTA) { onClick(rightCTA.ctaLink) }
-                                }
-                            } else Spacer(modifier = Modifier.weight(1f))
-                        }
-                    }
-
-                    centerCTAs.forEach { cta ->
-                        CTAElement(cta) { onClick(cta.ctaLink) }
-                    }
-                }
-            }
-
-            if (bottomSheetDetails.enableCrossButton == "true") {
-                IconButton(
-                    onClick = onDismissRequest,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(Color(0x4D000000), shape = CircleShape)
-                            .padding(4.dp)
-                            .clip(CircleShape)
                     )
-                }
-            }
 
+                    if (bottomSheetDetails.enableCrossButton == "true") {
+                        IconButton(
+                            onClick = onDismissRequest,
+                            modifier = Modifier
+                                .align(Alignment.TopEnd)
+                                .padding(8.dp),
+                            content = {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(Color(0x4D000000), shape = CircleShape)
+                                        .padding(4.dp)
+                                        .clip(CircleShape)
+                                )
+                            }
+                        )
+                    }
+                }
+            )
         }
-    }
+    )
 }
 
 @Composable
-private fun ImageElement(element: BottomSheetElement, onClick: (String?) -> Unit = { _ -> }) {
+private fun ImageElement(
+    element: BottomSheetElement,
+    onClick: (String?) -> Unit = { _ -> },
+    onState: (AsyncImagePainter.State) -> Unit = { _ -> }
+) {
     val paddingLeft = element.paddingLeft?.dp ?: 0.dp
     val paddingRight = element.paddingRight?.dp ?: 0.dp
     val paddingTop = element.paddingTop?.dp ?: 0.dp
@@ -210,23 +207,23 @@ private fun ImageElement(element: BottomSheetElement, onClick: (String?) -> Unit
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = null
-            ) {
-                onClick(element.imageLink)
-            },
+                indication = null,
+                onClick = { onClick(element.imageLink) }
+            ),
         contentAlignment = when (element.alignment) {
             "left" -> Alignment.CenterStart
             "right" -> Alignment.CenterEnd
             else -> Alignment.Center
+        },
+        content = {
+            Image(
+                painter = rememberAsyncImagePainter(element.url, onState = onState),
+                contentDescription = "Image",
+                modifier = Modifier.fillMaxWidth(),
+                contentScale = ContentScale.FillWidth
+            )
         }
-    ) {
-        Image(
-            painter = rememberAsyncImagePainter(element.url),
-            contentDescription = "Image",
-            modifier = Modifier.fillMaxWidth(),
-            contentScale = ContentScale.FillWidth
-        )
-    }
+    )
 }
 
 @Composable
@@ -253,9 +250,7 @@ private fun BodyElement(element: BottomSheetElement) {
             .fillMaxWidth()
             .background(
                 color = Color(
-                    android.graphics.Color.parseColor(
-                        element.bodyBackgroundColor ?: "#FFFFFF"
-                    )
+                    (element.bodyBackgroundColor ?: "#FFFFFF").toColorInt()
                 )
             )
             .padding(
@@ -264,18 +259,14 @@ private fun BodyElement(element: BottomSheetElement) {
                 top = paddingTop,
                 bottom = paddingBottom
             ),
-        horizontalAlignment = alignment
-    ) {
-        element.titleText?.let { title ->
-
-            if (element.titleText.isNotBlank()) {
+        horizontalAlignment = alignment,
+        content = {
+            if (!element.titleText.isNullOrBlank()) {
                 val titleColor = try {
                     Color(
-                        android.graphics.Color.parseColor(
-                            element.titleFontStyle?.colour ?: "#000000"
-                        )
+                        (element.titleFontStyle?.colour ?: "#000000").toColorInt()
                     )
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     Color.Black
                 }
 
@@ -289,7 +280,7 @@ private fun BodyElement(element: BottomSheetElement) {
                     if (decoration.contains("underline")) TextDecoration.Underline else null
 
                 Text(
-                    text = title,
+                    text = element.titleText,
                     color = titleColor,
                     fontSize = (element.titleFontSize ?: 16).sp,
                     fontWeight = titleFontWeight,
@@ -301,44 +292,45 @@ private fun BodyElement(element: BottomSheetElement) {
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height((element.spacingBetweenTitleDesc?.toInt() ?: 0).dp))
-
-        element.descriptionText?.let { description ->
-            val descriptionColor = try {
-                Color(
-                    android.graphics.Color.parseColor(
-                        element.descriptionFontStyle?.colour ?: "#000000"
+            if (!element.descriptionText.isNullOrBlank()) {
+                Spacer(
+                    modifier = Modifier.height(
+                        (element.spacingBetweenTitleDesc?.toInt() ?: 0).dp
                     )
                 )
-            } catch (e: Exception) {
-                Color.Black
+                val descriptionColor = try {
+                    Color(
+                        (element.descriptionFontStyle?.colour ?: "#000000").toColorInt()
+                    )
+                } catch (_: Exception) {
+                    Color.Black
+                }
+
+                val decoration = element.descriptionFontStyle?.decoration.orEmpty()
+                val descriptionFontWeight =
+                    if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
+                val descriptionFontStyle =
+                    if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
+                val descriptionTextDecoration =
+                    if (decoration.contains("underline")) TextDecoration.Underline else null
+
+                Text(
+                    text = element.descriptionText,
+                    color = descriptionColor,
+                    fontSize = (element.descriptionFontSize ?: 14).sp,
+                    fontWeight = descriptionFontWeight,
+                    fontStyle = descriptionFontStyle,
+                    textDecoration = descriptionTextDecoration,
+                    textAlign = textAlign,
+                    lineHeight = ((element.descriptionLineHeight
+                        ?: 1f) * (element.descriptionFontSize
+                        ?: 14)).sp,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
-
-            val decoration = element.descriptionFontStyle?.decoration.orEmpty()
-
-            val descriptionFontWeight =
-                if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
-            val descriptionFontStyle =
-                if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
-            val descriptionTextDecoration =
-                if (decoration.contains("underline")) TextDecoration.Underline else null
-
-            Text(
-                text = description,
-                color = descriptionColor,
-                fontSize = (element.descriptionFontSize ?: 14).sp,
-                fontWeight = descriptionFontWeight,
-                fontStyle = descriptionFontStyle,
-                textDecoration = descriptionTextDecoration,
-                textAlign = textAlign,
-                lineHeight = ((element.descriptionLineHeight ?: 1f) * (element.descriptionFontSize
-                    ?: 14)).sp,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
-    }
+    )
 }
 
 @Composable
@@ -349,14 +341,14 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
     val paddingBottom = element.paddingBottom?.dp ?: 0.dp
 
     val buttonColor = try {
-        Color(android.graphics.Color.parseColor(element.ctaBoxColor ?: "#000000"))
-    } catch (e: Exception) {
+        Color((element.ctaBoxColor ?: "#000000").toColorInt())
+    } catch (_: Exception) {
         Color.Black
     }
 
     val textColor = try {
-        Color(android.graphics.Color.parseColor(element.ctaTextColour ?: "#FFFFFF"))
-    } catch (e: Exception) {
+        Color((element.ctaTextColour ?: "#FFFFFF").toColorInt())
+    } catch (_: Exception) {
         Color.White
     }
 
@@ -369,9 +361,7 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
             .fillMaxWidth()
             .background(
                 color = Color(
-                    android.graphics.Color.parseColor(
-                        element.ctaBackgroundColor ?: "#FFFFFF"
-                    )
+                    (element.ctaBackgroundColor ?: "#FFFFFF").toColorInt()
                 )
             )
             .padding(
@@ -384,61 +374,61 @@ private fun CTAElement(element: BottomSheetElement, onClick: () -> Unit = {}) {
             "left" -> Alignment.CenterStart
             "right" -> Alignment.CenterEnd
             else -> Alignment.Center
-        }
-    ) {
-        Button(
-            onClick = onClick,
-            shape = RoundedCornerShape(borderRadius),
-            colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-            modifier = Modifier
-                .height(buttonHeight)
-                .then(
-                    if (element.ctaFullWidth == true) Modifier.fillMaxWidth()
-                    else Modifier.width(buttonWidth)
-                )
-        ) {
-            val decoration = element.ctaFontDecoration.orEmpty()
+        },
+        content = {
+            Button(
+                onClick = onClick,
+                shape = RoundedCornerShape(borderRadius),
+                colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+                modifier = Modifier
+                    .height(buttonHeight)
+                    .then(
+                        if (element.ctaFullWidth == true) Modifier.fillMaxWidth()
+                        else Modifier.width(buttonWidth)
+                    ),
+                content = {
+                    val decoration = element.ctaFontDecoration.orEmpty()
 
-            val ctaFontWeight = if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
-            val ctaFontStyle = if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
-            val ctaTextDecoration =
-                if (decoration.contains("underline")) TextDecoration.Underline else null
+                    val ctaFontWeight =
+                        if (decoration.contains("bold")) FontWeight.Bold else FontWeight.Normal
+                    val ctaFontStyle =
+                        if (decoration.contains("italic")) FontStyle.Italic else FontStyle.Normal
+                    val ctaTextDecoration =
+                        if (decoration.contains("underline")) TextDecoration.Underline else null
 
-            val fontName = element.ctaFontFamily ?: "Poppins"
+                    val fontName = element.ctaFontFamily ?: "Poppins"
 
-            Log.i("fontFamily", fontName)
+                    val fontFamily = try {
+                        val provider = GoogleFont.Provider(
+                            providerAuthority = "com.google.android.gms.fonts",
+                            providerPackage = "com.google.android.gms",
+                            certificates = R.array.com_google_android_gms_fonts_certs
+                        )
+                        val googleFont = GoogleFont(fontName)
+                        FontFamily(
+                            Font(
+                                googleFont = googleFont,
+                                fontProvider = provider,
+                                weight = FontWeight.Normal,
+                                style = FontStyle.Normal
+                            )
+                        )
+                    } catch (e: Exception) {
+                        Log.e("fontFamily", "Failed to load font: $fontName", e)
+                        FontFamily.Default
+                    }
 
-            val fontFamily = try {
-                val provider = GoogleFont.Provider(
-                    providerAuthority = "com.google.android.gms.fonts",
-                    providerPackage = "com.google.android.gms",
-                    certificates = R.array.com_google_android_gms_fonts_certs
-                )
-                val googleFont = GoogleFont(fontName)
-                FontFamily(
-                    Font(
-                        googleFont = googleFont,
-                        fontProvider = provider,
-                        weight = FontWeight.Normal,
-                        style = FontStyle.Normal
+                    Text(
+                        text = element.ctaText ?: "Click",
+                        color = textColor,
+                        fontFamily = fontFamily,
+                        fontSize = (element.ctaFontSize?.toFloatOrNull() ?: 14f).sp,
+                        fontWeight = ctaFontWeight,
+                        fontStyle = ctaFontStyle,
+                        textDecoration = ctaTextDecoration
                     )
-                ).also {
-                    Log.i("fontFamily", "FontFamily created successfully")
                 }
-            } catch (e: Exception) {
-                Log.e("fontFamily", "Failed to load font: $fontName", e)
-                FontFamily.Default
-            }
-
-            Text(
-                text = element.ctaText ?: "Click",
-                color = textColor,
-                fontFamily = fontFamily,
-                fontSize = (element.ctaFontSize?.toFloatOrNull() ?: 14f).sp,
-                fontWeight = ctaFontWeight,
-                fontStyle = ctaFontStyle,
-                textDecoration = ctaTextDecoration
             )
         }
-    }
+    )
 }
