@@ -237,6 +237,8 @@ fun HomeScreen(padding: PaddingValues) {
                     contentScale = ContentScale.Fit
                 )
 
+                campaignManager.Stories()
+
                 CopyUserIdText()
 
                 campaignManager.Widget(
@@ -265,7 +267,7 @@ fun HomeScreen(padding: PaddingValues) {
                     Button(
                         onClick = {
                             campaignManager.trackEvents(
-                                event = "Open Bottom Sheet Event"
+                                event = "Login"
                             )
                         },
                         modifier = Modifier.appstorys("open_bottom_sheet")
@@ -339,7 +341,7 @@ fun HomeScreen(padding: PaddingValues) {
                             event = "Added to cart"
                         )
                     },
-                    modifier = Modifier
+                    modifier = Modifier.appstorys("toolbar")
                 ) {
                     Text("Added to cart Event")
                 }
@@ -451,7 +453,7 @@ fun HomeScreen(padding: PaddingValues) {
                     }
                 }
 
-                campaignManager.Stories()
+
 
                 campaignManager.Reels()
 

@@ -13,12 +13,12 @@ import java.io.IOException
 
 internal interface ApiService {
 
-    @POST("api/v1/users/validate-account/")
+    @POST("validate-account")
     suspend fun validateAccount(
         @Body request: ValidateAccountRequest
     ): ValidateAccountResponse
 
-    @POST("api/v1/appinfo/identify-positions/")
+    @POST("api/v2/appinfo/identify-positions/")
     suspend fun identifyPositions(
         @Header("Authorization") token: String,
         @Body request: IdentifyPositionsRequest

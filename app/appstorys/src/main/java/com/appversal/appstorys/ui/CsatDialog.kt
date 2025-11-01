@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.appversal.appstorys.AppStorys.trackEvents
 import com.appversal.appstorys.api.CSATDetails
 import com.appversal.appstorys.api.CSATStyling
 import com.appversal.appstorys.utils.toColor
@@ -43,13 +44,13 @@ internal fun CsatDialog(
     onSubmitFeedback: (CsatFeedback) -> Unit,
     csatDetails: CSATDetails
 ) {
-    val localContent: Map<String, String> = remember {
+    val localContent: Map<String, String?> = remember {
         mapOf(
-            "title" to (csatDetails.title?.takeIf { it.isNotEmpty() } ?: "We'd love your feedback!"),
-            "description" to (csatDetails.descriptionText?.takeIf { it.isNotEmpty() } ?: "This will help us improve your experience"),
-            "thankyouText" to (csatDetails.thankyouText?.takeIf { it.isNotEmpty() } ?: "Thank you for your feedback!"),
-            "thankyouDescription" to (csatDetails.thankyouDescription?.takeIf { it.isNotEmpty() } ?: "We appreciate you taking the time to share your thoughts."),
-            "feedbackPrompt" to "Please tell us what went wrong."
+            "title" to csatDetails.title?.takeIf { it.isNotEmpty() },
+            "description" to csatDetails.descriptionText?.takeIf { it.isNotEmpty() },
+            "thankyouText" to csatDetails.thankyouText?.takeIf { it.isNotEmpty() },
+            "thankyouDescription" to csatDetails.thankyouDescription?.takeIf { it.isNotEmpty() },
+            "feedbackPrompt" to csatDetails.styling?.csatFeedbackTitleText?.takeIf { it.isNotEmpty() },
         )
     }
 
@@ -77,12 +78,7 @@ internal fun CsatDialog(
         if (csatDetails.feedbackOption?.toList()?.isNotEmpty() == true){
             csatDetails.feedbackOption.toList()
         }else{
-            listOf(
-                "Poor UI/UX",
-                "App Performance",
-                "Missing Features",
-                "Other Issues"
-            )
+            null
         }
     }
 
@@ -178,11 +174,11 @@ internal fun CsatDialog(
 
 @Composable
 private fun MainContent(
-    localContent: Map<String, String>,
+    localContent: Map<String, String?>,
     styling: Map<String, Color>,
     selectedStars: Int,
     showFeedback: Boolean,
-    feedbackOptions: List<String>,
+    feedbackOptions: List<String>?,
     selectedOption: String?,
     additionalComments: String,
     onStarSelected: (Int) -> Unit,
@@ -249,9 +245,9 @@ private fun MainContent(
 
 @Composable
 private fun FeedbackContent(
-    localContent: Map<String, String>,
+    localContent: Map<String, String?>,
     styling: Map<String, Color>,
-    feedbackOptions: List<String>,
+    feedbackOptions: List<String>?,
     selectedOption: String?,
     additionalComments: String,
     onOptionSelected: (String) -> Unit,
@@ -261,14 +257,16 @@ private fun FeedbackContent(
     Column(
         modifier = Modifier.padding(top = 16.dp)
     ) {
-        Text(
-            text = localContent["feedbackPrompt"]!!,
-            color = styling["csatTitleColor"]!!
-        )
+        localContent["feedbackPrompt"]?.let { feedbackPrompt ->
+            Text(
+                text = feedbackPrompt,
+                color = styling["csatTitleColor"]!!
+            )
+        }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        feedbackOptions.forEach { option ->
+        feedbackOptions?.forEach { option ->
             val isSelected = option == selectedOption
             Surface(
                 modifier = Modifier
@@ -328,7 +326,7 @@ private fun FeedbackContent(
 
 @Composable
 private fun ThankYouContent(
-    localContent: Map<String, String>,
+    localContent: Map<String, String?>,
     styling: Map<String, Color>,
     image: String,
     csatDetails: CSATDetails,
@@ -374,6 +372,7 @@ private fun ThankYouContent(
                     onDone()
                 } else {
                     try {
+                        trackEvents(csatDetails.campaign, "clicked")
                         val uri = Uri.parse(csatDetails.link)
                         val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
                         context.startActivity(intent)

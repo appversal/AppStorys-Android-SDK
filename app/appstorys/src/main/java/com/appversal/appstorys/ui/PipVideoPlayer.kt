@@ -34,6 +34,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.provider.FontRequest
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.media3.common.*
 import androidx.media3.common.util.Log
 import androidx.media3.common.util.UnstableApi
@@ -66,6 +68,8 @@ internal fun PipVideo(
     val context = LocalContext.current
     val density = LocalDensity.current.density
     val configuration = LocalConfiguration.current
+
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     val screenWidth = configuration.screenWidthDp * density
     val screenHeight = configuration.screenHeightDp * density
@@ -102,8 +106,27 @@ internal fun PipVideo(
     val bottomPaddingPx = with(LocalDensity.current) { bottomPadding.toPx() }
     val topPaddingPx = with(LocalDensity.current) { topPadding.toPx() }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    pipPlayer.pause()
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    if (!isFullScreen) {
+                        pipPlayer.play()
+                    }
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    pipPlayer.pause()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             pipPlayer.release()
         }
     }
@@ -297,6 +320,8 @@ fun FullScreenVideoDialog(
     var isMuted by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     val fullscreenPlayer = remember {
         ExoPlayer.Builder(context)
             .setSeekBackIncrementMs(5000)
@@ -313,14 +338,31 @@ fun FullScreenVideoDialog(
             }
     }
 
-    LaunchedEffect(isMuted) {
-        fullscreenPlayer.volume = if (isMuted) 0f else 1.0f
-    }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_PAUSE -> {
+                    fullscreenPlayer.pause()
+                }
+                Lifecycle.Event.ON_RESUME -> {
+                    fullscreenPlayer.play()
+                }
+                Lifecycle.Event.ON_STOP -> {
+                    fullscreenPlayer.pause()
+                }
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
 
-    DisposableEffect(Unit) {
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             fullscreenPlayer.release()
         }
+    }
+
+    LaunchedEffect(isMuted) {
+        fullscreenPlayer.volume = if (isMuted) 0f else 1.0f
     }
 
     Dialog(

@@ -268,6 +268,8 @@ internal object AppStorys : AppStorysAPI {
 
     private var trackedEventNames = mutableStateListOf<String>()
 
+    private var widgetPositionList = listOf<String>()
+
     override fun initialize(
         context: Application,
         appId: String,
@@ -362,11 +364,7 @@ internal object AppStorys : AppStorysAPI {
 
                 ensureActive()
 
-                repository.sendWidgetPositions(
-                    accessToken = accessToken,
-                    screenName = screenName,
-                    positionList = positionList
-                )
+                widgetPositionList = positionList
 
                 val deviceInfo = getDeviceInfo(context)
 
@@ -425,6 +423,9 @@ internal object AppStorys : AppStorysAPI {
                         .build()
 
                     val response = client.newCall(request).execute()
+
+                    Log.i("CSAT Captured", response.toString())
+                    Log.i("CSAT Captured", requestBody.toString())
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -538,17 +539,25 @@ internal object AppStorys : AppStorysAPI {
                             },
                             onSubmitFeedback = { feedback ->
                                 coroutineScope.launch {
-                                    repository.captureCSATResponse(
-                                        accessToken,
-                                        CsatFeedbackPostRequest(
-                                            user_id = userId,
-                                            csat = csatDetails.id,
-                                            rating = feedback.rating,
-                                            additional_comments = feedback.additionalComments,
-                                            feedback_option = feedback.feedbackOption
+//                                    repository.captureCSATResponse(
+//                                        accessToken,
+//                                        CsatFeedbackPostRequest(
+//                                            user_id = userId,
+//                                            csat = csatDetails.id,
+//                                            rating = feedback.rating,
+//                                            additional_comments = feedback.additionalComments,
+//                                            feedback_option = feedback.feedbackOption
+//                                        )
+//                                    )
+                                    trackEvents(
+                                        campaign_id = campaign?.id,
+                                        event = "csat captured",
+                                        metadata = mapOf(
+                                            "starCount" to feedback.rating,
+                                            "selectedOption" to (feedback.feedbackOption ?: "") as Any,
+                                            "additionalComments" to feedback.additionalComments
                                         )
                                     )
-                                    trackEvents(csatDetails.campaign, "clicked")
                                 }
                             },
                             csatDetails = csatDetails
@@ -1489,16 +1498,23 @@ internal object AppStorys : AppStorysAPI {
                 surveyDetails = surveyDetails,
                 onSubmitFeedback = { feedback ->
                     coroutineScope.launch {
-                        repository.captureSurveyResponse(
-                            accessToken,
-                            SurveyFeedbackPostRequest(
-                                user_id = userId,
-                                survey = surveyDetails.id,
-                                responseOptions = feedback.responseOptions,
-                                comment = feedback.comment
+//                        repository.captureSurveyResponse(
+//                            accessToken,
+//                            SurveyFeedbackPostRequest(
+//                                user_id = userId,
+//                                survey = surveyDetails.id,
+//                                responseOptions = feedback.responseOptions,
+//                                comment = feedback.comment
+//                            )
+//                        )
+                        trackEvents(
+                            campaign_id = campaign?.id,
+                            event = "survey captured",
+                            metadata = mapOf(
+                                "selectedOptions" to (feedback.responseOptions ?: ""),
+                                "otherText" to feedback.comment
                             )
                         )
-                        trackEvents(surveyDetails.campaign, "clicked")
                     }
                 },
             )
@@ -1593,6 +1609,14 @@ internal object AppStorys : AppStorysAPI {
                 FloatingActionButton(
                     onClick = {
                         shouldAnalyze = true
+
+                        coroutineScope.launch {
+                            repository.sendWidgetPositions(
+                                accessToken = accessToken,
+                                screenName = currentScreen,
+                                positionList = widgetPositionList
+                            )
+                        }
                     },
                     modifier = modifier
                         .padding(bottom = 86.dp, end = 16.dp)
@@ -1739,8 +1763,6 @@ internal object AppStorys : AppStorysAPI {
             "orientation" to if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) "portrait" else "landscape",
             "app_version" to packageInfo.versionName,
             "package_name" to packageName,
-            "install_time" to installTime,
-            "update_time" to updateTime,
             "device_type" to "mobile",
             "platform" to "android"
         )
