@@ -62,7 +62,6 @@ import com.appversal.appstorys.api.BannerDetails
 import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.CSATDetails
 import com.appversal.appstorys.api.Campaign
-import com.appversal.appstorys.api.CsatFeedbackPostRequest
 import com.appversal.appstorys.api.FloaterDetails
 import com.appversal.appstorys.api.ModalDetails
 import com.appversal.appstorys.api.PipDetails
@@ -72,7 +71,6 @@ import com.appversal.appstorys.api.ReelsDetails
 import com.appversal.appstorys.api.RetrofitClient
 import com.appversal.appstorys.api.StoryGroup
 import com.appversal.appstorys.api.SurveyDetails
-import com.appversal.appstorys.api.SurveyFeedbackPostRequest
 import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackActionStories
@@ -269,6 +267,13 @@ internal object AppStorys : AppStorysAPI {
     private var trackedEventNames = mutableStateListOf<String>()
 
     private var widgetPositionList = listOf<String>()
+
+    /**
+     * Tells the SDK whether the sdk components are visible to the user,
+     * this is very important for features like pip where the sdk needs to know
+     * whether the user can see the pip or not to pause/resume the pip video
+     */
+    var isVisible by mutableStateOf(true)
 
     override fun initialize(
         context: Application,

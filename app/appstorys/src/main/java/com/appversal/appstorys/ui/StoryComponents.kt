@@ -3,24 +3,47 @@ package com.appversal.appstorys.ui
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
-import android.util.Log
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.widget.FrameLayout
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,43 +53,38 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import coil.compose.rememberAsyncImagePainter
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.FrameLayout
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
+import coil.compose.rememberAsyncImagePainter
+import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 import com.appversal.appstorys.api.StoryGroup
 import com.appversal.appstorys.api.StorySlide
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.ui.StyledPlayerView
+import com.appversal.appstorys.utils.VideoCache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
-internal fun StoryCircles(storyGroups: List<StoryGroup>, onStoryClick: (StoryGroup) -> Unit, viewedStories: List<String>) {
+internal fun StoryCircles(
+    storyGroups: List<StoryGroup>,
+    onStoryClick: (StoryGroup) -> Unit,
+    viewedStories: List<String>
+) {
 
     val sortedStoryGroups = remember(storyGroups, viewedStories) {
         storyGroups.sortedWith(
@@ -83,7 +101,7 @@ internal fun StoryCircles(storyGroups: List<StoryGroup>, onStoryClick: (StoryGro
     ) {
         items(sortedStoryGroups.size) { index ->
             val storyGroup = sortedStoryGroups[index]
-            if (storyGroup.thumbnail != null){
+            if (storyGroup.thumbnail != null) {
                 StoryItem(
                     isStoryGroupViewed = viewedStories.contains(storyGroup.id),
                     imageUrl = storyGroup.thumbnail,
@@ -137,7 +155,17 @@ internal fun StoryItem(
             )
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(modifier = Modifier.width(60.dp).align(Alignment.CenterHorizontally), text = username, maxLines = 2, fontSize = 12.sp, color = nameColor, textAlign = TextAlign.Center, lineHeight = 15.sp)
+        Text(
+            modifier = Modifier
+                .width(60.dp)
+                .align(Alignment.CenterHorizontally),
+            text = username,
+            maxLines = 2,
+            fontSize = 12.sp,
+            color = nameColor,
+            textAlign = TextAlign.Center,
+            lineHeight = 15.sp
+        )
     }
 }
 
@@ -167,10 +195,13 @@ internal fun StoryScreen(
     val storyDuration = if (isImage) 5000 else 0
 
     val exoPlayer = remember(context) {
-        ExoPlayer.Builder(context).build().apply {
-            repeatMode = Player.REPEAT_MODE_OFF
-            playWhenReady = true
-        }
+        ExoPlayer
+            .Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(VideoCache.getFactory(context)))
+            .build().apply {
+                repeatMode = Player.REPEAT_MODE_OFF
+                playWhenReady = true
+            }
     }
 
     fun handleSlideCompletion() {
@@ -207,7 +238,8 @@ internal fun StoryScreen(
             while (progress < 1f) {
                 if (!isHolding) {
                     val elapsedTime = System.currentTimeMillis() - startTime
-                    progress = ((accumulatedTime + elapsedTime).toFloat() / storyDuration).coerceIn(0f, 1f)
+                    progress =
+                        ((accumulatedTime + elapsedTime).toFloat() / storyDuration).coerceIn(0f, 1f)
                 } else {
                     accumulatedTime += System.currentTimeMillis() - startTime
                     while (isHolding) delay(16)
@@ -224,10 +256,14 @@ internal fun StoryScreen(
                 exoPlayer.setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
                 exoPlayer.prepare()
 
-                var videoJob = launch {
+                val videoJob = launch {
                     while (true) {
                         if (!isHolding && exoPlayer.duration > 0) {
-                            progress = (exoPlayer.currentPosition.toFloat() / exoPlayer.duration).coerceIn(0f, 1f)
+                            progress =
+                                (exoPlayer.currentPosition.toFloat() / exoPlayer.duration).coerceIn(
+                                    0f,
+                                    1f
+                                )
                         }
                         delay(16)
                     }
@@ -267,6 +303,14 @@ internal fun StoryScreen(
         context.startActivity(Intent.createChooser(shareIntent, "Share via"))
     }
 
+    DisposableEffect(Unit) {
+        AppStorys.isVisible = false
+
+        onDispose {
+            AppStorys.isVisible = true
+        }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
@@ -299,7 +343,7 @@ internal fun StoryScreen(
                             }
                         },
                         onTap = { tapOffset ->
-                            if (!isHolding){
+                            if (!isHolding) {
                                 val screenWidth = this.size.width
                                 if (tapOffset.x < screenWidth / 2) {
                                     if (currentSlideIndex > 0) {
@@ -341,7 +385,7 @@ internal fun StoryScreen(
                 if (currentSlide.video != null) {
                     AndroidView(
                         factory = { ctx ->
-                            StyledPlayerView(ctx).apply {
+                            PlayerView(ctx).apply {
                                 player = exoPlayer
                                 layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
                                 useController = false
@@ -432,7 +476,7 @@ internal fun StoryScreen(
                     .padding(18.dp),
                 horizontalArrangement = Arrangement.End
             ) {
-                if (!isImage){
+                if (!isImage) {
 
                     Box(
                         modifier = Modifier
@@ -443,23 +487,25 @@ internal fun StoryScreen(
                             )
                             .clickable(onClick = {
                                 isMuted = !isMuted
-                                if (isMuted){
+                                if (isMuted) {
                                     exoPlayer.volume = 0f
-                                }else{
+                                } else {
                                     exoPlayer.volume = 1f
                                 }
                             }),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(R.drawable.volume),
+                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                R.drawable.volume
+                            ),
                             contentDescription = if (isMuted) "Unmute" else "Mute",
                             tint = Color.White
                         )
                     }
                     Spacer(Modifier.width(4.dp))
                 }
-                if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true){
+                if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true) {
                     Box(
                         modifier = Modifier
                             .size(32.dp)
@@ -504,7 +550,13 @@ internal fun StoryScreen(
 }
 
 @Composable
-internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, viewedStories: List<String>, storyViewed: (String) -> Unit, sendClickEvent: (Pair<StorySlide, String>) -> Unit) {
+internal fun StoriesApp(
+    storyGroups: List<StoryGroup>,
+    sendEvent: (Pair<StorySlide, String>) -> Unit,
+    viewedStories: List<String>,
+    storyViewed: (String) -> Unit,
+    sendClickEvent: (Pair<StorySlide, String>) -> Unit
+) {
     var selectedStoryGroup by remember { mutableStateOf<StoryGroup?>(null) }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -513,14 +565,14 @@ internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySli
             storyGroups = storyGroups,
             onStoryClick = { storyGroup ->
                 selectedStoryGroup = storyGroup
-                selectedStoryGroup?.id?.let{
+                selectedStoryGroup?.id?.let {
                     storyViewed(it)
                 }
             }
         )
 
         selectedStoryGroup?.let { storyGroup ->
-            if (!storyGroup.slides.isNullOrEmpty()){
+            if (!storyGroup.slides.isNullOrEmpty()) {
                 key(storyGroup) {
                     StoryScreen(
                         storyGroup = storyGroup,
@@ -530,7 +582,7 @@ internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySli
                             val currentIndex = storyGroups.indexOf(storyGroup)
                             if (currentIndex < storyGroups.lastIndex) {
                                 selectedStoryGroup = storyGroups[currentIndex + 1]
-                                selectedStoryGroup?.id?.let{
+                                selectedStoryGroup?.id?.let {
                                     storyViewed(it)
                                 }
                             } else {
@@ -547,13 +599,30 @@ internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySli
 }
 
 @Composable
-internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, sendClickEvent: (Pair<StorySlide, String>) -> Unit) {
+internal fun StoryAppMain(
+    apiStoryGroups: List<StoryGroup>,
+    sendEvent: (Pair<StorySlide, String>) -> Unit,
+    sendClickEvent: (Pair<StorySlide, String>) -> Unit
+) {
 
     val context = LocalContext.current
-    var viewedStories by remember { mutableStateOf(getViewedStories(context.getSharedPreferences("AppStory", Context.MODE_PRIVATE))) }
-    var storyGroups by remember { mutableStateOf(apiStoryGroups.sortedWith(
-        compareByDescending<StoryGroup> { it.id !in viewedStories }
-            .thenBy { it.order })) }
+    var viewedStories by remember {
+        mutableStateOf(
+            getViewedStories(
+                context.getSharedPreferences(
+                    "AppStory",
+                    Context.MODE_PRIVATE
+                )
+            )
+        )
+    }
+    var storyGroups by remember {
+        mutableStateOf(
+            apiStoryGroups.sortedWith(
+                compareByDescending<StoryGroup> { it.id !in viewedStories }
+                    .thenBy { it.order })
+        )
+    }
 
     LaunchedEffect(viewedStories) {
         storyGroups = storyGroups.sortedWith(
@@ -562,14 +631,24 @@ internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<Sto
         )
     }
 
-    StoriesApp(storyGroups = storyGroups, sendEvent = sendEvent, viewedStories = viewedStories, storyViewed =  {
-        if (!viewedStories.contains(it)){
-            val list = ArrayList(viewedStories)
-            list.add(it)
-            viewedStories = list
-            saveViewedStories(idList = list, sharedPreferences = context.getSharedPreferences("AppStory", Context.MODE_PRIVATE))
-        }
-    },
+    StoriesApp(
+        storyGroups = storyGroups,
+        sendEvent = sendEvent,
+        viewedStories = viewedStories,
+        storyViewed = {
+            if (!viewedStories.contains(it)) {
+                val list = ArrayList(viewedStories)
+                list.add(it)
+                viewedStories = list
+                saveViewedStories(
+                    idList = list,
+                    sharedPreferences = context.getSharedPreferences(
+                        "AppStory",
+                        Context.MODE_PRIVATE
+                    )
+                )
+            }
+        },
         sendClickEvent = sendClickEvent
     )
 }

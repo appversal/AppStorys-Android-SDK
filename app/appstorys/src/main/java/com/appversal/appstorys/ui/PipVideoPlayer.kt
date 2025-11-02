@@ -1,27 +1,49 @@
 package com.appversal.appstorys.ui
 
-import android.net.Uri
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.*
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -29,22 +51,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.*
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.core.provider.FontRequest
+import androidx.core.graphics.toColorInt
+import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.media3.common.*
-import androidx.media3.common.util.Log
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 import com.appversal.appstorys.api.PipStyling
-import com.appversal.appstorys.ui.xml.toDp
+import com.appversal.appstorys.utils.VideoCache
 import kotlin.math.roundToInt
 
 @OptIn(UnstableApi::class)
@@ -65,90 +95,13 @@ internal fun PipVideo(
     onButtonClick: () -> Unit,
     onExpandClick: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    val density = LocalDensity.current.density
-    val configuration = LocalConfiguration.current
-
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    val screenWidth = configuration.screenWidthDp * density
-    val screenHeight = configuration.screenHeightDp * density
-
-    val pipWidth = width
-    val pipHeight = height
-
-    val boundaryPadding = 12.dp
-    val boundaryPaddingPx = with(LocalDensity.current) { boundaryPadding.toPx() }
-
-    var pipSize by remember { mutableStateOf(IntSize(0, 0)) }
-    var offsetX by remember { mutableStateOf(0f) }
-    var offsetY by remember { mutableStateOf(0f) }
-    var isInitialized by remember { mutableStateOf(false) }
-
     var isFullScreen by remember { mutableStateOf(false) }
-    var isMuted by remember { mutableStateOf(true) }
 
-    val pipPlayer = remember {
-        ExoPlayer.Builder(context)
-            .setSeekBackIncrementMs(5000)
-            .setLoadControl(DefaultLoadControl())
-            .setSeekForwardIncrementMs(5000)
-            .build()
-            .apply {
-                setMediaItem(MediaItem.fromUri(Uri.parse(videoUri)))
-                repeatMode = Player.REPEAT_MODE_ALL
-                videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
-                prepare()
-                play()
-            }
-    }
-
-    val bottomPaddingPx = with(LocalDensity.current) { bottomPadding.toPx() }
-    val topPaddingPx = with(LocalDensity.current) { topPadding.toPx() }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    pipPlayer.pause()
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    if (!isFullScreen) {
-                        pipPlayer.play()
-                    }
-                }
-                Lifecycle.Event.ON_STOP -> {
-                    pipPlayer.pause()
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            pipPlayer.release()
-        }
-    }
-
-    LaunchedEffect(isFullScreen) {
-        if (isFullScreen) {
-            pipPlayer.pause()
-        } else {
-            pipPlayer.play()
-        }
-    }
-
-    LaunchedEffect(isMuted) {
-        pipPlayer.volume = if (isMuted) 0f else 1.0f
-    }
-
-    if (isFullScreen && !fullScreenVideoUri.isNullOrEmpty()) {
-        FullScreenVideoDialog(
+    when {
+        isFullScreen && !fullScreenVideoUri.isNullOrEmpty() -> FullScreenVideoDialog(
             videoUri = fullScreenVideoUri,
             onDismiss = {
                 isFullScreen = false
-                pipPlayer.play()
             },
             onClose = onClose,
             button_text = button_text,
@@ -156,128 +109,158 @@ internal fun PipVideo(
             pipStyling = pipStyling,
             onButtonClick = onButtonClick
         )
-    }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        if (isInitialized) {
-            Card(
-                modifier = Modifier
-                    .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
-                    .size(width = pipWidth, height = pipHeight)
-                    .onGloballyPositioned { coordinates ->
-                        pipSize = coordinates.size
-                    }
-                    .clickable {
-                        if (!fullScreenVideoUri.isNullOrEmpty()) {
-                            onExpandClick()
-                            isFullScreen = true
-                            pipPlayer.pause()
-                        }
-                    }
-                    .then(
-                        if (isMovable) {
-                            Modifier.pointerInput(Unit) {
-                                detectDragGestures { change, dragAmount ->
-                                    change.consume()
-                                    offsetX = (offsetX + dragAmount.x).coerceIn(
-                                        boundaryPaddingPx,
-                                        screenWidth - pipSize.width - boundaryPaddingPx
-                                    )
-                                    offsetY = (offsetY + dragAmount.y).coerceIn(
-                                        boundaryPaddingPx + topPaddingPx,
-                                        screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
-                                    )
-                                }
-                            }
-                        } else {
-                            Modifier
-                        }
-                    ),
-                shape = RoundedCornerShape(12.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-            ) {
-                Box {
-                    PipPlayerView(
-                        exoPlayer = pipPlayer,
-                        pipStyling = pipStyling,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .size(23.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                            .clickable { onClose() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                            modifier = Modifier.size(17.dp)
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.TopStart)
-                            .padding(4.dp)
-                            .size(24.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                            .clickable { isMuted = !isMuted },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(R.drawable.volume),
-                            contentDescription = "Mute/Unmute",
-                            tint = Color.White,
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                    if(!fullScreenVideoUri.isNullOrEmpty()){
-                        Box(
+        AppStorys.isVisible -> {
+            val density = LocalDensity.current.density
+            val configuration = LocalConfiguration.current
+
+            val screenWidth = configuration.screenWidthDp * density
+            val screenHeight = configuration.screenHeightDp * density
+
+            val boundaryPadding = 12.dp
+            val boundaryPaddingPx = with(LocalDensity.current) { boundaryPadding.toPx() }
+
+            var isMuted by remember { mutableStateOf(true) }
+            var pipSize by remember { mutableStateOf(IntSize(0, 0)) }
+            var offsetX by remember { mutableFloatStateOf(0f) }
+            var offsetY by remember { mutableFloatStateOf(0f) }
+            var isInitialized by remember { mutableStateOf(false) }
+
+            val pipPlayer = player(videoUri)
+
+            val bottomPaddingPx = with(LocalDensity.current) { bottomPadding.toPx() }
+            val topPaddingPx = with(LocalDensity.current) { topPadding.toPx() }
+
+            LaunchedEffect(isMuted) {
+                pipPlayer.volume = if (isMuted) 0f else 1.0f
+            }
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                content = {
+                    if (isInitialized) {
+                        Card(
                             modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(4.dp)
-                                .size(24.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                                .size(width = width, height = height)
+                                .onGloballyPositioned { coordinates ->
+                                    pipSize = coordinates.size
+                                }
                                 .clickable {
                                     if (!fullScreenVideoUri.isNullOrEmpty()) {
                                         onExpandClick()
                                         isFullScreen = true
                                         pipPlayer.pause()
                                     }
-                                },
-                            contentAlignment = Alignment.Center
+                                }
+                                .then(
+                                    if (isMovable) {
+                                        Modifier.pointerInput(Unit) {
+                                            detectDragGestures { change, dragAmount ->
+                                                change.consume()
+                                                offsetX = (offsetX + dragAmount.x).coerceIn(
+                                                    boundaryPaddingPx,
+                                                    screenWidth - pipSize.width - boundaryPaddingPx
+                                                )
+                                                offsetY = (offsetY + dragAmount.y).coerceIn(
+                                                    boundaryPaddingPx + topPaddingPx,
+                                                    screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        Modifier
+                                    }
+                                ),
+                            shape = RoundedCornerShape(12.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
                         ) {
-                            Icon(
-                                painter = painterResource(R.drawable.expand),
-                                contentDescription = "Maximize",
-                                tint = Color.White,
-                                modifier = Modifier.size(12.dp)
-                            )
+                            Box {
+                                PipPlayerView(
+                                    exoPlayer = pipPlayer,
+                                    pipStyling = pipStyling,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(4.dp)
+                                        .size(23.dp)
+                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                        .clickable { onClose() },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(17.dp)
+                                    )
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopStart)
+                                        .padding(4.dp)
+                                        .size(24.dp)
+                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                        .clickable { isMuted = !isMuted },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                            R.drawable.volume
+                                        ),
+                                        contentDescription = "Mute/Unmute",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                }
+                                if (!fullScreenVideoUri.isNullOrEmpty()) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomEnd)
+                                            .padding(4.dp)
+                                            .size(24.dp)
+                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                                            .clickable {
+                                                if (fullScreenVideoUri.isNotEmpty()) {
+                                                    onExpandClick()
+                                                    isFullScreen = true
+                                                    pipPlayer.pause()
+                                                }
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.expand),
+                                            contentDescription = "Maximize",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(12.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(width = width, height = height)
+                                .onGloballyPositioned { coordinates ->
+                                    pipSize = coordinates.size
+
+                                    offsetX = if (position == "left") {
+                                        boundaryPaddingPx
+                                    } else {
+                                        screenWidth - pipSize.width - boundaryPaddingPx
+                                    }
+                                    offsetY =
+                                        screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
+                                    isInitialized = true
+                                }
+                                .alpha(0f)
+                        )
                     }
                 }
-            }
-        } else {
-            Box(
-                modifier = Modifier
-                    .size(width = pipWidth, height = pipHeight)
-                    .onGloballyPositioned { coordinates ->
-                        pipSize = coordinates.size
-
-                        if (position == "left") {
-                            offsetX = boundaryPaddingPx
-                        } else {
-                            offsetX = screenWidth - pipSize.width - boundaryPaddingPx
-                        }
-                        offsetY = screenHeight - pipSize.height - boundaryPaddingPx - bottomPaddingPx
-                        isInitialized = true
-                    }
-                    .alpha(0f)
             )
         }
     }
@@ -316,53 +299,21 @@ fun FullScreenVideoDialog(
     onClose: () -> Unit,
     onButtonClick: () -> Unit
 ) {
-    val context = LocalContext.current
     var isMuted by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-
-    val fullscreenPlayer = remember {
-        ExoPlayer.Builder(context)
-            .setSeekBackIncrementMs(5000)
-            .setLoadControl(DefaultLoadControl())
-            .setSeekForwardIncrementMs(5000)
-            .build()
-            .apply {
-                setMediaItem(MediaItem.fromUri(Uri.parse(videoUri)))
-                repeatMode = Player.REPEAT_MODE_ALL
-                videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
-                volume = if (isMuted) 0f else 1.0f
-                prepare()
-                play()
-            }
-    }
-
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    fullscreenPlayer.pause()
-                }
-                Lifecycle.Event.ON_RESUME -> {
-                    fullscreenPlayer.play()
-                }
-                Lifecycle.Event.ON_STOP -> {
-                    fullscreenPlayer.pause()
-                }
-                else -> {}
-            }
-        }
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-            fullscreenPlayer.release()
-        }
-    }
+    val fullscreenPlayer = player(videoUri)
 
     LaunchedEffect(isMuted) {
         fullscreenPlayer.volume = if (isMuted) 0f else 1.0f
+    }
+
+    DisposableEffect(Unit) {
+        AppStorys.isVisible = false
+
+        onDispose {
+            AppStorys.isVisible = true
+        }
     }
 
     Dialog(
@@ -376,7 +327,7 @@ fun FullScreenVideoDialog(
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
-                ) {
+            ) {
                 PipPlayerView(
                     exoPlayer = fullscreenPlayer,
                     pipStyling = pipStyling,
@@ -410,7 +361,9 @@ fun FullScreenVideoDialog(
                             .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                     ) {
                         Icon(
-                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(R.drawable.volume),
+                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                R.drawable.volume
+                            ),
                             contentDescription = "Mute/Unmute",
                             tint = Color.White,
                             modifier = Modifier.size(24.dp)
@@ -434,7 +387,7 @@ fun FullScreenVideoDialog(
                     }
                 }
 
-                if(!button_text.isNullOrEmpty() && !link.isNullOrEmpty()){
+                if (!button_text.isNullOrEmpty() && !link.isNullOrEmpty()) {
 
                     fun String?.toDp(): Dp = this?.toIntOrNull()?.dp ?: 0.dp
 
@@ -444,32 +397,28 @@ fun FullScreenVideoDialog(
                     val paddingBottom = pipStyling?.marginBottom?.toDp()
 
                     val buttonColor = try {
-                        Color(android.graphics.Color.parseColor(pipStyling?.ctaButtonBackgroundColor ?: "#000000"))
+                        Color((pipStyling?.ctaButtonBackgroundColor ?: "#000000").toColorInt())
                     } catch (e: Exception) {
                         Color.Black
                     }
 
                     val textColor = try {
-                        Color(android.graphics.Color.parseColor(pipStyling?.ctaButtonTextColor ?: "#FFFFFF"))
+                        Color((pipStyling?.ctaButtonTextColor ?: "#FFFFFF").toColorInt())
                     } catch (e: Exception) {
                         Color.White
                     }
 
-                    val context = LocalContext.current
-                    val fontName = "Poppins"
-
-                    Log.i("fontFamily", "$fontName")
-
-                    val provider = GoogleFont.Provider(
-                        providerAuthority = "com.google.android.gms.fonts",
-                        providerPackage = "com.google.android.gms",
-                        certificates = R.array.com_google_android_gms_fonts_certs
-                    )
-
-                    val googleFont = GoogleFont(fontName)
-
                     val fontFamily = FontFamily(
-                        Font(googleFont, provider, FontWeight.Normal, FontStyle.Normal,)
+                        Font(
+                            googleFont = GoogleFont("Poppins"),
+                            fontProvider = GoogleFont.Provider(
+                                providerAuthority = "com.google.android.gms.fonts",
+                                providerPackage = "com.google.android.gms",
+                                certificates = R.array.com_google_android_gms_fonts_certs
+                            ),
+                            FontWeight.Normal,
+                            FontStyle.Normal
+                        )
                     )
 
                     Button(
@@ -484,15 +433,15 @@ fun FullScreenVideoDialog(
                                 bottom = paddingBottom ?: 0.dp,
                                 start = paddingLeft ?: 0.dp,
                                 end = paddingRight ?: 0.dp
-                            ).then(
+                            )
+                            .then(
                                 if (pipStyling?.ctaFullWidth == true) {
                                     Modifier.fillMaxWidth()
                                 } else {
                                     Modifier.width(pipStyling?.ctaWidth?.toDp() ?: 0.dp)
                                 }
                             )
-                            .height(pipStyling?.ctaHeight?.toDp() ?: 0.dp)
-                        ,
+                            .height(pipStyling?.ctaHeight?.toDp() ?: 0.dp),
                         shape = RoundedCornerShape(pipStyling?.cornerRadius?.toDp() ?: 0.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
                     ) {
@@ -501,10 +450,54 @@ fun FullScreenVideoDialog(
                             text = button_text.toString(),
                             color = textColor,
                             textAlign = TextAlign.Center
-                            )
+                        )
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+private fun player(videoUri: String): ExoPlayer {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val pipPlayer = remember {
+        ExoPlayer.Builder(context)
+            .setSeekBackIncrementMs(5000)
+            .setLoadControl(DefaultLoadControl())
+            .setSeekForwardIncrementMs(5000)
+            .setMediaSourceFactory(
+                DefaultMediaSourceFactory(VideoCache.getFactory(context))
+            )
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(videoUri.toUri()))
+                repeatMode = Player.REPEAT_MODE_ALL
+                videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
+                prepare()
+                play()
+            }
+    }
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> pipPlayer.play()
+
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> pipPlayer.pause()
+
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            pipPlayer.release()
+        }
+    }
+
+    return pipPlayer
 }
