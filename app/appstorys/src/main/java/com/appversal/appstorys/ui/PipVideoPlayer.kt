@@ -138,10 +138,15 @@ internal fun PipVideo(
             Box(
                 modifier = Modifier.fillMaxSize(),
                 content = {
-                    if (isInitialized) {
-                        Card(
+                    when (isInitialized) {
+                        true -> Card(
                             modifier = Modifier
-                                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                                .offset {
+                                    IntOffset(
+                                        offsetX.roundToInt(),
+                                        offsetY.roundToInt()
+                                    )
+                                }
                                 .size(width = width, height = height)
                                 .onGloballyPositioned { coordinates ->
                                     pipSize = coordinates.size
@@ -173,76 +178,86 @@ internal fun PipVideo(
                                     }
                                 ),
                             shape = RoundedCornerShape(12.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-                        ) {
-                            Box {
-                                PipPlayerView(
-                                    exoPlayer = pipPlayer,
-                                    pipStyling = pipStyling,
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopEnd)
-                                        .padding(4.dp)
-                                        .size(23.dp)
-                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                        .clickable { onClose() },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Close,
-                                        contentDescription = "Close",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(17.dp)
+                            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                            content = {
+                                Box {
+                                    PipPlayerView(
+                                        exoPlayer = pipPlayer,
+                                        pipStyling = pipStyling,
+                                        modifier = Modifier.fillMaxSize()
                                     )
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .align(Alignment.TopStart)
-                                        .padding(4.dp)
-                                        .size(24.dp)
-                                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                        .clickable { isMuted = !isMuted },
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
-                                            R.drawable.volume
-                                        ),
-                                        contentDescription = "Mute/Unmute",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(14.dp)
-                                    )
-                                }
-                                if (!fullScreenVideoUri.isNullOrEmpty()) {
                                     Box(
                                         modifier = Modifier
-                                            .align(Alignment.BottomEnd)
+                                            .align(Alignment.TopEnd)
                                             .padding(4.dp)
-                                            .size(24.dp)
-                                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                                            .clickable {
-                                                if (fullScreenVideoUri.isNotEmpty()) {
-                                                    onExpandClick()
-                                                    isFullScreen = true
-                                                    pipPlayer.pause()
-                                                }
-                                            },
+                                            .size(23.dp)
+                                            .background(
+                                                Color.Black.copy(alpha = 0.5f),
+                                                CircleShape
+                                            )
+                                            .clickable { onClose() },
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
-                                            painter = painterResource(R.drawable.expand),
-                                            contentDescription = "Maximize",
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Close",
                                             tint = Color.White,
-                                            modifier = Modifier.size(12.dp)
+                                            modifier = Modifier.size(17.dp)
                                         )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopStart)
+                                            .padding(4.dp)
+                                            .size(24.dp)
+                                            .background(
+                                                Color.Black.copy(alpha = 0.5f),
+                                                CircleShape
+                                            )
+                                            .clickable { isMuted = !isMuted },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                                R.drawable.volume
+                                            ),
+                                            contentDescription = "Mute/Unmute",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                    if (!fullScreenVideoUri.isNullOrEmpty()) {
+                                        Box(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomEnd)
+                                                .padding(4.dp)
+                                                .size(24.dp)
+                                                .background(
+                                                    Color.Black.copy(alpha = 0.5f),
+                                                    CircleShape
+                                                )
+                                                .clickable {
+                                                    if (fullScreenVideoUri.isNotEmpty()) {
+                                                        onExpandClick()
+                                                        isFullScreen = true
+                                                        pipPlayer.pause()
+                                                    }
+                                                },
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Icon(
+                                                painter = painterResource(R.drawable.expand),
+                                                contentDescription = "Maximize",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
-                    } else {
-                        Box(
+                        )
+
+                        else -> Box(
                             modifier = Modifier
                                 .size(width = width, height = height)
                                 .onGloballyPositioned { coordinates ->
@@ -458,6 +473,7 @@ fun FullScreenVideoDialog(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 private fun player(videoUri: String): ExoPlayer {
     val context = LocalContext.current
