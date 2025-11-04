@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.FrameLayout
+import androidx.annotation.OptIn
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -63,6 +64,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
@@ -169,6 +171,7 @@ internal fun StoryItem(
     }
 }
 
+@OptIn(UnstableApi::class)
 @Composable
 internal fun StoryScreen(
     storyGroup: StoryGroup,

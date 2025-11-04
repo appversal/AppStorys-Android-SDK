@@ -1150,7 +1150,10 @@ internal object AppStorys : AppStorysAPI {
                         widgetDetails.styling?.rightMargin?.toFloatOrNull()?.dp ?: 0.dp
 
                     val actualWidth = (staticWidth ?: screenWidth) - marginLeft - marginRight
-                    (actualWidth.value.minus(32) * aspectRatio).dp
+                    (actualWidth.value.minus(32
+                        // for the new widget
+//                            +26
+                    ) * aspectRatio).dp
                 } else {
                     widgetDetails.height?.dp
                 }

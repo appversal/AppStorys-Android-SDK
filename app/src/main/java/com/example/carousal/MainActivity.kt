@@ -1,7 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.carousal
-
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -192,7 +191,6 @@ fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
-
     // State variables for input fields
     var input1 by remember { mutableStateOf("") }
     var input2 by remember { mutableStateOf("") }
@@ -200,6 +198,9 @@ fun HomeScreen(padding: PaddingValues) {
     var eventInput1 by remember { mutableStateOf("") }
     var eventInput2 by remember { mutableStateOf("") }
     var eventInput3 by remember { mutableStateOf("") }
+
+    // State for scratch card dialog
+    var showScratchCard by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val screenName  = "Home Screen"
@@ -257,6 +258,31 @@ fun HomeScreen(padding: PaddingValues) {
                     placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
                     position = "widget_two",
                 )
+
+                // NEW: Scratch Card Button
+                Box(
+                    modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp)
+                        .fillMaxWidth(),
+//                        .padding(top = 12.dp, horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = {
+                            showScratchCard = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6200EE)
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = android.R.drawable.ic_dialog_info),
+                            contentDescription = "Scratch Card",
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Open Scratch Card")
+                    }
+                }
 
                 Box(
                     modifier = Modifier
@@ -467,6 +493,14 @@ fun HomeScreen(padding: PaddingValues) {
 
             }
         }
+    }
+    // Scratch Card Dialog
+    if (showScratchCard) {
+//        ScratchCardDialog(
+//            onDismiss = { showScratchCard = false },
+//            scratchImageRes = R.drawable.ic_launcher_foreground, // Replace with your scratch surface image
+//            revealImageRes = R.drawable.home_one // Replace with your reveal image
+//        )
     }
 }
 
