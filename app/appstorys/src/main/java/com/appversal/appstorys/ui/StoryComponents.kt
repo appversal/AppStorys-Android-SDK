@@ -62,6 +62,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -182,9 +185,10 @@ internal fun StoryScreen(
     sendClickEvent: (Pair<StorySlide, String>) -> Unit
 ) {
     var currentSlideIndex by remember { mutableIntStateOf(0) }
-    val currentSlide = slides.get(currentSlideIndex)
+    val currentSlide = slides[currentSlideIndex]
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var isHolding by remember { mutableStateOf(false) }
     var isMuted by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -224,8 +228,21 @@ internal fun StoryScreen(
         }
     }
 
-    DisposableEffect(Unit) {
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> exoPlayer.play()
+
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> exoPlayer.pause()
+
+                else -> {}
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
         onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
             exoPlayer.release()
         }
     }
