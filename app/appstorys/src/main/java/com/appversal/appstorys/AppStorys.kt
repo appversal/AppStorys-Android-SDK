@@ -268,6 +268,8 @@ internal object AppStorys : AppStorysAPI {
 
     private var widgetPositionList = listOf<String>()
 
+    private val viewedTooltips = MutableStateFlow<Set<String>>(emptySet())
+
     /**
      * Tells the SDK whether the sdk components are visible to the user,
      * this is very important for features like pip where the sdk needs to know
@@ -318,7 +320,7 @@ internal object AppStorys : AppStorysAPI {
                 override fun onStop(owner: LifecycleOwner) {
                     sdkState = AppStorysSdkState.Paused
                     campaigns.update { emptyList() }
-                    tooltipViewed.update { emptyList() }
+//                    tooltipViewed.update { emptyList() }
                     showModal = true
                     showCsat = false
                     showBottomSheet = true
@@ -405,7 +407,7 @@ internal object AppStorys : AppStorysAPI {
     ) {
         coroutineScope.launch {
             if (accessToken.isNotEmpty()) {
-                if (event != "viewed" && event != "clicked") {
+                if (event != "viewed" && event != "clicked" && event != "csat captured" && event != "survey captured") {
                     trackedEventNames.add(event)
                 }
                 try {
@@ -1663,22 +1665,26 @@ internal object AppStorys : AppStorysAPI {
             } ?: campaigns.value.firstOrNull { campaign ->
                 campaign.campaignType == "TTP" && campaign.details is TooltipsDetails
             }
-            repository.trackTooltipsActions(
-                accessToken, TrackActionTooltips(
-                    campaign_id = campaign?.id,
-                    user_id = userId,
-                    event_type = "IMP",
-                    tooltip_id = tooltip.id
+
+            val tooltipId = tooltip.id ?: return@launch
+
+            if (!viewedTooltips.value.contains(tooltipId)) {
+                trackEvents(
+                    campaign?.id,
+                    "viewed",
+                    mapOf("tooltip_id" to tooltipId)
                 )
-            )
-            trackEvents(
-                campaign?.id,
-                "viewed",
-                mapOf("tooltip_id" to tooltip.id!!)
-            )
+                viewedTooltips.update { it + tooltipId }
+            }
 
             if (isClick) {
                 if (!tooltip.deepLinkUrl.isNullOrEmpty()) {
+                    trackEvents(
+                        campaign?.id,
+                        "clicked",
+                        mapOf("tooltip_id" to tooltipId)
+                    )
+
                     if (tooltip.clickAction == "deepLink") {
                         if (!isValidUrl(tooltip.deepLinkUrl)) {
                             navigateToScreen(tooltip.deepLinkUrl)
