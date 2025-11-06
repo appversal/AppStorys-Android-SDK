@@ -131,17 +131,13 @@ internal fun PipVideo(
             var offsetY by remember { mutableFloatStateOf(0f) }
             var isInitialized by remember { mutableStateOf(false) }
 
-            val pipPlayer = player(videoUri)
+            val pipPlayer = player(videoUri, isMuted)
 
             val bottomPaddingPx = with(LocalDensity.current) {
                 (pipStyling?.pipBottomPadding?.toFloatOrNull()?.dp ?: bottomPadding).toPx()
             }
             val topPaddingPx = with(LocalDensity.current) {
                 (pipStyling?.pipTopPadding?.toFloatOrNull()?.dp ?: topPadding).toPx()
-            }
-
-            LaunchedEffect(isMuted) {
-                pipPlayer.volume = if (isMuted) 0f else 1.0f
             }
 
             Box(
@@ -329,11 +325,7 @@ fun FullScreenVideoDialog(
     val sheetState = rememberModalBottomSheetState(
         skipPartiallyExpanded = true
     )
-    val fullscreenPlayer = player(videoUri)
-
-    LaunchedEffect(isMuted) {
-        fullscreenPlayer.volume = if (isMuted) 0f else 1.0f
-    }
+    val player = player(videoUri, isMuted)
 
     DisposableEffect(Unit) {
         AppStorys.isVisible = false
@@ -345,8 +337,8 @@ fun FullScreenVideoDialog(
 
     LaunchedEffect(sheetState.targetValue) {
         when (sheetState.targetValue) {
-            SheetValue.Hidden -> fullscreenPlayer.pause()
-            else -> fullscreenPlayer.play()
+            SheetValue.Hidden -> player.pause()
+            else -> player.play()
         }
     }
 
@@ -366,7 +358,7 @@ fun FullScreenVideoDialog(
                 contentAlignment = Alignment.Center,
                 content = {
                     PipPlayerView(
-                        exoPlayer = fullscreenPlayer,
+                        exoPlayer = player,
                         pipStyling = pipStyling,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -498,7 +490,7 @@ fun FullScreenVideoDialog(
 
 @OptIn(UnstableApi::class)
 @Composable
-private fun player(videoUri: String): ExoPlayer {
+private fun player(videoUri: String, muted: Boolean): ExoPlayer {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -515,6 +507,7 @@ private fun player(videoUri: String): ExoPlayer {
                 setMediaItem(MediaItem.fromUri(videoUri.toUri()))
                 repeatMode = Player.REPEAT_MODE_ALL
                 videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
+                volume = if (muted) 0f else 1.0f
                 prepare()
                 play()
             }
@@ -536,6 +529,10 @@ private fun player(videoUri: String): ExoPlayer {
             lifecycleOwner.lifecycle.removeObserver(observer)
             pipPlayer.release()
         }
+    }
+
+    LaunchedEffect(muted) {
+        pipPlayer.volume = if (muted) 0f else 1.0f
     }
 
     return pipPlayer
