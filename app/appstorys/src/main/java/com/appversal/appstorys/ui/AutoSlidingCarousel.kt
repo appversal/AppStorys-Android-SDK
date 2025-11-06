@@ -96,19 +96,24 @@ internal fun AutoSlidingCarousel(
         modifier = modifier.then(if (width != null) Modifier.width(width) else Modifier.fillMaxWidth()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = Color.Transparent,
-            ),
-            modifier = Modifier,
-            shape = RoundedCornerShape(
-                topStart = (widgetDetails.styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
-                topEnd = (widgetDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
-                bottomStart = (widgetDetails.styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
-                bottomEnd = (widgetDetails.styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp,
-            ),
-        ) {
-            HorizontalPager(state = pagerState) { page ->
+        HorizontalPager(
+            state = pagerState,
+//            pageSpacing = 8.dp,
+//            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 18.dp),
+//            beyondViewportPageCount = 1,
+        ) { page ->
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.Transparent,
+                ),
+                modifier = Modifier,
+                shape = RoundedCornerShape(
+                    topStart = (widgetDetails.styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                    topEnd = (widgetDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
+                    bottomStart = (widgetDetails.styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                    bottomEnd = (widgetDetails.styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp,
+                ),
+            ) {
                 itemContent(page)
             }
         }

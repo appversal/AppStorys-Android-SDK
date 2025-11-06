@@ -36,8 +36,7 @@ class App : Application() {
             appId = "9e1b21a2-350a-4592-918c-2a19a73f249a",
             accountId = "4350bf8e-0c9a-46bd-b953-abb65ab21d11",
 //            userId = userId,
-            userId = "27c39982-cbec-4fa5-ba1d-4944a03b6d42",
-//            userId = "nameisprem",
+            userId = "anirudhbest",
             attributes = attributes,
             navigateToScreen = { screen ->
                 println("Navigating to $screen")
