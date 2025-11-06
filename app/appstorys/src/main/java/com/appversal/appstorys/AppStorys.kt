@@ -149,7 +149,7 @@ interface AppStorysAPI {
 
     @Composable
     fun Floater(
-        modifier: Modifier? = Modifier,
+        modifier: Modifier = Modifier,
         bottomPadding: Dp
     )
 
@@ -525,7 +525,9 @@ internal object AppStorys : AppStorysAPI {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = bottomPadding),
+                        .padding(
+                            bottom = style?.csatBottomPadding?.toFloatOrNull()?.dp ?: bottomPadding
+                        ),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
@@ -559,7 +561,8 @@ internal object AppStorys : AppStorysAPI {
                                         event = "csat captured",
                                         metadata = mapOf(
                                             "starCount" to feedback.rating,
-                                            "selectedOption" to (feedback.feedbackOption ?: "") as Any,
+                                            "selectedOption" to (feedback.feedbackOption
+                                                ?: "") as Any,
                                             "additionalComments" to feedback.additionalComments
                                         )
                                     )
@@ -576,7 +579,7 @@ internal object AppStorys : AppStorysAPI {
     @RequiresApi(Build.VERSION_CODES.N)
     @Composable
     override fun Floater(
-        modifier: Modifier?,
+        modifier: Modifier,
         bottomPadding: Dp
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -599,40 +602,45 @@ internal object AppStorys : AppStorysAPI {
                 }
             }
 
+            val styling = floaterDetails.styling
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = bottomPadding)
-            ) {
-                val alignmentModifier = when (floaterDetails.position) {
-                    "right" -> Modifier.align(Alignment.BottomEnd)
-                    "left" -> Modifier.align(Alignment.BottomStart)
-                    else -> Modifier.align(Alignment.BottomStart)
-                }
-
-                OverlayFloater(
-                    modifier = (modifier ?: Modifier).then(alignmentModifier),
-                    onClick = {
-                        if (campaign?.id != null && floaterDetails.link != null) {
-                            clickEvent(link = floaterDetails.link, campaignId = campaign.id)
-                            trackEvents(campaign.id, "clicked")
-                        }
-                    },
-                    image = floaterDetails.image,
-                    lottieUrl = floaterDetails.lottie_data,
-                    height = floaterDetails.height?.dp ?: 60.dp,
-                    width = floaterDetails.width?.dp ?: 60.dp,
-                    borderRadiusValues = RoundedCornerShape(
-                        topStart = (floaterDetails.styling?.topLeftRadius?.toFloatOrNull()
-                            ?: 0f).dp,
-                        topEnd = (floaterDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
-                        bottomStart = (floaterDetails.styling?.bottomLeftRadius?.toFloatOrNull()
-                            ?: 0f).dp,
-                        bottomEnd = (floaterDetails.styling?.bottomRightRadius?.toFloatOrNull()
-                            ?: 0f).dp
+                    .padding(
+                        bottom = styling?.floaterBottomPadding?.toFloatOrNull()?.dp
+                            ?: bottomPadding,
+                        start = styling?.floaterLeftPadding?.toFloatOrNull()?.dp ?: 0.dp,
+                        end = styling?.floaterRightPadding?.toFloatOrNull()?.dp ?: 0.dp,
+                    ),
+                content = {
+                    OverlayFloater(
+                        modifier = modifier.align(
+                            when (floaterDetails.position) {
+                                "right" -> Alignment.BottomEnd
+                                "left" -> Alignment.BottomStart
+                                else -> Alignment.BottomStart
+                            }
+                        ),
+                        onClick = {
+                            if (campaign?.id != null && floaterDetails.link != null) {
+                                clickEvent(link = floaterDetails.link, campaignId = campaign.id)
+                                trackEvents(campaign.id, "clicked")
+                            }
+                        },
+                        image = floaterDetails.image,
+                        lottieUrl = floaterDetails.lottie_data,
+                        height = floaterDetails.height?.dp ?: 60.dp,
+                        width = floaterDetails.width?.dp ?: 60.dp,
+                        borderRadiusValues = RoundedCornerShape(
+                            topStart = (styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                            topEnd = (styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
+                            bottomStart = (styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                            bottomEnd = (styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp
+                        )
                     )
-                )
-            }
+                }
+            )
         }
     }
 
