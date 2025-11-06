@@ -186,7 +186,10 @@ data class TrackUserWebSocketRequest(
     val topLeftRadius: String?,
     val topRightRadius: String?,
     val bottomLeftRadius: String?,
-    val bottomRightRadius: String?
+    val bottomRightRadius: String?,
+    val floaterBottomPadding: String?,
+    val floaterRightPadding: String?,
+    val floaterLeftPadding: String?,
 )
 
 @Keep data class FeedbackOption(
@@ -271,7 +274,9 @@ data class TrackUserWebSocketRequest(
     val csatCtaDimensions: Dimensions?,
     val csatCtaFullWidth: Boolean?,
     val csatCtaMargin: Margin?,
-    val csatCtaAlignment: String?
+    val csatCtaAlignment: String?,
+
+    val csatBottomPadding: String?,
 )
 
 @Keep
@@ -402,7 +407,9 @@ data class Dimensions(
     val marginBottom: String?,
     val fontDecoration: List<String>?,
     val ctaButtonTextColor: String?,
-    val ctaButtonBackgroundColor: String?
+    val ctaButtonBackgroundColor: String?,
+    val pipTopPadding: String?,
+    val pipBottomPadding: String?,
 )
 
 @Keep data class BottomSheetDetails(

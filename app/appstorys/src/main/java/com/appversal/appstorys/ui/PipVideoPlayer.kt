@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.appversal.appstorys.ui
 
 import androidx.annotation.OptIn
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,10 +25,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Surface
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -38,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
@@ -56,8 +63,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.core.graphics.toColorInt
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -128,8 +133,12 @@ internal fun PipVideo(
 
             val pipPlayer = player(videoUri)
 
-            val bottomPaddingPx = with(LocalDensity.current) { bottomPadding.toPx() }
-            val topPaddingPx = with(LocalDensity.current) { topPadding.toPx() }
+            val bottomPaddingPx = with(LocalDensity.current) {
+                (pipStyling?.pipBottomPadding?.toFloatOrNull()?.dp ?: bottomPadding).toPx()
+            }
+            val topPaddingPx = with(LocalDensity.current) {
+                (pipStyling?.pipTopPadding?.toFloatOrNull()?.dp ?: topPadding).toPx()
+            }
 
             LaunchedEffect(isMuted) {
                 pipPlayer.volume = if (isMuted) 0f else 1.0f
@@ -160,7 +169,7 @@ internal fun PipVideo(
                                 }
                                 .then(
                                     if (isMovable) {
-                                        Modifier.pointerInput(Unit) {
+                                        Modifier.pointerInput("drag_gesture") {
                                             detectDragGestures { change, dragAmount ->
                                                 change.consume()
                                                 offsetX = (offsetX + dragAmount.x).coerceIn(
@@ -303,7 +312,7 @@ fun PipPlayerView(
     )
 }
 
-@OptIn(UnstableApi::class)
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FullScreenVideoDialog(
     videoUri: String,
@@ -317,6 +326,9 @@ fun FullScreenVideoDialog(
     var isMuted by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
+    val sheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
     val fullscreenPlayer = player(videoUri)
 
     LaunchedEffect(isMuted) {
@@ -331,146 +343,157 @@ fun FullScreenVideoDialog(
         }
     }
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = Color.Black
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                PipPlayerView(
-                    exoPlayer = fullscreenPlayer,
-                    pipStyling = pipStyling,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                IconButton(
-                    onClick = onDismiss,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(16.dp)
-                        .size(36.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.minimize),
-                        contentDescription = "Minimize",
-                        tint = Color.White,
-                        modifier = Modifier.size(23.dp)
-                    )
-                }
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = { isMuted = !isMuted },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                    ) {
-                        Icon(
-                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
-                                R.drawable.volume
-                            ),
-                            contentDescription = "Mute/Unmute",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.width(12.dp))
-
-                    IconButton(
-                        onClick = onClose,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Close",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-
-                if (!button_text.isNullOrEmpty() && !link.isNullOrEmpty()) {
-
-                    fun String?.toDp(): Dp = this?.toIntOrNull()?.dp ?: 0.dp
-
-                    val paddingLeft = pipStyling?.marginLeft?.toDp()
-                    val paddingRight = pipStyling?.marginRight?.toDp()
-                    val paddingTop = pipStyling?.marginTop?.toDp()
-                    val paddingBottom = pipStyling?.marginBottom?.toDp()
-
-                    val buttonColor = try {
-                        Color((pipStyling?.ctaButtonBackgroundColor ?: "#000000").toColorInt())
-                    } catch (e: Exception) {
-                        Color.Black
-                    }
-
-                    val textColor = try {
-                        Color((pipStyling?.ctaButtonTextColor ?: "#FFFFFF").toColorInt())
-                    } catch (e: Exception) {
-                        Color.White
-                    }
-
-                    val fontFamily = FontFamily(
-                        Font(
-                            googleFont = GoogleFont("Poppins"),
-                            fontProvider = GoogleFont.Provider(
-                                providerAuthority = "com.google.android.gms.fonts",
-                                providerPackage = "com.google.android.gms",
-                                certificates = R.array.com_google_android_gms_fonts_certs
-                            ),
-                            FontWeight.Normal,
-                            FontStyle.Normal
-                        )
-                    )
-
-                    Button(
-                        onClick = {
-                            uriHandler.openUri(link);
-                            onButtonClick()
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(
-//                                top = paddingTop ?: 0.dp,
-                                bottom = paddingBottom ?: 0.dp,
-                                start = paddingLeft ?: 0.dp,
-                                end = paddingRight ?: 0.dp
-                            )
-                            .then(
-                                if (pipStyling?.ctaFullWidth == true) {
-                                    Modifier.fillMaxWidth()
-                                } else {
-                                    Modifier.width(pipStyling?.ctaWidth?.toDp() ?: 0.dp)
-                                }
-                            )
-                            .height(pipStyling?.ctaHeight?.toDp() ?: 0.dp),
-                        shape = RoundedCornerShape(pipStyling?.cornerRadius?.toDp() ?: 0.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-                    ) {
-                        Text(
-                            fontFamily = fontFamily,
-                            text = button_text.toString(),
-                            color = textColor,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-            }
+    LaunchedEffect(sheetState.targetValue) {
+        when (sheetState.targetValue) {
+            SheetValue.Hidden -> fullscreenPlayer.pause()
+            else -> fullscreenPlayer.play()
         }
     }
+
+    ModalBottomSheet(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
+        shape = RectangleShape,
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = Color.Black,
+        contentColor = Color.White,
+        dragHandle = null,
+        content = {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+                content = {
+                    PipPlayerView(
+                        exoPlayer = fullscreenPlayer,
+                        pipStyling = pipStyling,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    IconButton(
+                        onClick = onDismiss,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(16.dp)
+                            .size(36.dp)
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.minimize),
+                            contentDescription = "Minimize",
+                            tint = Color.White,
+                            modifier = Modifier.size(23.dp)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = { isMuted = !isMuted },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                    R.drawable.volume
+                                ),
+                                contentDescription = "Mute/Unmute",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Spacer(Modifier.width(12.dp))
+
+                        IconButton(
+                            onClick = onClose,
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close",
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
+
+                    if (!button_text.isNullOrEmpty() && !link.isNullOrEmpty()) {
+
+                        fun String?.toDp(): Dp = this?.toIntOrNull()?.dp ?: 0.dp
+
+                        val paddingLeft = pipStyling?.marginLeft?.toDp()
+                        val paddingRight = pipStyling?.marginRight?.toDp()
+                        val paddingTop = pipStyling?.marginTop?.toDp()
+                        val paddingBottom = pipStyling?.marginBottom?.toDp()
+
+                        val buttonColor = try {
+                            Color((pipStyling?.ctaButtonBackgroundColor ?: "#000000").toColorInt())
+                        } catch (e: Exception) {
+                            Color.Black
+                        }
+
+                        val textColor = try {
+                            Color((pipStyling?.ctaButtonTextColor ?: "#FFFFFF").toColorInt())
+                        } catch (e: Exception) {
+                            Color.White
+                        }
+
+                        val fontFamily = FontFamily(
+                            Font(
+                                googleFont = GoogleFont("Poppins"),
+                                fontProvider = GoogleFont.Provider(
+                                    providerAuthority = "com.google.android.gms.fonts",
+                                    providerPackage = "com.google.android.gms",
+                                    certificates = R.array.com_google_android_gms_fonts_certs
+                                ),
+                                FontWeight.Normal,
+                                FontStyle.Normal
+                            )
+                        )
+
+                        Button(
+                            onClick = {
+                                uriHandler.openUri(link);
+                                onButtonClick()
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomCenter)
+                                .padding(
+//                                top = paddingTop ?: 0.dp,
+                                    bottom = paddingBottom ?: 0.dp,
+                                    start = paddingLeft ?: 0.dp,
+                                    end = paddingRight ?: 0.dp
+                                )
+                                .then(
+                                    if (pipStyling?.ctaFullWidth == true) {
+                                        Modifier.fillMaxWidth()
+                                    } else {
+                                        Modifier.width(pipStyling?.ctaWidth?.toDp() ?: 0.dp)
+                                    }
+                                )
+                                .height(pipStyling?.ctaHeight?.toDp() ?: 0.dp),
+                            shape = RoundedCornerShape(pipStyling?.cornerRadius?.toDp() ?: 0.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
+                        ) {
+                            Text(
+                                fontFamily = fontFamily,
+                                text = button_text,
+                                color = textColor,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    )
 }
 
 @OptIn(UnstableApi::class)
