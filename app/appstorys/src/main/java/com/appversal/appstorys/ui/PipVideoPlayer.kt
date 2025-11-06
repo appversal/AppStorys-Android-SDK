@@ -39,6 +39,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -80,6 +81,7 @@ import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 import com.appversal.appstorys.api.PipStyling
 import com.appversal.appstorys.utils.VideoCache
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @OptIn(UnstableApi::class)
@@ -201,15 +203,16 @@ internal fun PipVideo(
                                                 CircleShape
                                             )
                                             .clickable { onClose() },
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = "Close",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(17.dp)
-                                        )
-                                    }
+                                        contentAlignment = Alignment.Center,
+                                        content = {
+                                            Icon(
+                                                imageVector = Icons.Default.Close,
+                                                contentDescription = "Close",
+                                                tint = Color.White,
+                                                modifier = Modifier.size(17.dp)
+                                            )
+                                        }
+                                    )
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.TopStart)
@@ -322,10 +325,17 @@ fun FullScreenVideoDialog(
     var isMuted by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
 
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
     val player = player(videoUri, isMuted)
+    val onHide = remember {
+        { action: () -> Unit ->
+            scope.launch {
+                sheetState.hide()
+                action()
+            }
+        }
+    }
 
     DisposableEffect(Unit) {
         AppStorys.isVisible = false
@@ -363,58 +373,66 @@ fun FullScreenVideoDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     IconButton(
-                        onClick = onDismiss,
                         modifier = Modifier
                             .align(Alignment.TopStart)
                             .padding(16.dp)
                             .size(36.dp)
-                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.minimize),
-                            contentDescription = "Minimize",
-                            tint = Color.White,
-                            modifier = Modifier.size(23.dp)
-                        )
-                    }
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+                        onClick = {
+                            onHide(onDismiss)
+                        },
+                        content = {
+                            Icon(
+                                painter = painterResource(R.drawable.minimize),
+                                contentDescription = "Minimize",
+                                tint = Color.White,
+                                modifier = Modifier.size(23.dp)
+                            )
+                        }
+                    )
                     Row(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(
-                            onClick = { isMuted = !isMuted },
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        ) {
-                            Icon(
-                                painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
-                                    R.drawable.volume
-                                ),
-                                contentDescription = "Mute/Unmute",
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = {
+                            IconButton(
+                                onClick = { isMuted = !isMuted },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+                                content = {
+                                    Icon(
+                                        painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                            R.drawable.volume
+                                        ),
+                                        contentDescription = "Mute/Unmute",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                            )
+
+                            Spacer(Modifier.width(12.dp))
+
+                            IconButton(
+                                onClick = {
+                                    onHide(onClose)
+                                },
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(Color.Black.copy(alpha = 0.5f), CircleShape),
+                                content = {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(32.dp)
+                                    )
+                                }
                             )
                         }
-
-                        Spacer(Modifier.width(12.dp))
-
-                        IconButton(
-                            onClick = onClose,
-                            modifier = Modifier
-                                .size(36.dp)
-                                .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Close",
-                                tint = Color.White,
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
-                    }
+                    )
 
                     if (!button_text.isNullOrEmpty() && !link.isNullOrEmpty()) {
 
@@ -436,19 +454,6 @@ fun FullScreenVideoDialog(
                         } catch (e: Exception) {
                             Color.White
                         }
-
-                        val fontFamily = FontFamily(
-                            Font(
-                                googleFont = GoogleFont("Poppins"),
-                                fontProvider = GoogleFont.Provider(
-                                    providerAuthority = "com.google.android.gms.fonts",
-                                    providerPackage = "com.google.android.gms",
-                                    certificates = R.array.com_google_android_gms_fonts_certs
-                                ),
-                                FontWeight.Normal,
-                                FontStyle.Normal
-                            )
-                        )
 
                         Button(
                             onClick = {
@@ -473,14 +478,26 @@ fun FullScreenVideoDialog(
                                 .height(pipStyling?.ctaHeight?.toDp() ?: 0.dp),
                             shape = RoundedCornerShape(pipStyling?.cornerRadius?.toDp() ?: 0.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = buttonColor),
-                        ) {
-                            Text(
-                                fontFamily = fontFamily,
-                                text = button_text,
-                                color = textColor,
-                                textAlign = TextAlign.Center
-                            )
-                        }
+                            content = {
+                                Text(
+                                    fontFamily = FontFamily(
+                                        Font(
+                                            googleFont = GoogleFont("Poppins"),
+                                            fontProvider = GoogleFont.Provider(
+                                                providerAuthority = "com.google.android.gms.fonts",
+                                                providerPackage = "com.google.android.gms",
+                                                certificates = R.array.com_google_android_gms_fonts_certs
+                                            ),
+                                            FontWeight.Normal,
+                                            FontStyle.Normal
+                                        )
+                                    ),
+                                    text = button_text,
+                                    color = textColor,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        )
                     }
                 }
             )

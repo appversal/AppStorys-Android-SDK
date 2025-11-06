@@ -12,6 +12,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,12 +43,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -86,6 +87,7 @@ import com.appversal.appstorys.api.StoryGroup
 import com.appversal.appstorys.api.StorySlide
 import com.appversal.appstorys.utils.VideoCache
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 
 @Composable
@@ -137,45 +139,51 @@ internal fun StoryItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(4.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(70.dp)
-        ) {
-            Canvas(
-                modifier = Modifier.size(80.dp)
-            ) {
-                drawCircle(
-                    color = if (isStoryGroupViewed) Color.Gray else ringColor,
-                    style = Stroke(width = 5f),
-                    radius = size.minDimension / 2
-                )
-            }
-
-            Image(
-                painter = rememberAsyncImagePainter(imageUrl),
-                contentDescription = null,
+            .clickable(
+                onClick = onClick,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ),
+        content = {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(70.dp),
+                content = {
+                    Canvas(
+                        modifier = Modifier.size(80.dp),
+                        onDraw = {
+                            drawCircle(
+                                color = if (isStoryGroupViewed) Color.Gray else ringColor,
+                                style = Stroke(width = 5f),
+                                radius = size.minDimension / 2
+                            )
+                        }
+                    )
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(65.dp)
+                            .clip(CircleShape)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                 modifier = Modifier
-                    .size(65.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop
+                    .width(60.dp)
+                    .align(Alignment.CenterHorizontally),
+                text = username,
+                maxLines = 2,
+                fontSize = 12.sp,
+                color = nameColor,
+                textAlign = TextAlign.Center,
+                lineHeight = 15.sp
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            modifier = Modifier
-                .width(60.dp)
-                .align(Alignment.CenterHorizontally),
-            text = username,
-            maxLines = 2,
-            fontSize = 12.sp,
-            color = nameColor,
-            textAlign = TextAlign.Center,
-            lineHeight = 15.sp
-        )
-    }
+    )
 }
 
 @UnstableApi
@@ -189,20 +197,19 @@ internal fun StoryScreen(
     sendEvent: (Pair<StorySlide, String>) -> Unit,
     sendClickEvent: (Pair<StorySlide, String>) -> Unit
 ) {
-    var currentSlideIndex by remember { mutableIntStateOf(0) }
-    val currentSlide = slides[currentSlideIndex]
-
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
     var isHolding by remember { mutableStateOf(false) }
     var isMuted by remember { mutableStateOf(false) }
     var isDismissing by remember { mutableStateOf(false) }
-
+    var currentSlideIndex by remember(storyGroup, slides) { mutableIntStateOf(0) }
+    val currentSlide = slides[currentSlideIndex]
     var progress by remember(currentSlideIndex) { mutableFloatStateOf(0f) }
-    val sheetState = rememberModalBottomSheetState(
-        skipPartiallyExpanded = true
-    )
+
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     val completedSlides = remember { mutableStateListOf<Int>() }
 
@@ -514,10 +521,9 @@ internal fun StoryScreen(
                             .fillMaxWidth()
                             .align(Alignment.TopEnd)
                             .padding(18.dp),
-                        horizontalArrangement = Arrangement.End,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
                         content = {
                             if (!isImage) {
-
                                 Box(
                                     modifier = Modifier
                                         .size(32.dp)
@@ -525,25 +531,18 @@ internal fun StoryScreen(
                                             color = Color.Black.copy(alpha = 0.2f),
                                             shape = CircleShape
                                         )
-                                        .clickable(onClick = {
-                                            isMuted = !isMuted
-                                            if (isMuted) {
-                                                player.volume = 0f
-                                            } else {
-                                                player.volume = 1f
-                                            }
-                                        }),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
-                                            R.drawable.volume
-                                        ),
-                                        contentDescription = if (isMuted) "Unmute" else "Mute",
-                                        tint = Color.White
-                                    )
-                                }
-                                Spacer(Modifier.width(4.dp))
+                                        .clickable { isMuted = !isMuted },
+                                    contentAlignment = Alignment.Center,
+                                    content = {
+                                        Icon(
+                                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                                R.drawable.volume
+                                            ),
+                                            contentDescription = if (isMuted) "Unmute" else "Mute",
+                                            tint = Color.White
+                                        )
+                                    }
+                                )
                             }
                             if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true) {
                                 Box(
@@ -568,16 +567,16 @@ internal fun StoryScreen(
                                                 )
                                             )
                                         }),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Share,
-                                        contentDescription = "Share",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                }
-                                Spacer(Modifier.width(4.dp))
+                                    contentAlignment = Alignment.Center,
+                                    content = {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Share",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                )
                             }
 
                             Box(
@@ -587,17 +586,22 @@ internal fun StoryScreen(
                                         color = Color.Black.copy(alpha = 0.2f),
                                         shape = CircleShape
                                     )
-                                    .clickable(onClick = onDismiss),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Close",
-                                    tint = Color.White,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-
+                                    .clickable {
+                                        scope.launch {
+                                            sheetState.hide()
+                                            onDismiss()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center,
+                                content = {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                            )
                         }
                     )
                 }
@@ -617,43 +621,43 @@ internal fun StoriesApp(
 ) {
     var selectedStoryGroup by remember { mutableStateOf<StoryGroup?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        StoryCircles(
-            viewedStories = viewedStories,
-            storyGroups = storyGroups,
-            onStoryClick = { storyGroup ->
-                selectedStoryGroup = storyGroup
-                selectedStoryGroup?.id?.let {
-                    storyViewed(it)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        content = {
+            StoryCircles(
+                viewedStories = viewedStories,
+                storyGroups = storyGroups,
+                onStoryClick = { storyGroup ->
+                    selectedStoryGroup = storyGroup
+                    selectedStoryGroup?.id?.let {
+                        storyViewed(it)
+                    }
                 }
-            }
-        )
+            )
 
-        selectedStoryGroup?.let { storyGroup ->
-            if (!storyGroup.slides.isNullOrEmpty()) {
-                key(storyGroup) {
-                    StoryScreen(
-                        storyGroup = storyGroup,
-                        slides = storyGroup.slides,
-                        onDismiss = { selectedStoryGroup = null },
-                        onStoryGroupEnd = {
-                            val currentIndex = storyGroups.indexOf(storyGroup)
-                            if (currentIndex < storyGroups.lastIndex) {
-                                selectedStoryGroup = storyGroups[currentIndex + 1]
-                                selectedStoryGroup?.id?.let {
-                                    storyViewed(it)
-                                }
-                            } else {
-                                selectedStoryGroup = null
+            val storyGroup = selectedStoryGroup
+            if (storyGroup != null && !storyGroup.slides.isNullOrEmpty()) {
+                StoryScreen(
+                    storyGroup = storyGroup,
+                    slides = storyGroup.slides,
+                    onDismiss = { selectedStoryGroup = null },
+                    onStoryGroupEnd = {
+                        val currentIndex = storyGroups.indexOf(storyGroup)
+                        if (currentIndex < storyGroups.lastIndex) {
+                            selectedStoryGroup = storyGroups[currentIndex + 1]
+                            selectedStoryGroup?.id?.let {
+                                storyViewed(it)
                             }
-                        },
-                        sendEvent = sendEvent,
-                        sendClickEvent = sendClickEvent
-                    )
-                }
+                        } else {
+                            selectedStoryGroup = null
+                        }
+                    },
+                    sendEvent = sendEvent,
+                    sendClickEvent = sendClickEvent
+                )
             }
         }
-    }
+    )
 }
 
 @UnstableApi
