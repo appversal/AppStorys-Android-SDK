@@ -112,10 +112,6 @@ fun MyApp() {
             app.resetNavigation()
         }
     }
-//    campaignManager.getScreenCampaigns(
-//        "Home Screen",
-//        listOf()
-//    )
 
     var edgeToEdgePadding by remember { mutableStateOf(PaddingValues()) }
 
@@ -296,7 +292,7 @@ fun HomeScreen(padding: PaddingValues) {
                                 event = "Login"
                             )
                         },
-                        modifier = Modifier.appstorys("open_bottom_sheet")
+                        modifier = Modifier.appstorys("anuridhtest")
                     ) {
                         Text("Open Bottom Sheet")
                     }
@@ -702,79 +698,6 @@ fun PayScreenPage(
     }
 
 }
-
-//@Composable
-//fun PayScreen(padding: PaddingValues) {
-//
-//    val campaignManager = App.appStorys
-//
-//    campaignManager.getScreenCampaigns(
-//        "More Screen",
-//        listOf()
-//    )
-//    Box(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .padding(top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding())
-//            .background(Color(0xFFf1f2f4)),
-//        contentAlignment = Alignment.TopCenter
-//    ) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//        ) {
-//            Column(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//            ) {
-//                Row {
-//                    Image(
-//                        painter = painterResource(id = R.drawable.more_one),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier.weight(1f).appstorys("cashbook"),
-//                        contentScale = ContentScale.Fit
-//                    )
-//
-//                    Image(
-//                        painter = painterResource(id = R.drawable.more_two),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier.weight(1f).appstorys("bills"),
-//                        contentScale = ContentScale.Fit
-//                    )
-//
-//                    Image(
-//                        painter = painterResource(id = R.drawable.more_three),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier.weight(1f).appstorys("items"),
-//                        contentScale = ContentScale.Fit
-//                    )
-//                }
-//                Image(
-//                    painter = painterResource(id = R.drawable.more_bottom),
-//                    contentDescription = "App Logo",
-//                    modifier = Modifier
-//                        .fillMaxWidth(),
-//                    contentScale = ContentScale.Fit
-//                )
-//
-//                Button(
-//                    onClick = {
-//                        campaignManager.trackEvents(
-//                            event = "clicked"
-//                        )
-//                    },
-//                    modifier = Modifier
-//                ) {
-//                    Text("Clicked Event")
-//                }
-//            }
-//        }
-//    }
-//    campaignManager.overlayElements(
-//        topPadding = 70.dp,
-//        bottomPadding = 70.dp,
-//    )
-//}
 
 @Composable
 fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {

@@ -531,7 +531,14 @@ internal fun StoryScreen(
                                             color = Color.Black.copy(alpha = 0.2f),
                                             shape = CircleShape
                                         )
-                                        .clickable { isMuted = !isMuted },
+                                        .clickable {
+                                            isMuted = !isMuted
+                                            if (isMuted){
+                                                player.volume = 0f
+                                            }else{
+                                                player.volume = 1f
+                                            }
+                                                   },
                                     contentAlignment = Alignment.Center,
                                     content = {
                                         Icon(

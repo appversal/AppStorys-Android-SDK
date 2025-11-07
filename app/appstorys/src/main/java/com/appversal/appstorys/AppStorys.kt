@@ -62,6 +62,7 @@ import com.appversal.appstorys.api.BannerDetails
 import com.appversal.appstorys.api.BottomSheetDetails
 import com.appversal.appstorys.api.CSATDetails
 import com.appversal.appstorys.api.Campaign
+import com.appversal.appstorys.api.CsatFeedbackPostRequest
 import com.appversal.appstorys.api.FloaterDetails
 import com.appversal.appstorys.api.ModalDetails
 import com.appversal.appstorys.api.PipDetails
@@ -431,8 +432,8 @@ internal object AppStorys : AppStorysAPI {
 
                     val response = client.newCall(request).execute()
 
-                    Log.i("CSAT Captured", response.toString())
-                    Log.i("CSAT Captured", requestBody.toString())
+                    Log.i("Event Captured", response.toString())
+                    Log.i("Event Captured", requestBody.toString())
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -524,11 +525,17 @@ internal object AppStorys : AppStorysAPI {
                     isVisibleState = true
                 }
 
+                val bottomPaddingValue = when (val padding = style?.csatBottomPadding) {
+                    is Number -> padding.toFloat().dp
+                    is String -> padding.trim().toFloatOrNull()?.dp ?: bottomPadding
+                    else -> bottomPadding
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(
-                            bottom = style?.csatBottomPadding?.toFloatOrNull()?.dp ?: bottomPadding
+                            bottom = bottomPaddingValue
                         ),
                     contentAlignment = Alignment.BottomCenter
                 ) {
@@ -548,16 +555,16 @@ internal object AppStorys : AppStorysAPI {
                             },
                             onSubmitFeedback = { feedback ->
                                 coroutineScope.launch {
-//                                    repository.captureCSATResponse(
-//                                        accessToken,
-//                                        CsatFeedbackPostRequest(
-//                                            user_id = userId,
-//                                            csat = csatDetails.id,
-//                                            rating = feedback.rating,
-//                                            additional_comments = feedback.additionalComments,
-//                                            feedback_option = feedback.feedbackOption
-//                                        )
-//                                    )
+                                    repository.captureCSATResponse(
+                                        accessToken,
+                                        CsatFeedbackPostRequest(
+                                            user_id = userId,
+                                            csat = csatDetails.id,
+                                            rating = feedback.rating,
+                                            additional_comments = feedback.additionalComments,
+                                            feedback_option = feedback.feedbackOption
+                                        )
+                                    )
                                     trackEvents(
                                         campaign_id = campaign?.id,
                                         event = "csat captured",
@@ -1183,15 +1190,6 @@ internal object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to currentWidgetId)
                             )
 
-                        } else if (!impressions.value.contains(it)) {
-                            val impressions = ArrayList(impressions.value)
-                            impressions.add(it)
-                            this@AppStorys.impressions.emit(impressions)
-                            trackEvents(
-                                it,
-                                "viewed",
-                                mapOf("widget_image" to currentWidgetId!!)
-                            )
                         }
                     }
                 }
@@ -1315,15 +1313,6 @@ internal object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!)
                             )
 
-                        } else if (!impressions.value.contains(it)) {
-                            val impressions = ArrayList(impressions.value)
-                            impressions.add(it)
-                            this@AppStorys.impressions.emit(impressions)
-                            trackEvents(
-                                it,
-                                "viewed",
-                                mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!)
-                            )
                         }
 
                         if (widgetImagesPairs[pagerState.currentPage].second.id != null && !impressions.value.contains(
@@ -1339,15 +1328,6 @@ internal object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!)
                             )
 
-                        } else if (!impressions.value.contains(it)) {
-                            val impressions = ArrayList(impressions.value)
-                            impressions.add(it)
-                            this@AppStorys.impressions.emit(impressions)
-                            trackEvents(
-                                it,
-                                "viewed",
-                                mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!)
-                            )
                         }
                     }
                 }
@@ -1516,15 +1496,6 @@ internal object AppStorys : AppStorysAPI {
                 surveyDetails = surveyDetails,
                 onSubmitFeedback = { feedback ->
                     coroutineScope.launch {
-//                        repository.captureSurveyResponse(
-//                            accessToken,
-//                            SurveyFeedbackPostRequest(
-//                                user_id = userId,
-//                                survey = surveyDetails.id,
-//                                responseOptions = feedback.responseOptions,
-//                                comment = feedback.comment
-//                            )
-//                        )
                         trackEvents(
                             campaign_id = campaign?.id,
                             event = "survey captured",

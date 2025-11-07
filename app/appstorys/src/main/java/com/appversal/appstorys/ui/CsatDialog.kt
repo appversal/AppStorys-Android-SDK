@@ -31,6 +31,7 @@ import com.appversal.appstorys.api.CSATStyling
 import com.appversal.appstorys.utils.toColor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.interaction.MutableInteractionSource
 
 data class CsatFeedback(
     val rating: Int,
@@ -222,7 +223,10 @@ private fun MainContent(
                     tint = starColor,
                     modifier = Modifier
                         .size(40.dp)
-                        .clickable { onStarSelected(index + 1) }
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() }
+                        ) { onStarSelected(index + 1) }
                 )
                 Spacer(modifier = Modifier.width(8.dp))
             }
@@ -263,8 +267,9 @@ private fun FeedbackContent(
                 color = styling["csatTitleColor"]!!
             )
         }
-
-        Spacer(modifier = Modifier.height(12.dp))
+        if (feedbackOptions?.toList()?.isNotEmpty() == true) {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         feedbackOptions?.forEach { option ->
             val isSelected = option == selectedOption
@@ -278,7 +283,10 @@ private fun FeedbackContent(
                             styling["csatOptionStrokeColor"]!!,
                         shape = RoundedCornerShape(24.dp)
                     )
-                    .clickable { onOptionSelected(option) },
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onOptionSelected(option) },
                 color = if (isSelected) styling["csatSelectedOptionBackgroundColor"]!!
                 else styling["csatOptionBoxColour"]!!,
                 shape = RoundedCornerShape(24.dp)
@@ -292,13 +300,15 @@ private fun FeedbackContent(
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        if (feedbackOptions?.toList()?.isNotEmpty() == true) {
+            Spacer(modifier = Modifier.height(12.dp))
+        }
 
         TextField(
             value = additionalComments,
             onValueChange = onCommentsChanged,
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Additional comments", color = Color.Gray) },
+            placeholder = { Text("Enter comments", color = Color.Gray) },
             colors = TextFieldDefaults.colors(
                 focusedTextColor = styling["csatAdditionalTextColor"]!!,
                 unfocusedTextColor = Color.Black,

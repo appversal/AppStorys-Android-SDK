@@ -216,6 +216,20 @@ internal class ApiRepository(
         }
     }
 
+    suspend fun captureCSATResponse(accessToken: String, actions: CsatFeedbackPostRequest) {
+        withContext(Dispatchers.IO) {
+            when (val result = safeApiCall {
+                apiService.sendCSATResponse(
+                    token = "Bearer $accessToken",
+                    request = actions
+                )
+            }) {
+                is ApiResult.Error -> println("Error capturing CSAT response: ${result.message}")
+                else -> Unit
+            }
+        }
+    }
+
     suspend fun trackReelActions(accessToken: String, actions: ReelActionRequest) {
         withContext(Dispatchers.IO) {
             when (val result = safeApiCall {
