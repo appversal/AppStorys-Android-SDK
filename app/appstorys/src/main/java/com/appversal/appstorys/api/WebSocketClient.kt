@@ -56,7 +56,7 @@ internal class WebSocketClient() {
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-                Log.e(TAG, "WebSocket error: ${t.message}", t)
+                Log.e(TAG, "3: ${t.message}", t)
                 isConnected = false
             }
         })

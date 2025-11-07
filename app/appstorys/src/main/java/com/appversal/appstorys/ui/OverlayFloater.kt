@@ -64,7 +64,7 @@ internal fun OverlayFloater(
             .clip(borderRadiusValues)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(),
+                indication = null,
                 onClick = onClick
             ),
         color = Color.Transparent,

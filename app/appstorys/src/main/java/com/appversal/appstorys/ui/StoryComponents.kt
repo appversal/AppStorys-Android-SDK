@@ -1,72 +1,101 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.appversal.appstorys.ui
 
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.net.Uri
-import android.util.Log
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.widget.FrameLayout
+import androidx.annotation.OptIn
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
+import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import coil.compose.rememberAsyncImagePainter
-import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.widget.FrameLayout
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.ViewConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.edit
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.ui.PlayerView
+import coil.compose.rememberAsyncImagePainter
+import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.R
 import com.appversal.appstorys.api.StoryGroup
 import com.appversal.appstorys.api.StorySlide
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.ui.StyledPlayerView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.awaitCancellation
+import com.appversal.appstorys.utils.VideoCache
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONArray
-import kotlin.coroutines.cancellation.CancellationException
 
 @Composable
-internal fun StoryCircles(storyGroups: List<StoryGroup>, onStoryClick: (StoryGroup) -> Unit, viewedStories: List<String>) {
+internal fun StoryCircles(
+    storyGroups: List<StoryGroup>,
+    onStoryClick: (StoryGroup) -> Unit,
+    viewedStories: List<String>
+) {
 
     val sortedStoryGroups = remember(storyGroups, viewedStories) {
         storyGroups.sortedWith(
@@ -83,7 +112,7 @@ internal fun StoryCircles(storyGroups: List<StoryGroup>, onStoryClick: (StoryGro
     ) {
         items(sortedStoryGroups.size) { index ->
             val storyGroup = sortedStoryGroups[index]
-            if (storyGroup.thumbnail != null){
+            if (storyGroup.thumbnail != null) {
                 StoryItem(
                     isStoryGroupViewed = viewedStories.contains(storyGroup.id),
                     imageUrl = storyGroup.thumbnail,
@@ -110,37 +139,55 @@ internal fun StoryItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(4.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier.size(70.dp)
-        ) {
-            Canvas(
-                modifier = Modifier.size(80.dp)
-            ) {
-                drawCircle(
-                    color = if (isStoryGroupViewed) Color.Gray else ringColor,
-                    style = Stroke(width = 5f),
-                    radius = size.minDimension / 2
-                )
-            }
-
-            Image(
-                painter = rememberAsyncImagePainter(imageUrl),
-                contentDescription = null,
+            .clickable(
+                onClick = onClick,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ),
+        content = {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.size(70.dp),
+                content = {
+                    Canvas(
+                        modifier = Modifier.size(80.dp),
+                        onDraw = {
+                            drawCircle(
+                                color = if (isStoryGroupViewed) Color.Gray else ringColor,
+                                style = Stroke(width = 5f),
+                                radius = size.minDimension / 2
+                            )
+                        }
+                    )
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(65.dp)
+                            .clip(CircleShape)
+                            .background(Color.LightGray),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
                 modifier = Modifier
-                    .size(65.dp)
-                    .clip(CircleShape)
-                    .background(Color.LightGray),
-                contentScale = ContentScale.Crop
+                    .width(60.dp)
+                    .align(Alignment.CenterHorizontally),
+                text = username,
+                maxLines = 2,
+                fontSize = 12.sp,
+                color = nameColor,
+                textAlign = TextAlign.Center,
+                lineHeight = 15.sp
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(modifier = Modifier.width(60.dp).align(Alignment.CenterHorizontally), text = username, maxLines = 2, fontSize = 12.sp, color = nameColor, textAlign = TextAlign.Center, lineHeight = 15.sp)
-    }
+    )
 }
 
+@UnstableApi
+@kotlin.OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun StoryScreen(
     storyGroup: StoryGroup,
@@ -150,49 +197,50 @@ internal fun StoryScreen(
     sendEvent: (Pair<StorySlide, String>) -> Unit,
     sendClickEvent: (Pair<StorySlide, String>) -> Unit
 ) {
-    var currentSlideIndex by remember { mutableIntStateOf(0) }
-    val currentSlide = slides.get(currentSlideIndex)
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
     var isHolding by remember { mutableStateOf(false) }
     var isMuted by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
+    var isDismissing by remember { mutableStateOf(false) }
+    var currentSlideIndex by remember(storyGroup, slides) { mutableIntStateOf(0) }
+    val currentSlide = slides[currentSlideIndex]
+    var progress by remember(currentSlideIndex) { mutableFloatStateOf(0f) }
 
-    var progress by remember { mutableFloatStateOf(0f) }
-    val animatedProgress by animateFloatAsState(targetValue = progress)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
 
     val completedSlides = remember { mutableStateListOf<Int>() }
 
     val isImage = currentSlide.image != null
     val storyDuration = if (isImage) 5000 else 0
 
-    val exoPlayer = remember(context) {
-        ExoPlayer.Builder(context).build().apply {
-            repeatMode = Player.REPEAT_MODE_OFF
-            playWhenReady = true
-        }
+    val player = remember(context) {
+        ExoPlayer
+            .Builder(context)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(VideoCache.getFactory(context)))
+            .build().apply {
+                repeatMode = Player.REPEAT_MODE_OFF
+                playWhenReady = true
+            }
     }
 
-    fun handleSlideCompletion() {
-        if (!completedSlides.contains(currentSlideIndex)) {
-            completedSlides.add(currentSlideIndex)
-        }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> player.play()
 
-        CoroutineScope(Dispatchers.Main).launch {
-            delay(100)
-            if (currentSlideIndex < slides.lastIndex) {
-                currentSlideIndex++
-            } else {
-                onStoryGroupEnd()
-                currentSlideIndex = 0
-                completedSlides.clear()
+                Lifecycle.Event.ON_PAUSE, Lifecycle.Event.ON_STOP -> player.pause()
+
+                else -> {}
             }
         }
-    }
+        lifecycleOwner.lifecycle.addObserver(observer)
 
-    DisposableEffect(Unit) {
         onDispose {
-            exoPlayer.release()
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            player.release()
         }
     }
 
@@ -200,360 +248,451 @@ internal fun StoryScreen(
         progress = 0f
         sendEvent(Pair(currentSlide, "IMP"))
 
-        if (isImage) {
-            var accumulatedTime = 0L
-            var startTime = System.currentTimeMillis()
+        player.stop()
+        player.clearMediaItems()
 
-            while (progress < 1f) {
-                if (!isHolding) {
+        if (!isImage && currentSlide.video != null) {
+            player.setMediaItem(MediaItem.fromUri(currentSlide.video.toUri()))
+            player.prepare()
+        }
+    }
+
+    LaunchedEffect(currentSlideIndex, isHolding, isDismissing) {
+        if (isHolding || isDismissing) {
+            return@LaunchedEffect
+        }
+
+        when {
+            isImage -> {
+                // Calculate the effective start time based on current progress
+                val elapsedDuration = (storyDuration * progress).toLong()
+                val startTime = System.currentTimeMillis() - elapsedDuration
+
+                while (progress < 1f) {
                     val elapsedTime = System.currentTimeMillis() - startTime
-                    progress = ((accumulatedTime + elapsedTime).toFloat() / storyDuration).coerceIn(0f, 1f)
-                } else {
-                    accumulatedTime += System.currentTimeMillis() - startTime
-                    while (isHolding) delay(16)
-                    startTime = System.currentTimeMillis()
+                    progress = (elapsedTime.toFloat() / storyDuration).coerceIn(0f, 1f)
+                    delay(16)
                 }
-                delay(16)
             }
-            handleSlideCompletion()
-        } else {
-            currentSlide.video?.let { videoUrl ->
-                exoPlayer.stop()
-                exoPlayer.clearMediaItems()
 
-                exoPlayer.setMediaItem(MediaItem.fromUri(videoUrl.toUri()))
-                exoPlayer.prepare()
-
-                var videoJob = launch {
-                    while (true) {
-                        if (!isHolding && exoPlayer.duration > 0) {
-                            progress = (exoPlayer.currentPosition.toFloat() / exoPlayer.duration).coerceIn(0f, 1f)
-                        }
-                        delay(16)
-                    }
+            currentSlide.video != null -> {
+                while (progress < 1) {
+                    progress = (player.currentPosition.toFloat() / player.duration).coerceIn(0f, 1f)
+                    delay(16)
                 }
+            }
+        }
 
-                try {
-                    awaitCancellation()
-                } finally {
-                    videoJob.cancel()
-                }
+        if (!completedSlides.contains(currentSlideIndex)) {
+            completedSlides.add(currentSlideIndex)
+        }
+
+        currentSlideIndex = when {
+            currentSlideIndex < slides.lastIndex -> currentSlideIndex + 1
+            else -> {
+                onStoryGroupEnd()
+                completedSlides.clear()
+                0
             }
         }
     }
 
-    DisposableEffect(currentSlide) {
-        val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED && !isImage) {
-                    handleSlideCompletion()
-                }
-            }
-        }
+    LaunchedEffect(sheetState.targetValue) {
+        isDismissing = sheetState.targetValue == SheetValue.Hidden
+    }
 
-        exoPlayer.addListener(listener)
+    LaunchedEffect(isHolding, isDismissing) {
+        when {
+            isDismissing || isHolding -> player.pause()
+            else -> player.play()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        AppStorys.isVisible = false
 
         onDispose {
-            exoPlayer.removeListener(listener)
+            AppStorys.isVisible = true
         }
     }
 
-    val shareContent = {
-        val shareIntent = Intent().apply {
-            action = Intent.ACTION_SEND
-            putExtra(Intent.EXTRA_TEXT, "Check out this story: ${currentSlide.link}")
-            type = "text/plain"
-        }
-        context.startActivity(Intent.createChooser(shareIntent, "Share via"))
-    }
-
-    Dialog(
+    ModalBottomSheet(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding(),
+        shape = RectangleShape,
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            dismissOnBackPress = true,
-            dismissOnClickOutside = false,
-            usePlatformDefaultWidth = false
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            val job = coroutineScope.launch {
-                                delay(500)
-                                isHolding = true
-                                if (!isImage) exoPlayer.pause()
-                            }
-                            try {
-                                awaitRelease()
-                            } finally {
-                                if (!isImage) exoPlayer.play()
-                                job.cancel()
-                                coroutineScope.launch {
-                                    delay(200)
-                                    isHolding = false
-                                }
-                            }
-                        },
-                        onTap = { tapOffset ->
-                            if (!isHolding){
-                                val screenWidth = this.size.width
-                                if (tapOffset.x < screenWidth / 2) {
-                                    if (currentSlideIndex > 0) {
-                                        if (completedSlides.contains(currentSlideIndex)) {
-                                            completedSlides.remove(currentSlideIndex)
-                                        }
-                                        currentSlideIndex--
+        sheetState = sheetState,
+        containerColor = Color.Black,
+        contentColor = Color.White,
+        dragHandle = null,
+        content = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput("story_gestures") {
+                        var startPosition: Offset? = null
+                        var startTime = 0L
+                        var hasMovedVertically = false
+                        var isCurrentlyHolding = false
+
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent(PointerEventPass.Main)
+                                val change = event.changes.first()
+
+                                when {
+                                    change.changedToDown() -> {
+                                        startPosition = change.position
+                                        startTime = System.currentTimeMillis()
+                                        hasMovedVertically = false
+                                        isCurrentlyHolding = true
+                                        isHolding = true
+                                        change.consume()
                                     }
-                                } else {
-                                    if (currentSlideIndex < slides.lastIndex) {
-                                        if (!completedSlides.contains(currentSlideIndex)) {
-                                            completedSlides.add(currentSlideIndex)
+
+                                    change.pressed && startPosition != null -> {
+                                        val currentPosition = change.position
+                                        val deltaY =
+                                            kotlin.math.abs(currentPosition.y - startPosition!!.y)
+                                        val deltaX =
+                                            kotlin.math.abs(currentPosition.x - startPosition!!.x)
+
+                                        // If there's significant vertical movement, it's likely a dismiss gesture
+                                        if (deltaY > 30 && deltaY > deltaX) {
+                                            hasMovedVertically = true
                                         }
-                                        currentSlideIndex++
-                                    } else {
-                                        onStoryGroupEnd()
-                                        currentSlideIndex = 0
-                                        completedSlides.clear()
+                                    }
+
+                                    change.changedToUp() && isCurrentlyHolding -> {
+                                        isCurrentlyHolding = false
+                                        isHolding = false
+
+                                        val duration = System.currentTimeMillis() - startTime
+                                        val tapPosition = startPosition ?: change.position
+
+                                        // Only navigate if:
+                                        // 1. Quick tap (< 200ms)
+                                        // 2. No vertical movement (not a swipe down)
+                                        // 3. Not in top area
+                                        if (duration < 200 && !hasMovedVertically && tapPosition.y > 100) {
+                                            val screenWidth = size.width
+                                            currentSlideIndex = when {
+                                                tapPosition.x < screenWidth / 2 && currentSlideIndex > 0 -> {
+                                                    if (completedSlides.contains(currentSlideIndex)) {
+                                                        completedSlides.remove(currentSlideIndex)
+                                                    }
+                                                    currentSlideIndex - 1
+                                                }
+
+                                                tapPosition.x > screenWidth / 2 && currentSlideIndex < slides.lastIndex -> {
+                                                    if (!completedSlides.contains(currentSlideIndex)) {
+                                                        completedSlides.add(currentSlideIndex)
+                                                    }
+                                                    currentSlideIndex + 1
+                                                }
+
+                                                else -> {
+                                                    onStoryGroupEnd()
+                                                    completedSlides.clear()
+                                                    0
+                                                }
+                                            }
+                                        }
+
+                                        startPosition = null
+                                        change.consume()
                                     }
                                 }
                             }
                         }
-                    )
-                }
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                if (currentSlide.image != null) {
-                    Image(
-                        painter = rememberAsyncImagePainter(currentSlide.image),
-                        contentDescription = null,
+                    },
+                content = {
+                    Box(
                         modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
-                }
-
-                if (currentSlide.video != null) {
-                    AndroidView(
-                        factory = { ctx ->
-                            StyledPlayerView(ctx).apply {
-                                player = exoPlayer
-                                layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
-                                useController = false
+                        contentAlignment = Alignment.Center,
+                        content = {
+                            if (currentSlide.image != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(currentSlide.image),
+                                    contentDescription = null,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
                             }
-                        },
-                        modifier = Modifier.fillMaxSize()
+
+                            if (currentSlide.video != null) {
+                                AndroidView(
+                                    factory = { ctx ->
+                                        PlayerView(ctx).apply {
+                                            this.player = player
+                                            layoutParams =
+                                                FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
+                                            useController = false
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            }
+
+                            if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true) {
+                                Button(
+                                    onClick = {
+                                        uriHandler.openUri(currentSlide.link)
+                                        sendEvent(Pair(currentSlide, "CLK"))
+                                        sendClickEvent(Pair(currentSlide, "clicked"))
+                                    },
+                                    modifier = Modifier
+                                        .align(Alignment.BottomCenter)
+                                        .padding(bottom = 32.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color.White
+                                    ),
+                                    content = {
+                                        Text(text = currentSlide.buttonText, color = Color.Black)
+                                    }
+                                )
+                            }
+                        }
                     )
-                }
 
-                if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true) {
-                    Button(
-                        onClick = {
-                            uriHandler.openUri(currentSlide.link)
-                            sendEvent(Pair(currentSlide, "CLK"))
-                            sendClickEvent(Pair(currentSlide, "clicked"))
-                        },
+                    Row(
                         modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(bottom = 32.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White
-                        )
-                    ) {
-                        Text(text = currentSlide.buttonText, color = Color.Black)
-                    }
-                }
-            }
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .align(Alignment.TopCenter)
+                            .padding(horizontal = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        content = {
+                            slides.forEachIndexed { index, _ ->
+                                LinearProgressIndicator(
+                                    progress = {
+                                        when {
+                                            index == currentSlideIndex -> progress
+                                            index < currentSlideIndex || completedSlides.contains(
+                                                index
+                                            ) -> 1f
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(4.dp)
-                    .align(Alignment.TopCenter)
-                    .padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                slides.forEachIndexed { index, _ ->
-                    val progressValue = when {
-                        index == currentSlideIndex -> animatedProgress
-                        index < currentSlideIndex || completedSlides.contains(index) -> 1f
-                        else -> 0f
-                    }
-
-                    LinearProgressIndicator(
-                        progress = { progressValue },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(4.dp),
-                        color = Color.White,
-                        trackColor = Color.Gray.copy(alpha = 0.5f),
-                        drawStopIndicator = {}
+                                            else -> 0f
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .height(4.dp),
+                                    color = Color.White,
+                                    trackColor = Color.Gray.copy(alpha = 0.5f),
+                                    drawStopIndicator = {}
+                                )
+                            }
+                        }
                     )
-                }
-            }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopStart)
-                    .padding(18.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(storyGroup.thumbnail),
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .clip(CircleShape)
-                        .background(Color.LightGray),
-                    contentScale = ContentScale.Crop
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                storyGroup.name?.let {
-                    Text(
-                        text = it,
-                        color = Color.White,
-                        fontSize = 14.sp
-                    )
-                }
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopEnd)
-                    .padding(18.dp),
-                horizontalArrangement = Arrangement.End
-            ) {
-                if (!isImage){
-
-                    Box(
+                    Row(
                         modifier = Modifier
-                            .size(32.dp)
-                            .background(
-                                color = Color.Black.copy(alpha = 0.2f),
-                                shape = CircleShape
+                            .fillMaxWidth()
+                            .align(Alignment.TopStart)
+                            .padding(18.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        content = {
+                            Image(
+                                painter = rememberAsyncImagePainter(storyGroup.thumbnail),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.LightGray),
+                                contentScale = ContentScale.Crop
                             )
-                            .clickable(onClick = {
-                                isMuted = !isMuted
-                                if (isMuted){
-                                    exoPlayer.volume = 0f
-                                }else{
-                                    exoPlayer.volume = 1f
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            storyGroup.name?.let {
+                                Text(
+                                    text = it,
+                                    color = Color.White,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .align(Alignment.TopEnd)
+                            .padding(18.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                        content = {
+                            if (!isImage) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.2f),
+                                            shape = CircleShape
+                                        )
+                                        .clickable {
+                                            isMuted = !isMuted
+                                            if (isMuted){
+                                                player.volume = 0f
+                                            }else{
+                                                player.volume = 1f
+                                            }
+                                                   },
+                                    contentAlignment = Alignment.Center,
+                                    content = {
+                                        Icon(
+                                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(
+                                                R.drawable.volume
+                                            ),
+                                            contentDescription = if (isMuted) "Unmute" else "Mute",
+                                            tint = Color.White
+                                        )
+                                    }
+                                )
+                            }
+                            if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(
+                                            color = Color.Black.copy(alpha = 0.2f),
+                                            shape = CircleShape
+                                        )
+                                        .clickable(onClick = {
+                                            context.startActivity(
+                                                Intent.createChooser(
+                                                    Intent().apply {
+                                                        action = Intent.ACTION_SEND
+                                                        putExtra(
+                                                            Intent.EXTRA_TEXT,
+                                                            "Check out this story: ${currentSlide.link}"
+                                                        )
+                                                        type = "text/plain"
+                                                    },
+                                                    "Share via"
+                                                )
+                                            )
+                                        }),
+                                    contentAlignment = Alignment.Center,
+                                    content = {
+                                        Icon(
+                                            imageVector = Icons.Default.Share,
+                                            contentDescription = "Share",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(24.dp)
+                                        )
+                                    }
+                                )
+                            }
+
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(
+                                        color = Color.Black.copy(alpha = 0.2f),
+                                        shape = CircleShape
+                                    )
+                                    .clickable {
+                                        scope.launch {
+                                            sheetState.hide()
+                                            onDismiss()
+                                        }
+                                    },
+                                contentAlignment = Alignment.Center,
+                                content = {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Close",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
                                 }
-                            }),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = if (isMuted) painterResource(R.drawable.mute) else painterResource(R.drawable.volume),
-                            contentDescription = if (isMuted) "Unmute" else "Mute",
-                            tint = Color.White
-                        )
-                    }
-                    Spacer(Modifier.width(4.dp))
-                }
-                if (currentSlide.link?.isNotEmpty() == true && currentSlide.buttonText?.isNotEmpty() == true){
-                    Box(
-                        modifier = Modifier
-                            .size(32.dp)
-                            .background(
-                                color = Color.Black.copy(alpha = 0.2f),
-                                shape = CircleShape
                             )
-                            .clickable(onClick = shareContent),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Share,
-                            contentDescription = "Share",
-                            tint = Color.White,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(Modifier.width(4.dp))
-                }
-
-                Box(
-                    modifier = Modifier
-                        .size(32.dp)
-                        .background(
-                            color = Color.Black.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        )
-                        .clickable(onClick = onDismiss),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close",
-                        tint = Color.White,
-                        modifier = Modifier.size(28.dp)
+                        }
                     )
                 }
-
-            }
+            )
         }
-    }
+    )
 }
 
+@UnstableApi
 @Composable
-internal fun StoriesApp(storyGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, viewedStories: List<String>, storyViewed: (String) -> Unit, sendClickEvent: (Pair<StorySlide, String>) -> Unit) {
+internal fun StoriesApp(
+    storyGroups: List<StoryGroup>,
+    sendEvent: (Pair<StorySlide, String>) -> Unit,
+    viewedStories: List<String>,
+    storyViewed: (String) -> Unit,
+    sendClickEvent: (Pair<StorySlide, String>) -> Unit
+) {
     var selectedStoryGroup by remember { mutableStateOf<StoryGroup?>(null) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        StoryCircles(
-            viewedStories = viewedStories,
-            storyGroups = storyGroups,
-            onStoryClick = { storyGroup ->
-                selectedStoryGroup = storyGroup
-                selectedStoryGroup?.id?.let{
-                    storyViewed(it)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        content = {
+            StoryCircles(
+                viewedStories = viewedStories,
+                storyGroups = storyGroups,
+                onStoryClick = { storyGroup ->
+                    selectedStoryGroup = storyGroup
+                    selectedStoryGroup?.id?.let {
+                        storyViewed(it)
+                    }
                 }
-            }
-        )
+            )
 
-        selectedStoryGroup?.let { storyGroup ->
-            if (!storyGroup.slides.isNullOrEmpty()){
-                key(storyGroup) {
-                    StoryScreen(
-                        storyGroup = storyGroup,
-                        slides = storyGroup.slides,
-                        onDismiss = { selectedStoryGroup = null },
-                        onStoryGroupEnd = {
-                            val currentIndex = storyGroups.indexOf(storyGroup)
-                            if (currentIndex < storyGroups.lastIndex) {
-                                selectedStoryGroup = storyGroups[currentIndex + 1]
-                                selectedStoryGroup?.id?.let{
-                                    storyViewed(it)
-                                }
-                            } else {
-                                selectedStoryGroup = null
+            val storyGroup = selectedStoryGroup
+            if (storyGroup != null && !storyGroup.slides.isNullOrEmpty()) {
+                StoryScreen(
+                    storyGroup = storyGroup,
+                    slides = storyGroup.slides,
+                    onDismiss = { selectedStoryGroup = null },
+                    onStoryGroupEnd = {
+                        val currentIndex = storyGroups.indexOf(storyGroup)
+                        if (currentIndex < storyGroups.lastIndex) {
+                            selectedStoryGroup = storyGroups[currentIndex + 1]
+                            selectedStoryGroup?.id?.let {
+                                storyViewed(it)
                             }
-                        },
-                        sendEvent = sendEvent,
-                        sendClickEvent = sendClickEvent
-                    )
-                }
+                        } else {
+                            selectedStoryGroup = null
+                        }
+                    },
+                    sendEvent = sendEvent,
+                    sendClickEvent = sendClickEvent
+                )
             }
         }
-    }
+    )
 }
 
+@UnstableApi
 @Composable
-internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<StorySlide, String>) -> Unit, sendClickEvent: (Pair<StorySlide, String>) -> Unit) {
+internal fun StoryAppMain(
+    apiStoryGroups: List<StoryGroup>,
+    sendEvent: (Pair<StorySlide, String>) -> Unit,
+    sendClickEvent: (Pair<StorySlide, String>) -> Unit
+) {
 
     val context = LocalContext.current
-    var viewedStories by remember { mutableStateOf(getViewedStories(context.getSharedPreferences("AppStory", Context.MODE_PRIVATE))) }
-    var storyGroups by remember { mutableStateOf(apiStoryGroups.sortedWith(
-        compareByDescending<StoryGroup> { it.id !in viewedStories }
-            .thenBy { it.order })) }
+    var viewedStories by remember {
+        mutableStateOf(
+            getViewedStories(
+                context.getSharedPreferences(
+                    "AppStory",
+                    Context.MODE_PRIVATE
+                )
+            )
+        )
+    }
+    var storyGroups by remember {
+        mutableStateOf(
+            apiStoryGroups.sortedWith(
+                compareByDescending<StoryGroup> { it.id !in viewedStories }
+                    .thenBy { it.order })
+        )
+    }
 
     LaunchedEffect(viewedStories) {
         storyGroups = storyGroups.sortedWith(
@@ -562,21 +701,31 @@ internal fun StoryAppMain(apiStoryGroups: List<StoryGroup>, sendEvent: (Pair<Sto
         )
     }
 
-    StoriesApp(storyGroups = storyGroups, sendEvent = sendEvent, viewedStories = viewedStories, storyViewed =  {
-        if (!viewedStories.contains(it)){
-            val list = ArrayList(viewedStories)
-            list.add(it)
-            viewedStories = list
-            saveViewedStories(idList = list, sharedPreferences = context.getSharedPreferences("AppStory", Context.MODE_PRIVATE))
-        }
-    },
+    StoriesApp(
+        storyGroups = storyGroups,
+        sendEvent = sendEvent,
+        viewedStories = viewedStories,
+        storyViewed = {
+            if (!viewedStories.contains(it)) {
+                val list = ArrayList(viewedStories)
+                list.add(it)
+                viewedStories = list
+                saveViewedStories(
+                    idList = list,
+                    sharedPreferences = context.getSharedPreferences(
+                        "AppStory",
+                        Context.MODE_PRIVATE
+                    )
+                )
+            }
+        },
         sendClickEvent = sendClickEvent
     )
 }
 
 internal fun saveViewedStories(idList: List<String>, sharedPreferences: SharedPreferences) {
     val jsonArray = JSONArray(idList)
-    sharedPreferences.edit().putString("VIEWED_STORIES", jsonArray.toString()).apply()
+    sharedPreferences.edit { putString("VIEWED_STORIES", jsonArray.toString()) }
 }
 
 internal fun getViewedStories(sharedPreferences: SharedPreferences): List<String> {

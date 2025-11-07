@@ -186,7 +186,10 @@ data class TrackUserWebSocketRequest(
     val topLeftRadius: String?,
     val topRightRadius: String?,
     val bottomLeftRadius: String?,
-    val bottomRightRadius: String?
+    val bottomRightRadius: String?,
+    val floaterBottomPadding: String?,
+    val floaterRightPadding: String?,
+    val floaterLeftPadding: String?,
 )
 
 @Keep data class FeedbackOption(
@@ -233,6 +236,61 @@ data class TrackUserWebSocketRequest(
     val csatSelectedOptionTextColor: String?,
     val csatSelectedOptionStrokeColor: String?,
     val csatSelectedOptionBackgroundColor: String?,
+
+    val csatTitleFontSize: Int?,
+    val csatTitleFontDecoration: List<String>?,
+    val csatTitleAlignment: String?,
+    val csatTitleLineHeight: Float?,
+    val csatTitleMargin: Margin?,
+
+    val csatDescriptionFontSize: Int?,
+    val csatDescriptionFontDecoration: List<String>?,
+    val csatDescriptionAlignment: String?,
+    val csatDescriptionLineHeight: Float?,
+    val csatDescriptionMargin: Margin?,
+
+    val csatFeedbackTitleText: String?,
+    val csatFeedbackTitleTextColor: String?,
+    val csatFeedbackTitleFontSize: Int?,
+    val csatFeedbackTitleFontDecoration: List<String>?,
+    val csatFeedbackTitleAlignment: String?,
+    val csatFeedbackTitleLineHeight: Float?,
+    val csatFeedbackTitleMargin: Margin?,
+
+    val csatFeedbackOptionFontSize: Int?,
+    val csatFeedbackOptionFontDecoration: List<String>?,
+    val csatFeedbackOptionAlignment: String?,
+    val csatFeedbackOptionMargin: Margin?,
+
+    val csatAdditionalTextFontSize: Int?,
+    val csatAdditionalTextFontDecoration: List<String>?,
+    val csatAdditionalTextMargin: Margin?,
+
+    val csatCtaFontSize: Int?,
+    val csatCtaFontDecoration: List<String>?,
+    val csatCtaBorderColor: String?,
+    val csatCtaBorderWidth: Int?,
+    val csatCtaBorderRadius: String?,
+    val csatCtaDimensions: Dimensions?,
+    val csatCtaFullWidth: Boolean?,
+    val csatCtaMargin: Margin?,
+    val csatCtaAlignment: String?,
+
+    val csatBottomPadding: String?,
+)
+
+@Keep
+data class Margin(
+    val top: Int?,
+    val bottom: Int?,
+    val left: Int?,
+    val right: Int?
+)
+
+@Keep
+data class Dimensions(
+    val height: Int?,
+    val width: Int?
 )
 
 @Keep data class CsatFeedbackPostRequest(
@@ -349,7 +407,9 @@ data class TrackUserWebSocketRequest(
     val marginBottom: String?,
     val fontDecoration: List<String>?,
     val ctaButtonTextColor: String?,
-    val ctaButtonBackgroundColor: String?
+    val ctaButtonBackgroundColor: String?,
+    val pipTopPadding: String?,
+    val pipBottomPadding: String?,
 )
 
 @Keep data class BottomSheetDetails(

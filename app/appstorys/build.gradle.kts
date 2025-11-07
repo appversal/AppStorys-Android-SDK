@@ -62,13 +62,13 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.coil.gif)
     implementation(libs.androidx.activity.ktx)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
     implementation(libs.exoplayer.ui)
     implementation(libs.exoplayer.core)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.activity.compose)
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.exoplayer.hls)
 }
@@ -80,7 +80,7 @@ afterEvaluate {
                 from(components["release"])
                 groupId = "com.appversal"
                 artifactId = "appstorys"
-                version = "3.4.0"
+                version = "3.7.1"
             }
         }
     }

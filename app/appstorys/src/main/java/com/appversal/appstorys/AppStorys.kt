@@ -72,7 +72,6 @@ import com.appversal.appstorys.api.ReelsDetails
 import com.appversal.appstorys.api.RetrofitClient
 import com.appversal.appstorys.api.StoryGroup
 import com.appversal.appstorys.api.SurveyDetails
-import com.appversal.appstorys.api.SurveyFeedbackPostRequest
 import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.api.TooltipsDetails
 import com.appversal.appstorys.api.TrackActionStories
@@ -151,7 +150,7 @@ interface AppStorysAPI {
 
     @Composable
     fun Floater(
-        modifier: Modifier? = Modifier,
+        modifier: Modifier = Modifier,
         bottomPadding: Dp
     )
 
@@ -268,6 +267,17 @@ internal object AppStorys : AppStorysAPI {
 
     private var trackedEventNames = mutableStateListOf<String>()
 
+    private var widgetPositionList = listOf<String>()
+
+    private val viewedTooltips = MutableStateFlow<Set<String>>(emptySet())
+
+    /**
+     * Tells the SDK whether the sdk components are visible to the user,
+     * this is very important for features like pip where the sdk needs to know
+     * whether the user can see the pip or not to pause/resume the pip video
+     */
+    var isVisible by mutableStateOf(true)
+
     override fun initialize(
         context: Application,
         appId: String,
@@ -311,7 +321,7 @@ internal object AppStorys : AppStorysAPI {
                 override fun onStop(owner: LifecycleOwner) {
                     sdkState = AppStorysSdkState.Paused
                     campaigns.update { emptyList() }
-                    tooltipViewed.update { emptyList() }
+//                    tooltipViewed.update { emptyList() }
                     showModal = true
                     showCsat = false
                     showBottomSheet = true
@@ -362,11 +372,7 @@ internal object AppStorys : AppStorysAPI {
 
                 ensureActive()
 
-                repository.sendWidgetPositions(
-                    accessToken = accessToken,
-                    screenName = screenName,
-                    positionList = positionList
-                )
+                widgetPositionList = positionList
 
                 val deviceInfo = getDeviceInfo(context)
 
@@ -402,7 +408,7 @@ internal object AppStorys : AppStorysAPI {
     ) {
         coroutineScope.launch {
             if (accessToken.isNotEmpty()) {
-                if (event != "viewed" && event != "clicked") {
+                if (event != "viewed" && event != "clicked" && event != "csat captured" && event != "survey captured") {
                     trackedEventNames.add(event)
                 }
                 try {
@@ -425,6 +431,9 @@ internal object AppStorys : AppStorysAPI {
                         .build()
 
                     val response = client.newCall(request).execute()
+
+                    Log.i("Event Captured", response.toString())
+                    Log.i("Event Captured", requestBody.toString())
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -516,10 +525,18 @@ internal object AppStorys : AppStorysAPI {
                     isVisibleState = true
                 }
 
+                val bottomPaddingValue = when (val padding = style?.csatBottomPadding) {
+                    is Number -> padding.toFloat().dp
+                    is String -> padding.trim().toFloatOrNull()?.dp ?: bottomPadding
+                    else -> bottomPadding
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(bottom = bottomPadding),
+                        .padding(
+                            bottom = bottomPaddingValue
+                        ),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     AnimatedVisibility(
@@ -548,7 +565,16 @@ internal object AppStorys : AppStorysAPI {
                                             feedback_option = feedback.feedbackOption
                                         )
                                     )
-                                    trackEvents(csatDetails.campaign, "clicked")
+                                    trackEvents(
+                                        campaign_id = campaign?.id,
+                                        event = "csat captured",
+                                        metadata = mapOf(
+                                            "starCount" to feedback.rating,
+                                            "selectedOption" to (feedback.feedbackOption
+                                                ?: "") as Any,
+                                            "additionalComments" to feedback.additionalComments
+                                        )
+                                    )
                                 }
                             },
                             csatDetails = csatDetails
@@ -562,7 +588,7 @@ internal object AppStorys : AppStorysAPI {
     @RequiresApi(Build.VERSION_CODES.N)
     @Composable
     override fun Floater(
-        modifier: Modifier?,
+        modifier: Modifier,
         bottomPadding: Dp
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -585,40 +611,45 @@ internal object AppStorys : AppStorysAPI {
                 }
             }
 
+            val styling = floaterDetails.styling
+
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(bottom = bottomPadding)
-            ) {
-                val alignmentModifier = when (floaterDetails.position) {
-                    "right" -> Modifier.align(Alignment.BottomEnd)
-                    "left" -> Modifier.align(Alignment.BottomStart)
-                    else -> Modifier.align(Alignment.BottomStart)
-                }
-
-                OverlayFloater(
-                    modifier = (modifier ?: Modifier).then(alignmentModifier),
-                    onClick = {
-                        if (campaign?.id != null && floaterDetails.link != null) {
-                            clickEvent(link = floaterDetails.link, campaignId = campaign.id)
-                            trackEvents(campaign.id, "clicked")
-                        }
-                    },
-                    image = floaterDetails.image,
-                    lottieUrl = floaterDetails.lottie_data,
-                    height = floaterDetails.height?.dp ?: 60.dp,
-                    width = floaterDetails.width?.dp ?: 60.dp,
-                    borderRadiusValues = RoundedCornerShape(
-                        topStart = (floaterDetails.styling?.topLeftRadius?.toFloatOrNull()
-                            ?: 0f).dp,
-                        topEnd = (floaterDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
-                        bottomStart = (floaterDetails.styling?.bottomLeftRadius?.toFloatOrNull()
-                            ?: 0f).dp,
-                        bottomEnd = (floaterDetails.styling?.bottomRightRadius?.toFloatOrNull()
-                            ?: 0f).dp
+                    .padding(
+                        bottom = styling?.floaterBottomPadding?.toFloatOrNull()?.dp
+                            ?: bottomPadding,
+                        start = styling?.floaterLeftPadding?.toFloatOrNull()?.dp ?: 0.dp,
+                        end = styling?.floaterRightPadding?.toFloatOrNull()?.dp ?: 0.dp,
+                    ),
+                content = {
+                    OverlayFloater(
+                        modifier = modifier.align(
+                            when (floaterDetails.position) {
+                                "right" -> Alignment.BottomEnd
+                                "left" -> Alignment.BottomStart
+                                else -> Alignment.BottomStart
+                            }
+                        ),
+                        onClick = {
+                            if (campaign?.id != null && floaterDetails.link != null) {
+                                clickEvent(link = floaterDetails.link, campaignId = campaign.id)
+                                trackEvents(campaign.id, "clicked")
+                            }
+                        },
+                        image = floaterDetails.image,
+                        lottieUrl = floaterDetails.lottie_data,
+                        height = floaterDetails.height?.dp ?: 60.dp,
+                        width = floaterDetails.width?.dp ?: 60.dp,
+                        borderRadiusValues = RoundedCornerShape(
+                            topStart = (styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                            topEnd = (styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
+                            bottomStart = (styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
+                            bottomEnd = (styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp
+                        )
                     )
-                )
-            }
+                }
+            )
         }
     }
 
@@ -1136,7 +1167,10 @@ internal object AppStorys : AppStorysAPI {
                         widgetDetails.styling?.rightMargin?.toFloatOrNull()?.dp ?: 0.dp
 
                     val actualWidth = (staticWidth ?: screenWidth) - marginLeft - marginRight
-                    (actualWidth.value.minus(32) * aspectRatio).dp
+                    (actualWidth.value.minus(32
+                        // for the new widget
+//                            +26
+                    ) * aspectRatio).dp
                 } else {
                     widgetDetails.height?.dp
                 }
@@ -1156,15 +1190,6 @@ internal object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to currentWidgetId)
                             )
 
-                        } else if (!impressions.value.contains(it)) {
-                            val impressions = ArrayList(impressions.value)
-                            impressions.add(it)
-                            this@AppStorys.impressions.emit(impressions)
-                            trackEvents(
-                                it,
-                                "viewed",
-                                mapOf("widget_image" to currentWidgetId!!)
-                            )
                         }
                     }
                 }
@@ -1288,15 +1313,6 @@ internal object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!)
                             )
 
-                        } else if (!impressions.value.contains(it)) {
-                            val impressions = ArrayList(impressions.value)
-                            impressions.add(it)
-                            this@AppStorys.impressions.emit(impressions)
-                            trackEvents(
-                                it,
-                                "viewed",
-                                mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].first.id!!)
-                            )
                         }
 
                         if (widgetImagesPairs[pagerState.currentPage].second.id != null && !impressions.value.contains(
@@ -1312,15 +1328,6 @@ internal object AppStorys : AppStorysAPI {
                                 mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!)
                             )
 
-                        } else if (!impressions.value.contains(it)) {
-                            val impressions = ArrayList(impressions.value)
-                            impressions.add(it)
-                            this@AppStorys.impressions.emit(impressions)
-                            trackEvents(
-                                it,
-                                "viewed",
-                                mapOf("widget_image" to widgetImagesPairs[pagerState.currentPage].second.id!!)
-                            )
                         }
                     }
                 }
@@ -1489,16 +1496,14 @@ internal object AppStorys : AppStorysAPI {
                 surveyDetails = surveyDetails,
                 onSubmitFeedback = { feedback ->
                     coroutineScope.launch {
-                        repository.captureSurveyResponse(
-                            accessToken,
-                            SurveyFeedbackPostRequest(
-                                user_id = userId,
-                                survey = surveyDetails.id,
-                                responseOptions = feedback.responseOptions,
-                                comment = feedback.comment
+                        trackEvents(
+                            campaign_id = campaign?.id,
+                            event = "survey captured",
+                            metadata = mapOf(
+                                "selectedOptions" to (feedback.responseOptions ?: ""),
+                                "otherText" to feedback.comment
                             )
                         )
-                        trackEvents(surveyDetails.campaign, "clicked")
                     }
                 },
             )
@@ -1593,6 +1598,14 @@ internal object AppStorys : AppStorysAPI {
                 FloatingActionButton(
                     onClick = {
                         shouldAnalyze = true
+
+                        coroutineScope.launch {
+                            repository.sendWidgetPositions(
+                                accessToken = accessToken,
+                                screenName = currentScreen,
+                                positionList = widgetPositionList
+                            )
+                        }
                     },
                     modifier = modifier
                         .padding(bottom = 86.dp, end = 16.dp)
@@ -1623,22 +1636,26 @@ internal object AppStorys : AppStorysAPI {
             } ?: campaigns.value.firstOrNull { campaign ->
                 campaign.campaignType == "TTP" && campaign.details is TooltipsDetails
             }
-            repository.trackTooltipsActions(
-                accessToken, TrackActionTooltips(
-                    campaign_id = campaign?.id,
-                    user_id = userId,
-                    event_type = "IMP",
-                    tooltip_id = tooltip.id
+
+            val tooltipId = tooltip.id ?: return@launch
+
+            if (!viewedTooltips.value.contains(tooltipId)) {
+                trackEvents(
+                    campaign?.id,
+                    "viewed",
+                    mapOf("tooltip_id" to tooltipId)
                 )
-            )
-            trackEvents(
-                campaign?.id,
-                "viewed",
-                mapOf("tooltip_id" to tooltip.id!!)
-            )
+                viewedTooltips.update { it + tooltipId }
+            }
 
             if (isClick) {
                 if (!tooltip.deepLinkUrl.isNullOrEmpty()) {
+                    trackEvents(
+                        campaign?.id,
+                        "clicked",
+                        mapOf("tooltip_id" to tooltipId)
+                    )
+
                     if (tooltip.clickAction == "deepLink") {
                         if (!isValidUrl(tooltip.deepLinkUrl)) {
                             navigateToScreen(tooltip.deepLinkUrl)
@@ -1739,8 +1756,6 @@ internal object AppStorys : AppStorysAPI {
             "orientation" to if (configuration.orientation == Configuration.ORIENTATION_PORTRAIT) "portrait" else "landscape",
             "app_version" to packageInfo.versionName,
             "package_name" to packageName,
-            "install_time" to installTime,
-            "update_time" to updateTime,
             "device_type" to "mobile",
             "platform" to "android"
         )

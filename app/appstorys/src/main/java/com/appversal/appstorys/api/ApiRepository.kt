@@ -68,6 +68,8 @@ internal class ApiRepository(
                     ) {
                         campaignResponseChannel.send(campaignResponse)
                         Log.d("ApiRepository", "New campaign processed: $campaignId")
+
+//                        webSocketClient?.disconnect()
                     } else {
                         Log.d("ApiRepository", "Campaign skipped: $campaignId")
                     }
@@ -82,7 +84,7 @@ internal class ApiRepository(
     suspend fun getAccessToken(app_id: String, account_id: String): String? {
         return withContext(Dispatchers.IO) {
             when (val result = safeApiCall {
-                apiService.validateAccount(
+                webSocketApiService.validateAccount(
                     ValidateAccountRequest(app_id = app_id, account_id = account_id)
                 ).access_token
             }) {
@@ -223,20 +225,6 @@ internal class ApiRepository(
                 )
             }) {
                 is ApiResult.Error -> println("Error capturing CSAT response: ${result.message}")
-                else -> Unit
-            }
-        }
-    }
-
-    suspend fun captureSurveyResponse(accessToken: String, actions: SurveyFeedbackPostRequest) {
-        withContext(Dispatchers.IO) {
-            when (val result = safeApiCall {
-                apiService.sendSurveyResponse(
-                    token = "Bearer $accessToken",
-                    request = actions
-                )
-            }) {
-                is ApiResult.Error -> println("Error capturing Survey response: ${result.message}")
                 else -> Unit
             }
         }

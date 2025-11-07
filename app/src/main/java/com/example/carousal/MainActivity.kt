@@ -1,7 +1,6 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.carousal
-
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -113,10 +112,6 @@ fun MyApp() {
             app.resetNavigation()
         }
     }
-//    campaignManager.getScreenCampaigns(
-//        "Home Screen",
-//        listOf()
-//    )
 
     var edgeToEdgePadding by remember { mutableStateOf(PaddingValues()) }
 
@@ -192,7 +187,6 @@ fun HomeScreen(padding: PaddingValues) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
-
     // State variables for input fields
     var input1 by remember { mutableStateOf("") }
     var input2 by remember { mutableStateOf("") }
@@ -200,6 +194,9 @@ fun HomeScreen(padding: PaddingValues) {
     var eventInput1 by remember { mutableStateOf("") }
     var eventInput2 by remember { mutableStateOf("") }
     var eventInput3 by remember { mutableStateOf("") }
+
+    // State for scratch card dialog
+    var showScratchCard by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val screenName  = "Home Screen"
@@ -237,6 +234,8 @@ fun HomeScreen(padding: PaddingValues) {
                     contentScale = ContentScale.Fit
                 )
 
+                campaignManager.Stories()
+
                 CopyUserIdText()
 
                 campaignManager.Widget(
@@ -256,6 +255,31 @@ fun HomeScreen(padding: PaddingValues) {
                     position = "widget_two",
                 )
 
+                // NEW: Scratch Card Button
+                Box(
+                    modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp)
+                        .fillMaxWidth(),
+//                        .padding(top = 12.dp, horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Button(
+                        onClick = {
+                            showScratchCard = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF6200EE)
+                        )
+                    ) {
+                        Icon(
+                            painter = painterResource(id = android.R.drawable.ic_dialog_info),
+                            contentDescription = "Scratch Card",
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text("Open Scratch Card")
+                    }
+                }
+
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -265,10 +289,10 @@ fun HomeScreen(padding: PaddingValues) {
                     Button(
                         onClick = {
                             campaignManager.trackEvents(
-                                event = "Open Bottom Sheet Event"
+                                event = "Login"
                             )
                         },
-                        modifier = Modifier.appstorys("open_bottom_sheet")
+                        modifier = Modifier.appstorys("anuridhtest")
                     ) {
                         Text("Open Bottom Sheet")
                     }
@@ -339,7 +363,7 @@ fun HomeScreen(padding: PaddingValues) {
                             event = "Added to cart"
                         )
                     },
-                    modifier = Modifier
+                    modifier = Modifier.appstorys("toolbar")
                 ) {
                     Text("Added to cart Event")
                 }
@@ -451,7 +475,7 @@ fun HomeScreen(padding: PaddingValues) {
                     }
                 }
 
-                campaignManager.Stories()
+
 
                 campaignManager.Reels()
 
@@ -465,6 +489,14 @@ fun HomeScreen(padding: PaddingValues) {
 
             }
         }
+    }
+    // Scratch Card Dialog
+    if (showScratchCard) {
+//        ScratchCardDialog(
+//            onDismiss = { showScratchCard = false },
+//            scratchImageRes = R.drawable.ic_launcher_foreground, // Replace with your scratch surface image
+//            revealImageRes = R.drawable.home_one // Replace with your reveal image
+//        )
     }
 }
 
@@ -666,79 +698,6 @@ fun PayScreenPage(
     }
 
 }
-
-//@Composable
-//fun PayScreen(padding: PaddingValues) {
-//
-//    val campaignManager = App.appStorys
-//
-//    campaignManager.getScreenCampaigns(
-//        "More Screen",
-//        listOf()
-//    )
-//    Box(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .padding(top = padding.calculateTopPadding(), bottom = padding.calculateBottomPadding())
-//            .background(Color(0xFFf1f2f4)),
-//        contentAlignment = Alignment.TopCenter
-//    ) {
-//        Box(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//        ) {
-//            Column(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//            ) {
-//                Row {
-//                    Image(
-//                        painter = painterResource(id = R.drawable.more_one),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier.weight(1f).appstorys("cashbook"),
-//                        contentScale = ContentScale.Fit
-//                    )
-//
-//                    Image(
-//                        painter = painterResource(id = R.drawable.more_two),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier.weight(1f).appstorys("bills"),
-//                        contentScale = ContentScale.Fit
-//                    )
-//
-//                    Image(
-//                        painter = painterResource(id = R.drawable.more_three),
-//                        contentDescription = "App Logo",
-//                        modifier = Modifier.weight(1f).appstorys("items"),
-//                        contentScale = ContentScale.Fit
-//                    )
-//                }
-//                Image(
-//                    painter = painterResource(id = R.drawable.more_bottom),
-//                    contentDescription = "App Logo",
-//                    modifier = Modifier
-//                        .fillMaxWidth(),
-//                    contentScale = ContentScale.Fit
-//                )
-//
-//                Button(
-//                    onClick = {
-//                        campaignManager.trackEvents(
-//                            event = "clicked"
-//                        )
-//                    },
-//                    modifier = Modifier
-//                ) {
-//                    Text("Clicked Event")
-//                }
-//            }
-//        }
-//    }
-//    campaignManager.overlayElements(
-//        topPadding = 70.dp,
-//        bottomPadding = 70.dp,
-//    )
-//}
 
 @Composable
 fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
