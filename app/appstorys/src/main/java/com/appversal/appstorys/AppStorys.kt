@@ -173,7 +173,6 @@ interface AppStorysAPI {
     fun Widget(
         modifier: Modifier = Modifier,
         placeholder: Drawable? = null,
-        placeholderContent: (@Composable () -> Unit)? = null,
         position: String? = null,
     )
 
@@ -1083,7 +1082,6 @@ internal object AppStorys : AppStorysAPI {
     override fun Widget(
         modifier: Modifier,
         placeholder: Drawable?,
-        placeholderContent: (@Composable () -> Unit)?,
         position: String?
     ) {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
@@ -1111,7 +1109,6 @@ internal object AppStorys : AppStorysAPI {
                     placeHolder = placeholder,
                     contentScale = ContentScale.FillWidth,
                     position = position,
-                    placeholderContent = placeholderContent
                 )
 
             } else if (widgetDetails.type == "half") {
@@ -1120,7 +1117,6 @@ internal object AppStorys : AppStorysAPI {
                     staticWidth = LocalConfiguration.current.screenWidthDp.dp,
                     position = position,
                     placeHolder = placeholder,
-                    placeholderContent = placeholderContent
                 )
             }
         }

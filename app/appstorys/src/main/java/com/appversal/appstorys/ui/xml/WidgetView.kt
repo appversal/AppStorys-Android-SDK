@@ -75,7 +75,6 @@ import com.appversal.appstorys.utils.pxToDp
                     setContent {
                         AppStorys.Widget(
                             placeholder = placeholder,
-                            placeholderContent = content,
                             position = position
                         )
                     }
