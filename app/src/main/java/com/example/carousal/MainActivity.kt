@@ -67,6 +67,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import com.appversal.appstorys.ui.CardScratch
 
 
 class MainActivity : ComponentActivity() {
@@ -93,6 +94,10 @@ fun MyApp() {
 
 
     var selectedTab by remember { mutableStateOf(0) } // Track selected tab index
+
+    var confettiTrigger by remember { mutableStateOf(0) }
+    var wasFullyScratched by remember { mutableStateOf(false) }
+    var isPresented by remember { mutableStateOf(false) }
 
     LaunchedEffect(screenName) {
         if (screenName.isNotEmpty()) {
@@ -153,7 +158,11 @@ fun MyApp() {
 //                PayScreen(innerPadding)
 //            } else {
                 when (selectedTab) {
-                    0 -> HomeScreen(innerPadding)
+                    0 -> HomeScreen(
+                        innerPadding,
+                        isPresented = isPresented,
+                        onIsPresentedChange = { isPresented = it }
+                    )
                     1 -> PayScreen(innerPadding)
                 }
 //            }
@@ -163,7 +172,19 @@ fun MyApp() {
             topPadding = 70.dp,
             bottomPadding = 70.dp,
         )
-    }
+
+        CardScratch(
+            isPresented = isPresented,
+            onDismiss = { isPresented = false },
+            onConfettiTrigger = {
+                confettiTrigger++
+                // Trigger your confetti animation here
+            },
+            wasFullyScratched = wasFullyScratched,
+            onWasFullyScratched = { wasFullyScratched = it },
+            gpayImageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSdypvQ11Iokxt6bwt3y1Gsy3gZLDfgUBtS3qF2lZV5q6B70kNYgD1cMtX8IunRAvYpK8&usqp=CAU",
+            bannerImageUrl = "https://techlingo.co/wp-content/uploads/2020/12/GPay-SG-Scratchcard-Christmas-Win-201211.png"
+        )    }
 }
 
 @Composable
@@ -183,7 +204,11 @@ fun CopyUserIdText() {
 }
 
 @Composable
-fun HomeScreen(padding: PaddingValues) {
+fun HomeScreen(
+    padding: PaddingValues,
+    isPresented: Boolean,
+    onIsPresentedChange: (Boolean) -> Unit
+    ) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
@@ -194,9 +219,6 @@ fun HomeScreen(padding: PaddingValues) {
     var eventInput1 by remember { mutableStateOf("") }
     var eventInput2 by remember { mutableStateOf("") }
     var eventInput3 by remember { mutableStateOf("") }
-
-    // State for scratch card dialog
-    var showScratchCard by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         val screenName  = "Home Screen"
@@ -263,9 +285,7 @@ fun HomeScreen(padding: PaddingValues) {
                     contentAlignment = Alignment.Center
                 ) {
                     Button(
-                        onClick = {
-                            showScratchCard = true
-                        },
+                        onClick = { onIsPresentedChange(true) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF6200EE)
@@ -489,14 +509,6 @@ fun HomeScreen(padding: PaddingValues) {
 
             }
         }
-    }
-    // Scratch Card Dialog
-    if (showScratchCard) {
-//        ScratchCardDialog(
-//            onDismiss = { showScratchCard = false },
-//            scratchImageRes = R.drawable.ic_launcher_foreground, // Replace with your scratch surface image
-//            revealImageRes = R.drawable.home_one // Replace with your reveal image
-//        )
     }
 }
 
