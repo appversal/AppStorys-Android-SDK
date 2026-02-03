@@ -27,6 +27,10 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.rememberLottieComposition
 import com.appversal.appstorys.api.WidgetDetails
 
 @Composable
@@ -82,6 +86,7 @@ internal fun DoubleWidgets(
 internal fun ImageCard(
     modifier: Modifier = Modifier,
     imageUrl: String,
+    lottieUrl: String?,
     widgetDetails: WidgetDetails,
     height: Dp?,
     placeHolder: Drawable? = null,
@@ -91,82 +96,99 @@ internal fun ImageCard(
 
     Card(
         shape = RoundedCornerShape(
-            topStart = (widgetDetails.styling?.topLeftRadius?.toFloatOrNull() ?: 0f).dp,
-            topEnd = (widgetDetails.styling?.topRightRadius?.toFloatOrNull() ?: 0f).dp,
-            bottomStart = (widgetDetails.styling?.bottomLeftRadius?.toFloatOrNull() ?: 0f).dp,
-            bottomEnd = (widgetDetails.styling?.bottomRightRadius?.toFloatOrNull() ?: 0f).dp,
+            topStart = (widgetDetails.styling?.topLeftRadius ?: 0).dp,
+            topEnd = (widgetDetails.styling?.topRightRadius ?: 0).dp,
+            bottomStart = (widgetDetails.styling?.bottomLeftRadius ?: 0).dp,
+            bottomEnd = (widgetDetails.styling?.bottomRightRadius ?: 0).dp,
         ),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         modifier = modifier
     ) {
-        if (isGifUrl(imageUrl)) {
-            val imageLoader = ImageLoader.Builder(context)
-                .components {
-                    if (SDK_INT >= 28) {
-                        add(ImageDecoderDecoder.Factory())
-                    } else {
-                        add(GifDecoder.Factory())
-                    }
-                }
-                .build()
 
-            val painter = rememberAsyncImagePainter(
-                ImageRequest.Builder(context)
-                    .data(data = imageUrl)
-                    .memoryCacheKey(imageUrl)
-                    .diskCacheKey(imageUrl)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(true)
-                    .apply(block = { size(coil.size.Size.ORIGINAL) })
-                    .build(),
-                imageLoader = imageLoader
-            )
+        when {
+            !lottieUrl.isNullOrEmpty() -> {
+                val composition by rememberLottieComposition(
+                    spec = LottieCompositionSpec.Url(lottieUrl)
+                )
 
-            Image(
-                painter = painter,
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier
-                    .then(if (height != null) Modifier.height(height) else Modifier)
-                    .fillMaxWidth()
-            )
-        } else {
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .memoryCacheKey(imageUrl)
-                    .diskCacheKey(imageUrl)
-                    .diskCachePolicy(CachePolicy.ENABLED)
-                    .memoryCachePolicy(CachePolicy.ENABLED)
-                    .crossfade(true)
-                    .build(),
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier
-                    .then(if (height != null) Modifier.height(height) else Modifier)
-                    .fillMaxWidth(),
-                loading = {
-                    if (placeholderContent != null) {
-                        Box(
-                            modifier = Modifier
-                                .then(if (height != null) Modifier.height(height) else Modifier)
-                                .fillMaxWidth()
-                        ) {
-                            placeholderContent()
+                LottieAnimation(
+                    composition = composition,
+                    iterations = LottieConstants.IterateForever,
+                    modifier = Modifier
+                        .then(if (height != null) Modifier.height(height) else Modifier)
+                        .fillMaxWidth()
+                )
+            }
+
+            isGifUrl(imageUrl) -> {
+                val imageLoader = ImageLoader.Builder(context)
+                    .components {
+                        if (SDK_INT >= 28) {
+                            add(ImageDecoderDecoder.Factory())
+                        } else {
+                            add(GifDecoder.Factory())
                         }
-                    } else if (placeHolder != null) {
-                        Image(
-                            painter = rememberAsyncImagePainter(placeHolder),
-                            contentDescription = null,
-                            contentScale = ContentScale.FillWidth,
-                            modifier = Modifier
-                                .then(if (height != null) Modifier.height(height) else Modifier)
-                                .fillMaxWidth()
-                        )
                     }
-                }
-            )
+                    .build()
+
+                val painter = rememberAsyncImagePainter(
+                    ImageRequest.Builder(context)
+                        .data(data = imageUrl)
+                        .memoryCacheKey(imageUrl)
+                        .diskCacheKey(imageUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .crossfade(true)
+                        .apply(block = { size(coil.size.Size.ORIGINAL) })
+                        .build(),
+                    imageLoader = imageLoader
+                )
+
+                Image(
+                    painter = painter,
+                    contentDescription = null,
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .then(if (height != null) Modifier.height(height) else Modifier)
+                        .fillMaxWidth()
+                )
+            } else -> {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .memoryCacheKey(imageUrl)
+                        .diskCacheKey(imageUrl)
+                        .diskCachePolicy(CachePolicy.ENABLED)
+                        .memoryCachePolicy(CachePolicy.ENABLED)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.FillWidth,
+                    modifier = Modifier
+                        .then(if (height != null) Modifier.height(height) else Modifier)
+                        .fillMaxWidth(),
+                    loading = {
+                        if (placeholderContent != null) {
+                            Box(
+                                modifier = Modifier
+                                    .then(if (height != null) Modifier.height(height) else Modifier)
+                                    .fillMaxWidth()
+                            ) {
+                                placeholderContent()
+                            }
+                        } else if (placeHolder != null) {
+                            Image(
+                                painter = rememberAsyncImagePainter(placeHolder),
+                                contentDescription = null,
+                                contentScale = ContentScale.FillWidth,
+                                modifier = Modifier
+                                    .then(if (height != null) Modifier.height(height) else Modifier)
+                                    .fillMaxWidth()
+                            )
+                        }
+                    }
+                )
+            }
         }
     }
 }

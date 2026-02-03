@@ -2,7 +2,7 @@ package com.example.carousal
 
 import android.app.Application
 import android.content.Context
-import com.appversal.appstorys.AppStorysAPI
+import com.appversal.appstorys.AppStorys
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -10,33 +10,30 @@ import java.util.UUID
 
 class App : Application() {
 
-
     val screenNameNavigation = MutableStateFlow("")
     private val appScope = MainScope()
 
     override fun onCreate() {
         super.onCreate()
-        val attributes: Map<String, Any> = mapOf("name" to "Alice", "age" to 25)
 
         val userId = getOrCreateUserId()
 
-        val appStorysApi = AppStorysAPI.getInstance()
-
         // Initialize CampaignManager with userId and appId
-        appStorysApi.initialize(
+        AppStorys.initialize(
             context = this,
-            appId = "",
-            accountId = "",
+            appId = "9e1b21a2-350a-4592-918c-2a19a73f249a",  // prod test
+            accountId = "4350bf8e-0c9a-46bd-b953-abb65ab21d11",  // prod test
+//            appId = "f69bdccf-b20f-4938-b39e-7075d76db791",  // dev test
+//            accountId = "12a9eac5-94ee-4735-9aa6-b8a94cb8fbbb",  // dev test
 //            userId = userId,
-            userId = "anitest",
-            attributes = attributes,
+            userId = "nameisprem",
             navigateToScreen = { screen ->
                 println("Navigating to $screen")
                 navigateToScreen(screen)
             }
         )
 
-        appStorys = appStorysApi
+        appStorys = AppStorys
     }
 
     private fun getOrCreateUserId(): String {
@@ -65,7 +62,7 @@ class App : Application() {
     }
 
     companion object {
-        lateinit var appStorys: AppStorysAPI
+        lateinit var appStorys: AppStorys
             private set
     }
 }

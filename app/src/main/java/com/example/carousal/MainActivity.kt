@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.carousal
+import android.app.Activity
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -92,7 +93,6 @@ fun MyApp() {
     val screenName by app.screenNameNavigation.collectAsState()
     var currentScreen by remember { mutableStateOf("HomeScreen") }
 
-
     var selectedTab by remember { mutableStateOf(0) } // Track selected tab index
 
     var confettiTrigger by remember { mutableStateOf(0) }
@@ -157,34 +157,23 @@ fun MyApp() {
 //            if (currentScreen == "PayScreen") {
 //                PayScreen(innerPadding)
 //            } else {
-                when (selectedTab) {
-                    0 -> HomeScreen(
-                        innerPadding,
-                        isPresented = isPresented,
-                        onIsPresentedChange = { isPresented = it }
-                    )
-                    1 -> PayScreen(innerPadding)
-                }
+            when (selectedTab) {
+                0 -> HomeScreen(
+                    innerPadding,
+                    isPresented = isPresented,
+                    onIsPresentedChange = { isPresented = it }
+                )
+                1 -> PayScreen(innerPadding)
+            }
 //            }
         }
 
         App.appStorys.overlayElements(
             topPadding = 70.dp,
             bottomPadding = 70.dp,
+            activity = LocalContext.current as Activity
         )
-
-        CardScratch(
-            isPresented = isPresented,
-            onDismiss = { isPresented = false },
-            onConfettiTrigger = {
-                confettiTrigger++
-                // Trigger your confetti animation here
-            },
-            wasFullyScratched = wasFullyScratched,
-            onWasFullyScratched = { wasFullyScratched = it },
-            gpayImageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTSdypvQ11Iokxt6bwt3y1Gsy3gZLDfgUBtS3qF2lZV5q6B70kNYgD1cMtX8IunRAvYpK8&usqp=CAU",
-            bannerImageUrl = "https://techlingo.co/wp-content/uploads/2020/12/GPay-SG-Scratchcard-Christmas-Win-201211.png"
-        )    }
+    }
 }
 
 @Composable
@@ -208,7 +197,7 @@ fun HomeScreen(
     padding: PaddingValues,
     isPresented: Boolean,
     onIsPresentedChange: (Boolean) -> Unit
-    ) {
+) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
 
@@ -221,8 +210,8 @@ fun HomeScreen(
     var eventInput3 by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        val screenName  = "Home Screen"
-        val positions = listOf("widget_one", "widget_two", "widget_three", "widget_four", "widget_fifty")
+        val screenName  = "Home Screen Kotlin"
+        val positions = listOf("widget_one")
         campaignManager.getScreenCampaigns(
             screenName,
             positions,
@@ -260,6 +249,8 @@ fun HomeScreen(
 
                 CopyUserIdText()
 
+                campaignManager.Milestone()
+
                 campaignManager.Widget(
                     modifier = Modifier.appstorys("tooltip_home"),
 //                    position = null
@@ -277,28 +268,32 @@ fun HomeScreen(
                     position = "widget_two",
                 )
 
+//                campaignManager.Streaks()
+
                 // NEW: Scratch Card Button
-                Box(
-                    modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp)
-                        .fillMaxWidth(),
-//                        .padding(top = 12.dp, horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Button(
-                        onClick = { onIsPresentedChange(true) },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF6200EE)
-                        )
-                    ) {
-                        Icon(
-                            painter = painterResource(id = android.R.drawable.ic_dialog_info),
-                            contentDescription = "Scratch Card",
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text("Open Scratch Card")
-                    }
-                }
+//                Box(
+//                    modifier = Modifier.padding(top = 12.dp, start = 16.dp, end = 16.dp)
+//                        .fillMaxWidth(),
+////                        .padding(top = 12.dp, horizontal = 16.dp),
+//                    contentAlignment = Alignment.Center
+//                ) {
+//                    Button(
+//                        onClick = {
+//                            campaignManager.trackEvents(event =  "triggerScratchCard")
+//                        },
+//                        modifier = Modifier.fillMaxWidth(),
+//                        colors = ButtonDefaults.buttonColors(
+//                            containerColor = Color(0xFF6200EE)
+//                        )
+//                    ) {
+//                        Icon(
+//                            painter = painterResource(id = android.R.drawable.ic_dialog_info),
+//                            contentDescription = "Scratch Card",
+//                            modifier = Modifier.padding(end = 8.dp)
+//                        )
+//                        Text("Open Scratch Card")
+//                    }
+//                }
 
                 Box(
                     modifier = Modifier
@@ -309,8 +304,10 @@ fun HomeScreen(
                     Button(
                         onClick = {
                             campaignManager.trackEvents(
-                                event = "Login"
+//                                event = "Login"
+                                event = "dismissed"
                             )
+//                            campaignManager.setUserId("nameisprem")
                         },
                         modifier = Modifier.appstorys("anuridhtest")
                     ) {
@@ -380,7 +377,7 @@ fun HomeScreen(
                 Button(
                     onClick = {
                         campaignManager.trackEvents(
-                            event = "Added to cart"
+                            event = "accounts"
                         )
                     },
                     modifier = Modifier.appstorys("toolbar")

@@ -1,15 +1,15 @@
-package com.appversal.appstorys.ui
+package com.appversal.appstorys.ui.floater
 
 import android.os.Build.VERSION.SDK_INT
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -22,12 +22,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.ImageLoader
 import coil.compose.AsyncImage
-import coil.compose.SubcomposeAsyncImage
 import coil.compose.rememberAsyncImagePainter
 import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import coil.request.CachePolicy
 import coil.request.ImageRequest
+import coil.size.Size
 import com.airbnb.lottie.compose.LottieAnimation
 import com.airbnb.lottie.compose.LottieCompositionSpec
 import com.airbnb.lottie.compose.LottieConstants
@@ -78,9 +78,9 @@ internal fun OverlayFloater(
                 LottieAnimation(
                     composition = composition,
                     iterations = LottieConstants.IterateForever,
-                    modifier = Modifier
-                        .height(height ?: Dp.Unspecified)
-                        .width(width ?: Dp.Unspecified)
+                    modifier  = Modifier
+                        .fillMaxSize()
+                        .clip(borderRadiusValues)
                 )
             }
 
@@ -104,7 +104,7 @@ internal fun OverlayFloater(
                             .diskCachePolicy(CachePolicy.ENABLED)
                             .memoryCachePolicy(CachePolicy.ENABLED)
                             .crossfade(true)
-                            .apply { size(coil.size.Size.ORIGINAL) }
+                            .apply { size(Size.ORIGINAL) }
                             .build(),
                         imageLoader = imageLoader
                     )
@@ -114,8 +114,8 @@ internal fun OverlayFloater(
                         contentDescription = null,
                         contentScale = ContentScale.Fit,
                         modifier = Modifier
-                            .height(height ?: Dp.Unspecified)
-                            .width(width ?: Dp.Unspecified)
+                            .height(height)
+                            .width(width)
                     )
                 } else {
                     AsyncImage(

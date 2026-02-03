@@ -21,10 +21,12 @@ import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.getOrNull
 import com.appversal.appstorys.AppStorys.repository
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.io.File
 import java.io.FileOutputStream
 import java.lang.reflect.Field
@@ -72,24 +74,34 @@ internal object ViewTreeAnalyzer {
         accessToken: String,
         activity: Activity,
         context: Context
-    ): JsonObject {
-        val resultJson = JsonObject().apply {
-            addProperty("name", screenName)
-            val children = JsonArray()
+    ): kotlinx.serialization.json.JsonObject {
+        Log.i("ViewTreeAnalyzer", "===== analyzeViewRoot() START =====")
+        val children = buildJsonArray {
+            Log.i("ViewTreeAnalyzer", "Starting view tree analysis...")
             analyzeViewElement(
                 root,
-                onElementAnalyzed = { children.add(it) },
+                onElementAnalyzed = {
+                    Log.i("ViewTreeAnalyzer", "Element analyzed: $it")
+                    add(it)
+                    },
                 activity = activity
             )
-            add("children", children)
         }
 
-        val gson = GsonBuilder().setPrettyPrinting().create()
-        val formattedJson = gson.toJson(resultJson.getAsJsonArray("children"))
+        Log.i("ViewTreeAnalyzer", "View tree analysis complete. Total elements: ${children.size}")
+
+        val resultJson = buildJsonObject {
+            put("name", screenName)
+            put("children", children)
+        }
+
+        val formattedJson = SdkJson.encodeToString(children)
         Log.e(
             "ViewTreeAnalyzer",
             formattedJson
         )
+
+        Log.i("ViewTreeAnalyzer", "Capturing screenshot...")
 
         val screenshot = captureScreenshot(
             view = root,
@@ -97,13 +109,20 @@ internal object ViewTreeAnalyzer {
         )
 
         if (screenshot != null) {
-            repository.tooltipIdentify(
-                accessToken = accessToken,
-                user_id = user_id,
-                screenName = screenName,
-                childrenJson = formattedJson,
-                screenshotFile = screenshot
-            )
+            Log.i("ViewTreeAnalyzer", "Screenshot captured. Sending to server...")
+
+            try {
+                repository.tooltipIdentify(
+                    accessToken = accessToken,
+                    user_id = user_id,
+                    screenName = screenName,
+                    childrenJson = formattedJson,
+                    screenshotFile = screenshot
+                )
+                Log.i("ViewTreeAnalyzer", "tooltipIdentify() sent successfully.")
+            } catch (e: Exception) {
+                Log.e("ViewTreeAnalyzer", "tooltipIdentify() failed", e)
+            }
         }
 
         return resultJson
@@ -115,6 +134,7 @@ internal object ViewTreeAnalyzer {
      * @param view The view to capture.
      */
     private suspend fun captureScreenshot(activity: Activity, view: View): File? {
+        Log.i("ViewTreeAnalyzer", "captureScreenshot() called")
         return try {
             if (view.width <= 0 || view.height <= 0) {
                 Log.e("ViewTreeAnalyzer", "Cannot capture screenshot: View has invalid dimensions")
@@ -169,7 +189,7 @@ internal object ViewTreeAnalyzer {
                     bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
                 }
                 screenBitmap = bitmap
-                Log.d("ViewTreeAnalyzer", "Screenshot captured successfully (fallback)")
+                Log.i("ViewTreeAnalyzer", "Screenshot captured successfully (fallback)")
                 file
             }
         } catch (e: Exception) {
@@ -204,7 +224,7 @@ internal object ViewTreeAnalyzer {
      */
     private fun analyzeViewElement(
         view: View,
-        onElementAnalyzed: (JsonObject) -> Unit,
+        onElementAnalyzed: (JsonElement) -> Unit,
         activity: Activity
     ) {
         // Skip views with no ID
@@ -227,19 +247,16 @@ internal object ViewTreeAnalyzer {
 
             val (screenWidth, screenHeight) = getScreenSize(activity)
 
-            val elementJson = JsonObject().apply {
-                addProperty("id", viewId)
-                add(
-                    "frame",
-                    JsonObject().apply {
-                        addProperty("x", xInWindow)
-                        addProperty("y", yInWindow)
-                        addProperty("width", view.width)
-                        addProperty("height", view.height)
-                        addProperty("screenWidth", screenWidth)
-                        addProperty("screenHeight", screenHeight)
-                    }
-                )
+            val elementJson = buildJsonObject {
+                put("id", viewId)
+                put("frame", buildJsonObject {
+                    put("x", xInWindow)
+                    put("y", yInWindow)
+                    put("width", view.width)
+                    put("height", view.height)
+                    put("screenWidth", screenWidth)
+                    put("screenHeight", screenHeight)
+                })
             }
 
             onElementAnalyzed(elementJson)
@@ -264,11 +281,11 @@ internal object ViewTreeAnalyzer {
      * Reports coordinates relative to the application window.
      *
      * @param view The AndroidComposeView to analyze.
-     * @param onElementAnalyzed Callback to receive the JsonObject for the analyzed element.
+     * @param onElementAnalyzed Callback to receive the JsonElement for the analyzed element.
      */
     private fun analyzeComposeView(
         view: View,
-        onElementAnalyzed: (JsonObject) -> Unit
+        onElementAnalyzed: (kotlinx.serialization.json.JsonElement) -> Unit
     ) {
         @Suppress("TooGenericExceptionCaught")
         try {
@@ -302,60 +319,6 @@ internal object ViewTreeAnalyzer {
     }
 
     /**
-     * Generates a consistent ID for a SemanticsNode based on its properties and position in the tree.
-     *
-     * @param semanticsNode The SemanticsNode to generate an ID for.
-     * @param path The path from root to this node (list of child indices).
-     * @return A consistent string ID for this node.
-     */
-//    private fun generateConsistentId(semanticsNode: SemanticsNode, path: List<Int>): String {
-//        // Collect identifying properties
-//        val properties = mutableListOf<String>()
-//
-//        // Add path information (most reliable for consistency)
-//        properties.add("path:${path.joinToString("_")}")
-//
-//        // Add semantic properties that are likely to be stable
-//        semanticsNode.config.getOrNull(SemanticsProperties.Text)?.let { textList ->
-//            if (textList.isNotEmpty()) {
-//                properties.add("text:${textList.first().text}")
-//            }
-//        }
-//
-//        semanticsNode.config.getOrNull(SemanticsProperties.ContentDescription)?.let { contentDescList ->
-//            if (contentDescList.isNotEmpty()) {
-//                properties.add("desc:${contentDescList.first()}")
-//            }
-//        }
-//
-//        semanticsNode.config.getOrNull(SemanticsProperties.TestTag)?.let { testTag ->
-//            properties.add("tag:$testTag")
-//        }
-//
-//        // Add role information if available
-//        semanticsNode.config.getOrNull(SemanticsProperties.Role)?.let { role ->
-//            properties.add("role:$role")
-//        }
-//
-//        // Add size and position as fallback (less reliable but helps with uniqueness)
-//        val bounds = "${semanticsNode.size.width}x${semanticsNode.size.height}"
-//        val position = "${semanticsNode.positionInWindow.x.roundToInt()},${semanticsNode.positionInWindow.y.roundToInt()}"
-//        properties.add("bounds:$bounds")
-//        properties.add("pos:$position")
-//
-//        // Combine all properties
-//        val combinedProperties = properties.joinToString("|")
-//
-//        // Generate a hash for a shorter, consistent ID
-//        val hash = MessageDigest.getInstance("MD5")
-//            .digest(combinedProperties.toByteArray())
-//            .joinToString("") { "%02x".format(it) }
-//            .take(8) // Take first 8 characters for readability
-//
-//        return "compose_auto_$hash"
-//    }
-
-    /**
      * Recursively analyzes a SemanticsNode and its children.
      * Reports coordinates relative to the application window.
      *
@@ -366,13 +329,12 @@ internal object ViewTreeAnalyzer {
     private fun analyzeSemanticsNode(
         semanticsNode: SemanticsNode,
         context: Context,
-        onElementAnalyzed: (JsonObject) -> Unit,
+        onElementAnalyzed: (kotlinx.serialization.json.JsonElement) -> Unit,
         path: MutableList<Int>
     ) {
         val explicitId = semanticsNode.config.getOrNull(AppstorysViewTagKey)
         // Attempt to extract a valid ID from the Semantics config
         val nodeId = explicitId
-//            ?: generateConsistentId(semanticsNode, path)
 
         // Skip nodes that do not have a valid ID
         if (nodeId != null) {
@@ -381,15 +343,13 @@ internal object ViewTreeAnalyzer {
             val widthPx = semanticsNode.size.width
             val heightPx = semanticsNode.size.height
 
-            val elementJson = JsonObject().apply {
-                addProperty("id", nodeId)
-
-                // Position and size
-                add("frame", JsonObject().apply {
-                    addProperty("x", xInWindow)
-                    addProperty("y", yInWindow)
-                    addProperty("width", widthPx)
-                    addProperty("height", heightPx)
+            val elementJson = buildJsonObject {
+                put("id", nodeId)
+                put("frame", buildJsonObject {
+                    put("x", xInWindow)
+                    put("y", yInWindow)
+                    put("width", widthPx)
+                    put("height", heightPx)
                 })
             }
 

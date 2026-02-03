@@ -1,8 +1,12 @@
 package com.appversal.appstorys.ui
 
+import android.app.Activity
+import android.content.Context
 import android.graphics.Rect
+import android.os.Build
 import android.util.Log
 import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -30,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import com.appversal.appstorys.AppStorys
 import com.appversal.appstorys.AppStorys.dismissTooltip
 import com.appversal.appstorys.AppStorys.tooltipTargetView
-import com.appversal.appstorys.AppStorysAPI
 import com.appversal.appstorys.api.Tooltip
 import com.appversal.appstorys.utils.AppStorysCoordinates
 
@@ -88,6 +92,7 @@ object OverlayContainer {
      *
      * @param modifier The `Modifier` to be applied to the overlay container.
      */
+    @RequiresApi(Build.VERSION_CODES.M)
     @Composable
     fun Content(
         modifier: Modifier = Modifier,
@@ -98,9 +103,8 @@ object OverlayContainer {
         pipTopPadding: Dp = 0.dp,
         pipBottomPadding: Dp = 0.dp,
         csatBottomPadding: Dp = 0.dp,
+        activity: Activity? = null
     ) {
-        val campaignManager = AppStorysAPI.getInstance()
-
         // Collects the target view for tooltips and updates the tooltip list.
         LaunchedEffect(Unit) {
             tooltipTargetView.collect { target ->
@@ -117,28 +121,43 @@ object OverlayContainer {
                 .navigationBarsPadding()
                 .statusBarsPadding(),
             content = {
-                campaignManager.PinnedBanner(
+                AppStorys.PinnedBanner(
                     bottomPadding = bottomPadding + bannerBottomPadding,
                 )
 
-                campaignManager.Floater(
+//                AppStorys.Milestone(
+//                    topPadding = topPadding,
+//                    bottomPadding = bottomPadding
+//                )
+
+                AppStorys.Floater(
                     bottomPadding = bottomPadding + floaterBottomPadding,
                 )
 
-                campaignManager.Pip(
+                AppStorys.Pip(
                     topPadding = topPadding + pipTopPadding,
                     bottomPadding = bottomPadding + pipBottomPadding,
                 )
 
-                campaignManager.CSAT(
+                AppStorys.CSAT(
                     bottomPadding = bottomPadding + csatBottomPadding,
                 )
 
-                campaignManager.BottomSheet()
+                AppStorys.Milestone(
+                    topPadding = topPadding,
+                    bottomPadding = bottomPadding,
+                    isWidgets = false
+                )
 
-                campaignManager.TestUserButton()
+                AppStorys.ScratchCard()
 
-                campaignManager.Survey()
+                AppStorys.BottomSheet()
+
+                AppStorys.TestUserButton(
+                    activity = activity
+                )
+
+                AppStorys.Survey()
 
                 val visibleTooltips by remember {
                     derivedStateOf {
@@ -170,11 +189,12 @@ object OverlayContainer {
                                     visible = true,
                                     targetCoordinates = coordinates!!,
                                     highlight = ShowcaseHighlight.Rectangular(
-                                        cornerRadius = tooltip.styling?.highlightRadius?.toIntOrNull()?.dp
+                                        cornerRadius = tooltip.styling?.appearance?.highlight?.radius?.dp
                                             ?: 8.dp,
-                                        padding = tooltip.styling?.highlightPadding?.toIntOrNull()?.dp
+                                        padding = tooltip.styling?.appearance?.highlight?.padding?.dp
                                             ?: 8.dp
-                                    )
+                                    ),
+                                    tooltip = tooltip
                                 )
 
                                 // Renders the tooltip content.
@@ -187,7 +207,7 @@ object OverlayContainer {
                     }
                 }
 
-                campaignManager.Modals()
+                AppStorys.Modals()
             }
         )
     }
