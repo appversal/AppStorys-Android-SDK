@@ -28,7 +28,7 @@ class TestActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         App.appStorys.getScreenCampaigns(
-            "Home Screen",
+            "Home Screen Kotlin XML",
             emptyList()
         )
         lifecycleScope.launch {

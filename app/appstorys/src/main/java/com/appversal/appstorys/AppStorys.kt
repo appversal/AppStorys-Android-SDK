@@ -59,6 +59,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.util.UnstableApi
 import com.appversal.appstorys.api.ApiRepository
 import com.appversal.appstorys.api.ApiResult
 import com.appversal.appstorys.api.BannerDetails
@@ -1118,6 +1119,7 @@ object AppStorys {
         }
     }
 
+    @OptIn(UnstableApi::class)
     @Composable
     fun Stories() {
         val campaignsData = campaigns.collectAsStateWithLifecycle()
