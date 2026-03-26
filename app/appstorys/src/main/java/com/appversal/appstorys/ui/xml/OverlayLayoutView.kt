@@ -18,6 +18,7 @@ import android.app.Activity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.core.view.doOnLayout
 
 /**
  * `OverlayLayoutView` is a custom `FrameLayout` that integrates Compose content into a traditional
@@ -113,16 +114,71 @@ class OverlayLayoutView @JvmOverloads constructor(
 
         val view = getViewId(target)
         if (view == null) {
-            Log.e("OverlayLayoutView", "Target view not found: $target")
+            Log.e(
+                "TooltipDebug",
+                "[$target] View ID not found in layout. Is the view in the same window as OverlayLayoutView?"
+            )
             return
         }
 
-        // Add the view's constraints to the OverlayContainer.
-        OverlayContainer.addViewConstraint(target, view)
+        fun registerIfReady() {
+            val loc = IntArray(2)
+            view.getLocationOnScreen(loc)
 
-        // Listen for layout changes to update the constraints dynamically.
-        view.onLayoutChanges {
+            val rect = android.graphics.Rect()
+            val globallyVisible = view.getGlobalVisibleRect(rect)
+
+            Log.e(
+                "TooltipDebug",
+                "[$target] w=${view.width} h=${view.height} " +
+                        "screenX=${loc[0]} screenY=${loc[1]} " +
+                        "isShown=${view.isShown} visibility=${view.visibility} " +
+                        "globallyVisible=$globallyVisible visibleRect=$rect"
+            )
+
+            if (view.width <= 0 || view.height <= 0) {
+                Log.e(
+                    "TooltipDebug",
+                    "[$target] Skipping — zero dimensions, will retry on next layout pass"
+                )
+                return
+            }
+
+            if (!globallyVisible || rect.width() == 0 || rect.height() == 0) {
+                Log.e(
+                    "TooltipDebug",
+                    "[$target] Skipping — not globally visible yet"
+                )
+                return
+            }
+
+            Log.e("TooltipDebug", "[$target] Registering constraint ✓")
             OverlayContainer.addViewConstraint(target, view)
+        }
+
+        // Add the view's constraints to the OverlayContainer.
+//        OverlayContainer.addViewConstraint(target, view)
+//
+//        // Listen for layout changes to update the constraints dynamically.
+//        view.onLayoutChanges {
+//            OverlayContainer.addViewConstraint(target, view)
+//        }
+
+        if (view.width > 0 && view.height > 0) {
+            // Already laid out — register immediately
+            registerIfReady()
+        } else {
+            // Not yet laid out — wait for first layout pass
+            Log.e(
+                "TooltipDebug",
+                "[$target] View not yet laid out (w=0/h=0), waiting with doOnLayout"
+            )
+            view.doOnLayout { registerIfReady() }
+        }
+
+// Keep re-registering on any subsequent layout changes (scroll, resize, etc.)
+        view.onLayoutChanges {
+            registerIfReady()
         }
     }
 

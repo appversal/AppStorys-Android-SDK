@@ -70,7 +70,14 @@ object OverlayContainer {
      * @param view The `View` object representing the target.
      */
     fun addViewConstraint(id: String, view: View) {
-        constraints[id] = view.toAppStorysCoordinates()
+        val coords = view.toAppStorysCoordinates()
+        val bounds = coords.boundsInRoot()
+        Log.e(
+            "TooltipDebug",
+            "[OverlayContainer] Storing constraint for '$id': " + "bounds=$bounds w=${view.width} h=${view.height}"
+        )
+//        constraints[id] = view.toAppStorysCoordinates()
+        constraints[id] = coords
     }
 
     /**
@@ -252,38 +259,78 @@ object OverlayContainer {
         val rootX = locationInWindow[0].toFloat()
         val rootY = (locationInWindow[1] - statusBarHeight).toFloat()
 
+        if (width == 0 || height == 0) {
+            Log.e(
+                "TooltipDebug",
+                "[toAppStorysCoordinates] WARNING: converting view with zero dimensions (w=$width, h=$height). Highlight will be invisible!"
+            )
+        }
+
         return AppStorysCoordinates(
             // TODO: Find out why I need to subtract 55 from rootX and rootY
-            x = rootX - 55,
-            y = rootY - 55,
+            x = run {
+                val loc = IntArray(2); getLocationInWindow(loc)
+                val rootRect = Rect(); getWindowVisibleDisplayFrame(rootRect)
+                (loc[0] - rootRect.left).toFloat()         // ← no magic -55
+            },
+            y = run {
+                val loc = IntArray(2); getLocationInWindow(loc)
+                val rootRect = Rect(); getWindowVisibleDisplayFrame(rootRect)
+                (loc[1] - rootRect.top).toFloat()          // ← no magic -55
+            },
             width = width,
             height = height,
             boundsInParent = {
-                androidx.compose.ui.geometry.Rect(
-                    left = left.toFloat(),
-                    top = top.toFloat(),
-                    right = right.toFloat(),
-                    bottom = bottom.toFloat()
-                )
+                // recomputed fresh every time it's called
+                androidx.compose.ui.geometry.Rect(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
             },
             boundsInRoot = {
-                androidx.compose.ui.geometry.Rect(
-                    left = rootX,
-                    top = rootY,
-                    right = rootX + width,
-                    bottom = rootY + height
-                )
+                // recomputed fresh every time it's called
+                val loc = IntArray(2); getLocationInWindow(loc)
+                val rootRect = android.graphics.Rect()
+                getWindowVisibleDisplayFrame(rootRect)
+                val rx = (loc[0] - rootRect.left).toFloat()
+                val ry = (loc[1] - rootRect.top).toFloat()
+                Log.e("TooltipDebug", "[boundsInRoot] id=$id rx=$rx ry=$ry w=$width h=$height rootTop=${rootRect.top}")
+                androidx.compose.ui.geometry.Rect(rx, ry, rx + width, ry + height)
             },
             boundsInWindow = {
-                val locationOnScreen = IntArray(2)
-                getLocationOnScreen(locationOnScreen)
+                val loc = IntArray(2); getLocationOnScreen(loc)
                 androidx.compose.ui.geometry.Rect(
-                    left = locationOnScreen[0].toFloat(),
-                    top = locationOnScreen[1].toFloat(),
-                    right = (locationOnScreen[0] + width).toFloat(),
-                    bottom = (locationOnScreen[1] + height).toFloat()
+                    loc[0].toFloat(), loc[1].toFloat(),
+                    (loc[0] + width).toFloat(), (loc[1] + height).toFloat()
                 )
             }
+//            x = rootX - 55,
+//            y = rootY - 55,
+//            width = width,
+//            height = height,
+//            boundsInParent = {
+//                androidx.compose.ui.geometry.Rect(
+//                    left = left.toFloat(),
+//                    top = top.toFloat(),
+//                    right = right.toFloat(),
+//                    bottom = bottom.toFloat()
+//                )
+//            },
+//            boundsInRoot = {
+//                androidx.compose.ui.geometry.Rect(
+//                    left = rootX,
+//                    top = rootY,
+//                    right = rootX + width,
+//                    bottom = rootY + height
+//                )
+//            },
+//            boundsInWindow = {
+//                val locationOnScreen = IntArray(2)
+//                getLocationOnScreen(locationOnScreen)
+//                androidx.compose.ui.geometry.Rect(
+//                    left = locationOnScreen[0].toFloat(),
+//                    top = locationOnScreen[1].toFloat(),
+//                    right = (locationOnScreen[0] + width).toFloat(),
+//                    bottom = (locationOnScreen[1] + height).toFloat()
+//                )
+//            }
         )
     }
 }
