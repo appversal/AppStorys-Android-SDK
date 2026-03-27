@@ -1,6 +1,7 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 
 package com.example.carousal
+
 import android.app.Activity
 import android.os.Bundle
 import android.util.Log
@@ -105,10 +106,12 @@ fun MyApp() {
                     selectedTab = 1 // Set to PayScreen tab
                     currentScreen = "HomeScreen" // Keep normal navigation
                 }
+
                 "HomeScreen" -> {
                     selectedTab = 0
                     currentScreen = "HomeScreen"
                 }
+
                 else -> {
                     currentScreen = screenName // For other screens
                 }
@@ -119,7 +122,9 @@ fun MyApp() {
 
     var edgeToEdgePadding by remember { mutableStateOf(PaddingValues()) }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .background(Color.White)) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color(0xFFFAF8F9),
@@ -162,6 +167,7 @@ fun MyApp() {
                     isPresented = isPresented,
                     onIsPresentedChange = { isPresented = it }
                 )
+
                 1 -> PayScreen(innerPadding)
             }
 //            }
@@ -209,7 +215,7 @@ fun HomeScreen(
     var eventInput3 by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
-        val screenName  = "Home Screen Kotlin"
+        val screenName = "Home Screen Kotlin"
         val positions = listOf("widget_one")
         campaignManager.getScreenCampaigns(
             screenName,
@@ -256,13 +262,17 @@ fun HomeScreen(
                 )
 
                 campaignManager.Widget(
-                    modifier = Modifier.fillMaxWidth().appstorys("tooltip_home_prem_test"),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .appstorys("tooltip_home_prem_test"),
                     placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
                     position = "widget_one",
                 )
 
                 campaignManager.Widget(
-                    modifier = Modifier.fillMaxWidth().appstorys("tooltip_home_prem_test"),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .appstorys("tooltip_home_prem_test"),
                     placeholder = context.getDrawable(R.drawable.ic_launcher_foreground),
                     position = "widget_two",
                 )
@@ -448,7 +458,11 @@ fun HomeScreen(
                             campaignManager.setUserProperties(
                                 mapOf("key_one" to input1)
                             )
-                            Toast.makeText(context, "User property set: key_one = $input1", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "User property set: key_one = $input1",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         },
                         modifier = Modifier
                     ) {
@@ -483,7 +497,11 @@ fun HomeScreen(
                             campaignManager.setUserProperties(
                                 mapOf("key_two" to input2)
                             )
-                            Toast.makeText(context, "User property set: key_two = $input2", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "User property set: key_two = $input2",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         },
                         modifier = Modifier
                     ) {
@@ -499,7 +517,8 @@ fun HomeScreen(
                     painter = painterResource(id = R.drawable.home_two),
                     contentDescription = "App Logo",
                     modifier = Modifier
-                        .fillMaxWidth().appstorys("app_logo"),
+                        .fillMaxWidth()
+                        .appstorys("app_logo"),
                     contentScale = ContentScale.Fit
                 )
 
@@ -711,7 +730,9 @@ fun PayScreenPage(
 fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     NavigationBar(
         containerColor = Color.White, // Add this line to set the background color to white
-        modifier = Modifier.fillMaxWidth().height(70.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp)
 
     ) {
         val items = listOf("Parties", "More")
@@ -728,7 +749,9 @@ fun BottomNavigationBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                     onClick = { onTabSelected(index) },
                     icon = {
                         Icon(
-                            modifier = Modifier.size(24.dp), // Apply modifier from ToolTipWrapper
+                            modifier = Modifier
+                                .size(24.dp)
+                                .appstorys(if (index == 0) "tooltip_home" else "tooltip_more"), // Apply modifier from ToolTipWrapper
                             imageVector = icons[index],
                             contentDescription = title,
                             tint = if (selectedTab == index) Color(0xFF186fd9) else Color.Gray

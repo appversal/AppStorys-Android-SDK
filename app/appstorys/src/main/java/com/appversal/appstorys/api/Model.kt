@@ -888,7 +888,8 @@ data class TooltipAppearance(
     val cornerRadius: CornerRadius?,
     val highlight: TooltipHighlight?,
     val imageDimensions: TooltipImageDimensions?,
-    val padding: Margin?
+    val padding: Margin?,
+    val width: Int?
 )
 
 @Keep
