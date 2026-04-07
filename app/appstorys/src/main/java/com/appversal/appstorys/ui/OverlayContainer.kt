@@ -25,6 +25,7 @@ import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -241,6 +242,93 @@ object OverlayContainer {
     }
 
     /**
+     * Renders only the active tooltip Popups. Has zero layout footprint (no fillMaxSize).
+     * Call this from inside a ModalBottomSheet so the Popup gets the sheet's window
+     * token and appears above it, not behind it.
+     */
+    @Composable
+    fun TooltipsOnly() {
+        val localView = LocalView.current
+
+        LaunchedEffect(Unit) {
+            tooltipTargetView.collect { target ->
+                when (target) {
+                    null -> tooltips.clear()
+                    else -> addTooltip(target)
+                }
+            }
+        }
+
+        val visibleTooltips by remember {
+            derivedStateOf { tooltips.filter { constraints.containsKey(it.target) } }
+        }
+
+        visibleTooltips.forEach { tooltip ->
+            val coordinates by rememberUpdatedState(constraints[tooltip.target])
+            if (coordinates != null) {
+                val coords = coordinates!!
+
+                // KEY FIX: swap boundsInRoot → boundsInWindow.
+                // boundsInWindow() is always from the Android window's (0,0).
+                // The Popup below is positioned at that same window (0,0), so
+                // the Canvas coordinate space and the stored coordinates align exactly,
+                // regardless of any statusBar / inset offset applied to the AndroidComposeView
+                // within the dialog window.
+                val windowCoords = remember(coords) {
+                    AppStorysCoordinates(
+                        x = coords.x,
+                        y = coords.y,
+                        width = coords.width,
+                        height = coords.height,
+                        boundsInParent = coords.boundsInParent,
+                        boundsInRoot = coords.boundsInWindow,   // ← was coords.boundsInRoot
+                        boundsInWindow = coords.boundsInWindow
+                    )
+                }
+
+                Popup(
+                    popupPositionProvider = object : PopupPositionProvider {
+                        override fun calculatePosition(
+                            anchorBounds: IntRect,
+                            windowSize: IntSize,
+                            layoutDirection: LayoutDirection,
+                            popupContentSize: IntSize
+                        ): IntOffset {
+                            // Popup screen position = LocalView_on_screen + calculatePosition().
+                            // We want the Popup at the Android window's (0,0) on screen, because
+                            // boundsInWindow() is measured from that same origin.
+                            //
+                            // window_on_screen = LocalView_on_screen - LocalView_in_window
+                            // ∴ calculatePosition = window_on_screen - LocalView_on_screen
+                            //                     = -LocalView_in_window
+                            val localViewInWindow = IntArray(2)
+                            localView.getLocationInWindow(localViewInWindow)
+                            return IntOffset(-localViewInWindow[0], -localViewInWindow[1])
+                        }
+                    },
+                    properties = PopupProperties(
+                        focusable = true,
+                        dismissOnBackPress = true,
+                        dismissOnClickOutside = true
+                    ),
+                    onDismissRequest = ::dismissTooltip
+                ) {
+                    ShowcaseView(
+                        visible = true,
+                        targetCoordinates = windowCoords,
+                        highlight = ShowcaseHighlight.Rectangular(
+                            cornerRadius = tooltip.styling?.appearance?.highlight?.radius?.dp ?: 8.dp,
+                            padding = tooltip.styling?.appearance?.highlight?.padding?.dp ?: 8.dp
+                        ),
+                        tooltip = tooltip
+                    )
+                    TooltipContent(tooltip = tooltip, coordinates = windowCoords)
+                }
+            }
+        }
+    }
+
+    /**
      * Converts `LayoutCoordinates` to `AppStorysCoordinates`.
      *
      * @return The converted `AppStorysCoordinates`.
@@ -397,5 +485,9 @@ object OverlayContainer {
 //                )
 //            }
         )
+    }
+    fun clearAll() {
+        constraints.clear()
+        tooltips.clear()
     }
 }

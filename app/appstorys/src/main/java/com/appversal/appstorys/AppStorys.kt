@@ -54,6 +54,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import androidx.core.net.toUri
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
@@ -424,6 +426,7 @@ object AppStorys {
             ensureActive()
             try {
                 if (currentScreen != screenName) {
+                    OverlayContainer.clearAll()
                     disabledCampaigns.emit(emptyList())
                     impressions.emit(emptyList())
                     campaigns.emit(emptyList())
@@ -674,7 +677,16 @@ object AppStorys {
         pipTopPadding: Dp = 0.dp,
         pipBottomPadding: Dp = 0.dp,
         csatBottomPadding: Dp = 0.dp,
+        insideBottomSheet: Boolean = false,
     ) {
+        if (insideBottomSheet) {
+            // Tooltip Popups created here get the BottomSheet's window token → appear ABOVE it.
+            // TestUserButton FAB also uses Popup → zero layout impact.
+            // No Banner/Floater/CSAT — those stay at Activity level only.
+            TestUserButton(activity = activity)
+            OverlayContainer.TooltipsOnly()
+            return
+        }
 
         BackHandler(enabled = true) {
             if (isBackPressCampaignReady()) {
@@ -2412,7 +2424,11 @@ object AppStorys {
     ) {
         val TAG = "TestUserButton"
 
-        val activityRef = activity ?: LocalContext.current as? Activity
+//        val activityRef = activity ?: LocalContext.current as? Activity
+        val localContext = LocalContext.current
+        val activityRef = activity ?: generateSequence(localContext) {
+            (it as? android.content.ContextWrapper)?.baseContext
+        }.filterIsInstance<Activity>().firstOrNull()
 
         val isScreenCaptureEnabled by _isScreenCaptureEnabled.collectAsStateWithLifecycle()
 
@@ -2464,36 +2480,38 @@ object AppStorys {
             }
         }
 
-        if (
-            isScreenCaptureEnabled &&
-            !isCapturing
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize()
+        if (isScreenCaptureEnabled && !isCapturing) {
+            Popup(
+                alignment = Alignment.BottomEnd,
+                properties = PopupProperties(
+                    focusable = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
             ) {
                 FloatingActionButton(
                     onClick = {
                         Log.i(TAG, "Capture button clicked")
                         shouldAnalyze = true
-
                         Log.i(TAG, "shouldAnalyze = true")
                     },
-                    modifier = modifier
-                        .padding(bottom = 86.dp, end = 16.dp)
-                        .align(Alignment.BottomEnd),
+                    modifier = modifier.padding(bottom = 86.dp, end = 16.dp),
                     containerColor = Color.White
                 ) {
-                    Text(
-                        modifier = Modifier.padding(horizontal = 12.dp),
-                        text = "Capture Screen"
-                    )
+                    Text(modifier = Modifier.padding(horizontal = 12.dp), text = "Capture Screen")
                 }
-
+            }
+            Popup(
+                alignment = Alignment.BottomCenter,
+                properties = PopupProperties(
+                    focusable = false,
+                    dismissOnBackPress = false,
+                    dismissOnClickOutside = false
+                )
+            ) {
                 SnackbarHost(
                     hostState = snackbarHostState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 80.dp)
+                    modifier = Modifier.padding(bottom = 80.dp)
                 )
             }
         }

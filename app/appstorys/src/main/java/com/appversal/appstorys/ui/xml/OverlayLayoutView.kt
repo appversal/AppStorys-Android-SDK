@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.view.doOnLayout
+import com.appversal.appstorys.AppStorys
 
 /**
  * `OverlayLayoutView` is a custom `FrameLayout` that integrates Compose content into a traditional
@@ -46,6 +47,7 @@ class OverlayLayoutView @JvmOverloads constructor(
     private var pipTopPadding = 0
     private var pipBottomPadding = 0
     private var csatBottomPadding = 0
+    private var insideBottomSheet = false
 
     private var _activity by mutableStateOf<Activity?>(null)
 
@@ -55,32 +57,73 @@ class OverlayLayoutView @JvmOverloads constructor(
 
     init {
         attrs?.let(::loadPaddings)
-        addView(
-            ComposeView(context).apply {
-                elevation = 1000f
 
-                setContent {
-                    LaunchedEffect(Unit) {
-                        tooltipTargetView.collect { target ->
-                            handleTargetView(target?.target)
-                        }
-                    }
-
-                    val resolvedActivity = _activity ?: (context as? Activity)
-
-                    OverlayContainer.Content(
-                        topPadding = topPadding.toDp(),
-                        bottomPadding = bottomPadding.toDp(),
-                        bannerBottomPadding = bannerBottomPadding.toDp(),
-                        floaterBottomPadding = floaterBottomPadding.toDp(),
-                        pipTopPadding = pipTopPadding.toDp(),
-                        pipBottomPadding = pipBottomPadding.toDp(),
-                        csatBottomPadding = csatBottomPadding.toDp(),
-                        activity = resolvedActivity
+        if (insideBottomSheet) {
+            // ── Bottom-sheet mode ────────────────────────────────────────────────────
+            // Use a 0×0 ComposeView so this view takes no space in the layout.
+            // Both TestUserButton and TooltipsOnly() use Popup internally, so they
+            // render in their own windows above this BottomSheet window.
+            addView(
+                ComposeView(context).apply {
+                    layoutParams = LayoutParams(
+                        LayoutParams.MATCH_PARENT,
+                        LayoutParams.MATCH_PARENT
                     )
+                    setContent {
+                        val resolvedActivity = _activity ?: (context as? Activity)
+                        ?: generateSequence(context) {
+                            (it as? android.content.ContextWrapper)?.baseContext
+                        }.filterIsInstance<Activity>().firstOrNull()
+
+                        AppStorys.TestUserButton(activity = resolvedActivity)
+                    }
                 }
-            }
-        )
+            )
+
+            addView(
+                ComposeView(context).apply {
+                    layoutParams = LayoutParams(
+                        LayoutParams.MATCH_PARENT,
+                        LayoutParams.MATCH_PARENT
+                    )
+                    setContent {
+                        LaunchedEffect(Unit) {
+                            tooltipTargetView.collect { target ->
+                                handleTargetView(target?.target)
+                            }
+                        }
+                        OverlayContainer.TooltipsOnly()
+                    }
+                }
+            )
+        } else {
+            addView(
+                ComposeView(context).apply {
+                    elevation = 1000f
+
+                    setContent {
+                        LaunchedEffect(Unit) {
+                            tooltipTargetView.collect { target ->
+                                handleTargetView(target?.target)
+                            }
+                        }
+
+                        val resolvedActivity = _activity ?: (context as? Activity)
+
+                        OverlayContainer.Content(
+                            topPadding = topPadding.toDp(),
+                            bottomPadding = bottomPadding.toDp(),
+                            bannerBottomPadding = bannerBottomPadding.toDp(),
+                            floaterBottomPadding = floaterBottomPadding.toDp(),
+                            pipTopPadding = pipTopPadding.toDp(),
+                            pipBottomPadding = pipBottomPadding.toDp(),
+                            csatBottomPadding = csatBottomPadding.toDp(),
+                            activity = resolvedActivity
+                        )
+                    }
+                }
+            )
+        }
     }
 
     /**
@@ -211,6 +254,10 @@ class OverlayLayoutView @JvmOverloads constructor(
             csatBottomPadding = getDimensionPixelSize(
                 R.styleable.OverlayLayoutView_csatBottomPadding,
                 csatBottomPadding
+            )
+            insideBottomSheet = getBoolean(
+                R.styleable.OverlayLayoutView_insideBottomSheet,
+                false
             )
         }
     }

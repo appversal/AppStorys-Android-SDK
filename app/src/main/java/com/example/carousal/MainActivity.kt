@@ -68,7 +68,10 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import com.appversal.appstorys.ui.CardScratch
+import kotlinx.coroutines.delay
 
 
 class MainActivity : ComponentActivity() {
@@ -122,9 +125,11 @@ fun MyApp() {
 
     var edgeToEdgePadding by remember { mutableStateOf(PaddingValues()) }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(Color.White)) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             containerColor = Color(0xFFFAF8F9),
@@ -205,6 +210,9 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val campaignManager = App.appStorys
+
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     // State variables for input fields
     var input1 by remember { mutableStateOf("") }
@@ -312,6 +320,7 @@ fun HomeScreen(
                 ) {
                     Button(
                         onClick = {
+                            showBottomSheet = true
                             campaignManager.trackEvents(
 //                                event = "Login"
                                 event = "dismissed"
@@ -321,6 +330,50 @@ fun HomeScreen(
                         modifier = Modifier.appstorys("anuridhtest")
                     ) {
                         Text("Open Bottom Sheet")
+                    }
+                }
+
+                if (showBottomSheet) {
+                    LaunchedEffect(Unit) {
+                        delay(1000)
+                        campaignManager.getScreenCampaigns("Bottom Sheet Kotlin")
+                    }
+                    ModalBottomSheet(
+                        onDismissRequest = { showBottomSheet = false },
+                        sheetState = sheetState,
+                        containerColor = Color.White
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                                .padding(bottom = 32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Text(
+                                modifier = Modifier.appstorys("bottom sheet text"),
+                                text = "Bottom Sheet",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF0752ad)
+                            )
+                            Text(
+                                text = "This is a simple bottom sheet. You can put any content here.",
+                                fontSize = 14.sp,
+                                color = Color.Gray
+                            )
+                            Button(
+                                onClick = { showBottomSheet = false },
+                                modifier = Modifier.fillMaxWidth().appstorys("closebutton"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFF0752ad)
+                                )
+                            ) {
+                                Text("Close")
+                            }
+                        }
+                        campaignManager.overlayElements(insideBottomSheet = true)
                     }
                 }
 
