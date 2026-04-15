@@ -135,13 +135,17 @@ class OverlayLayoutView @JvmOverloads constructor(
     @SuppressLint("DiscouragedApi")
     private fun getViewId(id: String): View? {
         val viewId = context.resources.getIdentifier(id, "id", context.packageName)
-        return when {
-            viewId != 0 -> findViewById(viewId)
-            else -> {
-                Log.e("OverlayLayoutView", "View ID not found: $id")
+        if (viewId == 0) {
+            Log.e("OverlayLayoutView", "View resource ID not found for name: $id")
+            return null
+        }
+        // Search from the window root so we can find sibling views (e.g. cells
+        // inside a RecyclerView that sits next to OverlayLayoutView in the layout).
+        return rootView?.findViewById(viewId)
+            ?: run {
+                Log.e("OverlayLayoutView", "View $id not found in window tree")
                 null
             }
-        }
     }
 
     /**
