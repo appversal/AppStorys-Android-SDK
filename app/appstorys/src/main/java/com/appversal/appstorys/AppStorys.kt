@@ -947,7 +947,7 @@ object AppStorys {
                 var showPip by remember { mutableStateOf(true) }
                 LaunchedEffect(Unit) {
                     campaign?.id?.let {
-                        trackEvents(it, "viewed")
+                        trackEvents(it, "viewed", mapOf("is_small_video" to true))
                     }
                 }
 
@@ -1087,16 +1087,23 @@ object AppStorys {
                                     imageUrl = unmute?.image ?: pipDetails.unmuteImage
                                 )
                             },
-
-
-                            onButtonClick = {
+                            onSmallVideoClick = {
                                 campaign?.id?.let { campaignId ->
-                                    trackEvents(campaignId, "clicked")
+                                    trackEvents(
+                                        campaignId,
+                                        "clicked",
+                                        mapOf("is_small_video" to true)
+                                    )
+                                }
+                            },
+                            onButtonClick = { isSmallVideo ->
+                                campaign?.id?.let { campaignId ->
+                                    trackEvents(campaignId, "clicked", mapOf("is_small_video" to isSmallVideo))
                                 }
                             },
                             onExpandClick = {
                                 campaign?.id?.let { campaignId ->
-                                    trackEvents(campaignId, "viewed")
+                                    trackEvents(campaignId, "viewed", mapOf("is_small_video" to false))
                                 }
                             }
                         )
