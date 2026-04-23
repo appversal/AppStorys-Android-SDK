@@ -141,6 +141,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import com.appversal.appstorys.utils.TriggerEventMatcher.TrackedEventData
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -426,7 +427,9 @@ object AppStorys {
             ensureActive()
             try {
                 if (currentScreen != screenName) {
-                    OverlayContainer.clearAll()
+                    withContext(Dispatchers.Main) {   // ← add this
+                        OverlayContainer.clearAll()
+                    }
                     disabledCampaigns.emit(emptyList())
                     impressions.emit(emptyList())
                     campaigns.emit(emptyList())
@@ -1098,12 +1101,20 @@ object AppStorys {
                             },
                             onButtonClick = { isSmallVideo ->
                                 campaign?.id?.let { campaignId ->
-                                    trackEvents(campaignId, "clicked", mapOf("is_small_video" to isSmallVideo))
+                                    trackEvents(
+                                        campaignId,
+                                        "clicked",
+                                        mapOf("is_small_video" to isSmallVideo)
+                                    )
                                 }
                             },
                             onExpandClick = {
                                 campaign?.id?.let { campaignId ->
-                                    trackEvents(campaignId, "viewed", mapOf("is_small_video" to false))
+                                    trackEvents(
+                                        campaignId,
+                                        "viewed",
+                                        mapOf("is_small_video" to false)
+                                    )
                                 }
                             }
                         )
