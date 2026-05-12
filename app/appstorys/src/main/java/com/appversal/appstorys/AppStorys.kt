@@ -148,6 +148,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import kotlin.collections.plus
 import kotlin.toString
+import com.appversal.appstorys.notifications.OutreachEventTracker
 
 object AppStorys {
     private lateinit var context: Application
@@ -390,6 +391,15 @@ object AppStorys {
                 if (!accessToken.isNullOrBlank()) {
                     this@AppStorys.accessToken = accessToken
                     sdkState = AppStorysSdkState.Initialized
+
+                    try {
+                        OutreachEventTracker.saveUserId(context, this@AppStorys.userId)
+                        OutreachEventTracker.saveSdkAccessToken(context, accessToken)
+                        OutreachEventTracker.drainPendingQueue(context)
+                    } catch (e: Exception) {
+                        Log.e("AppStorys", "Outreach tracker setup failed: ${e.message}", e)
+                    }
+
                     val savedScratchedCampaigns = getScratchedCampaigns(
                         context.getSharedPreferences("AppStory", Context.MODE_PRIVATE)
                     )
@@ -528,7 +538,7 @@ object AppStorys {
                     }
                     val client = OkHttpClient()
                     val request = Request.Builder()
-                        .url("https://tracking.appstorys.com/capture-event")
+                        .url("https://tracking.appstorys.co/capture-event")
                         .post(
                             requestBody.toString()
                                 .toRequestBody("application/json".toMediaTypeOrNull())
@@ -597,6 +607,36 @@ object AppStorys {
         }
     }
 
+    fun setFirebaseToken(fcmToken: String) {
+        try {
+            if (fcmToken.isBlank()) {
+                Log.w("AppStorys", "setFirebaseToken: empty token, ignoring")
+                return
+            }
+            Log.d("AppStorys", "setFirebaseToken: updating device_push_token")
+
+            // 1. Existing flow — push device_push_token as a user attribute.
+            setUserProperties(mapOf("device_push_token" to fcmToken))
+
+            // 2. New flow — make sure the outreach access token is cached.
+            //    No-op if we already have one (cached from a previous session,
+            //    valid for ~30 days unless the server rejects it).
+            coroutineScope.launch {
+                try {
+                    if (!checkIfInitialized() || userId.isBlank()) {
+                        Log.w("AppStorys", "setFirebaseToken: SDK not ready, skipping outreach token fetch")
+                        return@launch
+                    }
+                    OutreachEventTracker.ensureAccessToken(context, userId, fcmToken)
+                } catch (e: Exception) {
+                    Log.e("AppStorys", "Outreach ensureAccessToken failed: ${e.message}", e)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("AppStorys", "setFirebaseToken failed: ${e.message}", e)
+        }
+    }
+
     fun setUserId(newUserId: String) {
         if (newUserId.isEmpty()) {
             Log.w("AppStorys", "Cannot set empty user ID")
@@ -649,6 +689,12 @@ object AppStorys {
                 userId = newUserId
                 isAnonymousUser = false
                 saveUserId(newUserId, false)
+
+                try {
+                    OutreachEventTracker.saveUserId(context, newUserId)
+                } catch (e: Exception) {
+                    Log.e("AppStorys", "Outreach saveUserId failed: ${e.message}", e)
+                }
 
                 Log.i("AppStorys", "User ID updated to: $newUserId")
 

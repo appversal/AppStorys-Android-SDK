@@ -72,6 +72,12 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import com.appversal.appstorys.ui.CardScratch
 import kotlinx.coroutines.delay
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 
 
 class MainActivity : ComponentActivity() {
@@ -95,6 +101,8 @@ fun MyApp() {
     val app = LocalContext.current.applicationContext as App
     val screenName by app.screenNameNavigation.collectAsState()
     var currentScreen by remember { mutableStateOf("HomeScreen") }
+
+    RequestNotificationPermission()
 
     var selectedTab by remember { mutableStateOf(0) } // Track selected tab index
 
@@ -183,6 +191,31 @@ fun MyApp() {
             bottomPadding = 70.dp,
             activity = LocalContext.current as Activity
         )
+    }
+}
+
+@Composable
+fun RequestNotificationPermission() {
+    val context = LocalContext.current
+
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        Log.d("NotifPerm", if (granted) "granted" else "denied")
+    }
+
+    LaunchedEffect(Unit) {
+        // Below Android 13 the permission is granted automatically — nothing to do.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val alreadyGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!alreadyGranted) {
+                launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     }
 }
 
@@ -320,11 +353,13 @@ fun HomeScreen(
                 ) {
                     Button(
                         onClick = {
-                            showBottomSheet = true
-                            campaignManager.trackEvents(
-//                                event = "Login"
-                                event = "dismissed"
-                            )
+//                            campaignManager.handleBackPress {
+//                                showBottomSheet = true
+//                                campaignManager.trackEvents(
+////                                event = "Login"
+//                                    event = "dismissed"
+//                                )
+//                            }
 //                            campaignManager.setUserId("nameisprem")
                         },
                         modifier = Modifier.appstorys("anuridhtest")
