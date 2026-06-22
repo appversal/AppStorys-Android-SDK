@@ -1,0 +1,43 @@
+# ============================================================
+# Flow 2: Banner frequency unlimited — re-appears after navigation
+# Campaign: BAN  id=f9232e9e-6e22-4791-8b42-414ea748c2ee
+# Screen:   Home Screen Kotlin
+#
+# BEFORE RUNNING: set this banner to "Unlimited" in the dashboard
+# WHAT THIS PROVES: banner re-appears when returning to HomeScreen
+#                   (tests the founder's screen-change-return use case)
+# IF THIS FAILS:    SDK is not calling getScreenCampaigns on return,
+#                   OR the "viewed" state blocks re-show incorrectly
+# ============================================================
+appId: com.example.carousal
+---
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# Banner must appear on first load
+- assertVisible:
+    text: "Close"
+
+- takeScreenshot: "02_banner_visible_first_load"
+
+# Navigate away WITHOUT closing the banner
+# Going to PayScreen hides "Home Screen Kotlin" campaigns
+- tapOn:
+    text: "More"
+
+- waitForAnimationToEnd
+
+# Return to HomeScreen — SDK calls getScreenCampaigns("Home Screen Kotlin") again
+- tapOn:
+    text: "Parties"
+
+- waitForAnimationToEnd
+
+# Banner MUST re-appear (frequency = unlimited)
+# If assertVisible fails here → the screen-change-return bug is present
+- assertVisible:
+    text: "Close"
+
+- takeScreenshot: "02_banner_visible_after_return_PASS"

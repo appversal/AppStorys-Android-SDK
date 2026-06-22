@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     id("maven-publish")
     id("kotlin-parcelize")
+    id("app.cash.paparazzi") version "1.3.5"
 }
 
 android {
@@ -75,6 +76,8 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.exoplayer.dash)
     implementation(libs.androidx.media3.exoplayer.hls)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("io.coil-kt:coil-test:2.6.0")
 }
 
 afterEvaluate {
@@ -87,5 +90,18 @@ afterEvaluate {
                 version = "3.7.2"
             }
         }
+    }
+}
+
+tasks.withType<Test> {
+    binaryResultsDirectory.set(
+        layout.buildDirectory.dir("binary-test-results/${System.currentTimeMillis()}")
+    )
+    reports.html.required.set(false)
+    reports.junitXml.required.set(false)
+    testLogging {
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStackTraces = true
+        events("failed")
     }
 }

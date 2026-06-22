@@ -50,7 +50,9 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -2501,6 +2503,7 @@ object AppStorys {
 
         val snackbarHostState = remember { SnackbarHostState() }
         val coroutineScope = rememberCoroutineScope()
+        val density = LocalDensity.current
 
         LaunchedEffect(shouldAnalyze) {
             Log.i(TAG, "LaunchedEffect triggered. shouldAnalyze = $shouldAnalyze")
@@ -2547,6 +2550,7 @@ object AppStorys {
         if (isScreenCaptureEnabled && !isCapturing) {
             Popup(
                 alignment = Alignment.BottomEnd,
+                offset = with(density) { IntOffset((-16).dp.roundToPx(), (-86).dp.roundToPx()) },
                 properties = PopupProperties(
                     focusable = false,
                     dismissOnBackPress = false,
@@ -2559,7 +2563,7 @@ object AppStorys {
                         shouldAnalyze = true
                         Log.i(TAG, "shouldAnalyze = true")
                     },
-                    modifier = modifier.padding(bottom = 86.dp, end = 16.dp),
+                    modifier = modifier,
                     containerColor = Color.White
                 ) {
                     Text(modifier = Modifier.padding(horizontal = 12.dp), text = "Capture Screen")
@@ -2567,6 +2571,7 @@ object AppStorys {
             }
             Popup(
                 alignment = Alignment.BottomCenter,
+                offset = with(density) { IntOffset(0, (-80).dp.roundToPx()) },
                 properties = PopupProperties(
                     focusable = false,
                     dismissOnBackPress = false,
@@ -2574,8 +2579,7 @@ object AppStorys {
                 )
             ) {
                 SnackbarHost(
-                    hostState = snackbarHostState,
-                    modifier = Modifier.padding(bottom = 80.dp)
+                    hostState = snackbarHostState
                 )
             }
         }

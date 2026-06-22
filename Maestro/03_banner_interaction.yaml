@@ -1,0 +1,43 @@
+# ============================================================
+# Flow 3: Banner interaction — tap CTA body, then close
+# Campaign: BAN  id=f9232e9e-6e22-4791-8b42-414ea748c2ee
+# Screen:   Home Screen Kotlin
+#
+# FIX: banner renders at the BOTTOM half of the screen
+
+# point "50%,75%" targets the centre of the banner body.
+# ============================================================
+appId: com.example.carousal
+---
+- launchApp:
+      clearState: false
+
+- waitForAnimationToEnd
+
+- assertVisible:
+      text: "Close"
+
+- takeScreenshot: "03_banner_visible_before_tap"
+
+# Tap the banner body — bottom half of screen
+- tapOn:
+      point: "50%,75%"
+
+- waitForAnimationToEnd
+
+# If CTA opened a browser, go back
+- pressKey: back
+
+- waitForAnimationToEnd
+
+- takeScreenshot: "03_banner_after_cta_tap"
+
+- tapOn:
+      text: "Close"
+
+- waitForAnimationToEnd
+
+- assertNotVisible:
+      text: "Close"
+
+- takeScreenshot: "03_banner_dismissed_PASS"

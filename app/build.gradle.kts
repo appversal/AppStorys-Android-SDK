@@ -62,6 +62,7 @@ dependencies {
 
     implementation(project(":app:appstorys"))
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.firebase.messaging.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

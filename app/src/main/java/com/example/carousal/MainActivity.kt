@@ -612,6 +612,8 @@ fun HomeScreen(
 
             }
         }
+
+        campaignManager.PinnedBanner()
     }
 }
 

@@ -1,0 +1,55 @@
+# ============================================================
+# Flow 1: Banner frequency — "once" setting
+# Campaign: BAN  id=f9232e9e-6e22-4791-8b42-414ea748c2ee
+# Screen:   Home Screen Kotlin
+#
+# BEFORE RUNNING: set this banner to "Only once" in the dashboard
+# WHAT THIS PROVES: banner shows on first launch, does NOT show again
+#                   after you navigate away and come back
+# IF THIS FAILS:    the frequency/re-show bug is present
+# ============================================================
+appId: com.example.carousal
+---
+# ── Launch fresh (clears SharedPreferences = clears "viewed" state)
+- launchApp:
+    clearState: false
+
+- waitForAnimationToEnd
+
+# ── Step 1: Banner must appear on HomeScreen
+# The cross button always has contentDescription="Close" (CrossButton.kt line 57)
+- assertVisible:
+    text: "Close"
+
+# Take a screenshot as proof
+- takeScreenshot: "01_banner_visible_first_launch"
+
+# ── Step 2: Close the banner by tapping the cross button
+- tapOn:
+    text: "Close"
+
+- waitForAnimationToEnd
+
+# ── Step 3: Banner must be gone after closing
+- assertNotVisible:
+    text: "Close"
+
+# ── Step 4: Navigate to "More" tab (PayScreen)
+- tapOn:
+    text: "More"
+
+- waitForAnimationToEnd
+
+# ── Step 5: Come back to "Parties" tab (HomeScreen)
+# This calls getScreenCampaigns("Home Screen Kotlin") again
+- tapOn:
+    text: "Parties"
+
+- waitForAnimationToEnd
+
+# ── Step 6: Banner must NOT re-appear (frequency = once)
+# If it re-appears here → the viewed event was lost (the bug you described)
+- assertNotVisible:
+    text: "Close"
+
+- takeScreenshot: "01_banner_NOT_visible_after_return_PASS"

@@ -1,7 +1,6 @@
 package com.appversal.appstorys.ui
 
 import android.app.Activity
-import android.content.Context
 import android.graphics.Rect
 import android.os.Build
 import android.util.Log
@@ -179,6 +178,8 @@ object OverlayContainer {
                 )
 
                 AppStorys.ScratchCard()
+
+                AppStorys.SpinTheWheel()
 
                 AppStorys.BottomSheet()
 
